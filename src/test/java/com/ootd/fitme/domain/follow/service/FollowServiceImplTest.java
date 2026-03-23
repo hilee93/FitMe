@@ -28,6 +28,9 @@ class FollowServiceImplTest {
     @Mock
     private FollowRepository followRepository;
 
+    @Mock
+    private FollowCountService followCountService;
+
     @InjectMocks
     private FollowServiceImpl followServiceImpl;
 
