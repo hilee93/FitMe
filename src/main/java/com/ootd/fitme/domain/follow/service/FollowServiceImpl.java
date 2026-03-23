@@ -21,6 +21,7 @@ import java.util.UUID;
 public class FollowServiceImpl implements FollowService {
 
     private final FollowRepository followRepository;
+    private final FollowCountService followCountService;
 
     @Override
     @Transactional
@@ -36,6 +37,7 @@ public class FollowServiceImpl implements FollowService {
 
         Follow follow = Follow.create(request.followerId(), request.followeeId());
         Follow savedFollow = followRepository.save(follow);
+        followCountService.increaseFollowCount(savedFollow);
 
         return FollowMapper.toDto(savedFollow);
     }
@@ -63,8 +65,9 @@ public class FollowServiceImpl implements FollowService {
     @Override
     @Transactional
     public void cancelFollow(UUID followId) {
-        followRepository.findById(followId)
+        Follow follow = followRepository.findById(followId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 팔로우입니다."));
+        followCountService.decreaseFollowCount(follow);
         followRepository.deleteById(followId);
     }
 }
