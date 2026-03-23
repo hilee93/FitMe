@@ -2,13 +2,15 @@ package com.ootd.fitme.domain.follow.service;
 
 import com.ootd.fitme.domain.follow.dto.request.FollowCreateRequest;
 import com.ootd.fitme.domain.follow.dto.response.FollowDto;
-import com.ootd.fitme.domain.follow.dto.response.UserSummary;
-import com.ootd.fitme.domain.follow.entity.Follow;
+import com.ootd.fitme.domain.follow.dto.response.FollowListResponse;
+import com.ootd.fitme.domain.follow.dto.response.FollowSummaryDto;
 import com.ootd.fitme.domain.follow.repository.FollowRepository;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -18,25 +20,33 @@ public class FollowServiceImpl implements FollowService {
     private final FollowRepository followRepository;
 
     @Override
-    @Transactional
     public FollowDto createFollow(FollowCreateRequest request) {
+        // TODO : 팔로우 생성로직
+        return null;
+    }
 
-        // todo : Exception 수정하기
-        if(request.followerId().equals(request.followeeId())) {
-            throw new IllegalArgumentException("자기 자신을 팔로우 할 수 없습니다.");
-        }
-        // todo : Exception 수정하기
-        if(followRepository.findByFollowerIdAndFolloweeId(request.followerId(), request.followeeId()).isPresent()) {
-            throw new IllegalArgumentException("이미 팔로우 했습니다.");
-        }
+    @Override
+    public FollowListResponse getFollowers(
+            UUID followeeId, String Cursor, UUID idAfter, int limit, String nameLike) {
+        // TODO : 팔로워 조회 로직
+        return null;
+    }
 
-        Follow follow = Follow.create(request.followerId(), request.followeeId());
-        Follow saveFollow = followRepository.save(follow);
+    @Override
+    public FollowListResponse getFollowings(
+            UUID followerId, String Cursor, UUID idAfter, int limit, String nameLike) {
+        // TODO : 팔로잉 조회 로직
+        return null;
+    }
 
-        // todo : User 레포지토리 가져오기
-        UserSummary follower = new UserSummary(saveFollow.getFollowerId(), null, null);
-        UserSummary followee = new UserSummary(saveFollow.getFolloweeId(), null, null);
-        return new FollowDto(saveFollow.getId(), follower, followee);
+    @Override
+    public FollowSummaryDto getFollowSummary(UUID userId) {
+        // TODO : 팔로워 요약 조회 로직
+        return null;
+    }
 
+    @Override
+    public void cancelFollow(UUID followId) {
+        // TODO : 팔로우 취소 로직
     }
 }
