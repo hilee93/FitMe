@@ -1,12 +1,14 @@
 package com.ootd.fitme.domain.feed.controller;
 
+import com.ootd.fitme.domain.feed.dto.request.FeedCommentCreateRequest;
+import com.ootd.fitme.domain.feed.dto.request.FeedCommentSearchCondition;
+import com.ootd.fitme.domain.comment.dto.response.CommentCursorResponseDto;
 import com.ootd.fitme.domain.comment.dto.response.CommentResponseDto;
 import com.ootd.fitme.domain.feed.controller.docs.FeedControllerDocs;
-import com.ootd.fitme.domain.feed.controller.docs.FeedCreateRequest;
-import com.ootd.fitme.domain.feed.dto.request.FeedSearchCondition;
-import com.ootd.fitme.domain.feed.dto.request.FeedUpdateRequestDto;
+import com.ootd.fitme.domain.feed.dto.request.*;
 import com.ootd.fitme.domain.feed.dto.response.FeedCursorResponseDto;
 import com.ootd.fitme.domain.feed.dto.response.FeedResponseDto;
+import com.ootd.fitme.domain.feed.service.FeedService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +20,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @RequestMapping("/api/feeds")
 public class FeedController implements FeedControllerDocs {
+
+    private final FeedService feedService;
+
     @Override
     @GetMapping
     public ResponseEntity<FeedCursorResponseDto> getAllFeeds(FeedSearchCondition feedSearchCondition) {
@@ -26,8 +31,9 @@ public class FeedController implements FeedControllerDocs {
 
     @Override
     @PostMapping
-    public ResponseEntity<FeedResponseDto> createFeed(@RequestBody FeedCreateRequest feedCreateRequest) {
-        return null;
+    public ResponseEntity<FeedResponseDto> createFeed(@RequestBody @Valid FeedCreateRequest feedCreateRequest) {
+        FeedResponseDto responseDto = feedService.createFeed(feedCreateRequest);
+        return ResponseEntity.ok(responseDto);
     }
 
     @Override
@@ -58,7 +64,14 @@ public class FeedController implements FeedControllerDocs {
     }
 
     @Override
-    public ResponseEntity<CommentResponseDto> addComment(UUID feedId, String comment) {
+    @PostMapping("/{feedId}/comments")
+    public ResponseEntity<CommentResponseDto> addComment(@RequestBody @Valid FeedCommentCreateRequest feedCommentCreateRequest) {
+        return null;
+    }
+
+    @Override
+    @GetMapping("/{feedId}/comments")
+    public ResponseEntity<CommentCursorResponseDto> getAllFeedComments(@Valid FeedCommentSearchCondition feedCommentSearchCondition) {
         return null;
     }
 }
