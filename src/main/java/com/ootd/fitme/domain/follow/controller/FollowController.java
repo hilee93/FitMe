@@ -8,8 +8,7 @@ import com.ootd.fitme.domain.follow.dto.response.FollowSummaryDto;
 import com.ootd.fitme.domain.follow.service.FollowService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
@@ -21,8 +20,10 @@ public class FollowController implements FollowControllerDocs {
     private final FollowService followService;
 
     @Override
-    public ResponseEntity<FollowDto> createFollow(FollowCreateRequest followCreateRequest) {
-        return null;
+    @PostMapping
+    public ResponseEntity<FollowDto> createFollow(@RequestBody FollowCreateRequest request) {
+        FollowDto follow = followService.createFollow(request);
+        return ResponseEntity.status(201).body(follow);
     }
 
     @Override
@@ -45,7 +46,9 @@ public class FollowController implements FollowControllerDocs {
     }
 
     @Override
-    public ResponseEntity<Void> cancelFollow(UUID followId) {
-        return null;
+    @DeleteMapping("/{followId}")
+    public ResponseEntity<Void> cancelFollow(@PathVariable UUID followId) {
+        followService.cancelFollow(followId);
+        return ResponseEntity.noContent().build();
     }
 }

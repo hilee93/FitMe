@@ -12,7 +12,7 @@ import java.util.UUID;
 @Tag(name = "Follow API", description = "팔로우 관련 API")
 public interface FollowControllerDocs {
 
-    ResponseEntity<FollowDto> createFollow(FollowCreateRequest followCreateRequest);
+    ResponseEntity<FollowDto> createFollow(FollowCreateRequest request);
 
     ResponseEntity<FollowSummaryDto> getFollowSummary(UUID userId);
 
