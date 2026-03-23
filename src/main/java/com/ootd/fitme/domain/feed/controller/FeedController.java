@@ -25,7 +25,8 @@ public class FeedController implements FeedControllerDocs {
     }
 
     @Override
-    public ResponseEntity<FeedResponseDto> createFeed(FeedCreateRequest feedCreateRequest) {
+    @PostMapping
+    public ResponseEntity<FeedResponseDto> createFeed(@RequestBody FeedCreateRequest feedCreateRequest) {
         return null;
     }
 
@@ -39,17 +40,20 @@ public class FeedController implements FeedControllerDocs {
     }
 
     @Override
-    public ResponseEntity<Void> deleteFeed(UUID feedId) {
+    @DeleteMapping("/{feedId}")
+    public ResponseEntity<Void> deleteFeed(@PathVariable UUID feedId) {
         return null;
     }
 
     @Override
-    public ResponseEntity<Void> addLike(UUID feedId) {
+    @PostMapping("/{feedId}/like")
+    public ResponseEntity<Void> addLike(@PathVariable UUID feedId) {
         return null;
     }
 
     @Override
-    public ResponseEntity<Void> removeLike(UUID feedId) {
+    @DeleteMapping("/{feedId}/like")
+    public ResponseEntity<Void> removeLike(@PathVariable UUID feedId) {
         return null;
     }
 
