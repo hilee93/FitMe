@@ -28,11 +28,11 @@ public class NotificationFactory {
         );
     }
 
-    public Notification weatherAlert(User user, String message) {
+    public Notification weatherAlert(User user,String weatherAlert ) { // TODO : 추후에 weatherAlert가 enum이 생기면 바꿀것
         return Notification.create(
                 NotificationLevel.INFO,
-                message,
-                "날씨 알림",
+                "["+weatherAlert +"]"+ ".",
+                "",
                 NotificationType.WEATHER_ALERT,
                 user
         );

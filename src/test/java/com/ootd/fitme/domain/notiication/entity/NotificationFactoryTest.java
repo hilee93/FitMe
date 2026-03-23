@@ -61,8 +61,8 @@ class NotificationFactoryTest {
             Notification notification = notificationFactory.weatherAlert(user, "내일 비가 올 예정입니다.");
 
             assertThat(notification.getLevel()).isEqualTo(NotificationLevel.INFO);
-            assertThat(notification.getTitle()).isEqualTo("내일 비가 올 예정입니다.");
-            assertThat(notification.getContent()).isEqualTo("날씨 알림");
+            assertThat(notification.getTitle()).isEqualTo("[내일 비가 올 예정입니다.].");
+            assertThat(notification.getContent()).isEqualTo("");
             assertThat(notification.getType()).isEqualTo(NotificationType.WEATHER_ALERT);
             assertThat(notification.getUser()).isEqualTo(user);
         }

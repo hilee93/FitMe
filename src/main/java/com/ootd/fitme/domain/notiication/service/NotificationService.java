@@ -17,8 +17,9 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final NotificationFactory notificationFactory;
 
+
     @Transactional
-    public Notification notifyDm(User user, String senderName,String message) {
+    public Notification notifyDirectMessage(User user, String senderName,String message) {
         Notification notification = notificationFactory.dm(user, senderName,message);
         return notificationRepository.save(notification);
     }
