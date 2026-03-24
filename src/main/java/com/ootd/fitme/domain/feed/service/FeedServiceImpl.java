@@ -64,7 +64,7 @@ public class FeedServiceImpl implements FeedService {
                 .toList();
 
         feedClothesRepository.saveAll(feedClothes);
-
+        // NOTE: 여기까지 순수 create 기능을 위한 동작, 아래는 응답값을 위해 queryService로 별도 처리
         return feedQueryService.getFeed(savedFeed.getId(), feedCreateRequest.authorId());
     }
 
