@@ -5,6 +5,14 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 public enum ErrorCode {
+    // user & auth
+    AUTH_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "인증이 올바르지 않습니다.", "U-001"),
+    AUTH_FORBIDDEN(HttpStatus.FORBIDDEN, "접근 권한이 없습니다..", "U-002"),
+    AUTH_INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "신뢰할 수 없는 요청입니다.", "U-003"),
+    AUTH_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "토큰이 만료되었습니다.", "U-004"),
+    AUTH_INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "토큰을 찾을 수 없습니다.", "U-005"),
+    USER_ACCOUNT_LOCKED(HttpStatus.LOCKED, "유저 계정이 잠겨있습니다.", "U-006"),
+    USER_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "유저가 이미 존재합니다.", "U-007"),
 
     // common
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "요청이 올바르지 않습니다.", "CM-001"),
