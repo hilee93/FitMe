@@ -5,6 +5,8 @@ import com.ootd.fitme.domain.follow.dto.request.FollowCreateRequest;
 import com.ootd.fitme.domain.follow.dto.response.FollowDto;
 import com.ootd.fitme.domain.follow.dto.response.UserSummary;
 import com.ootd.fitme.domain.follow.service.FollowService;
+import com.ootd.fitme.global.security.auth.CustomUserDetailsService;
+import com.ootd.fitme.global.security.jwt.JwtProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -26,7 +28,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-
 @WebMvcTest(FollowController.class)
 @AutoConfigureMockMvc(addFilters = false) // Security 필터 비활성화
 class FollowControllerTest {
@@ -39,6 +40,12 @@ class FollowControllerTest {
 
     @MockitoBean
     private FollowService followService;
+
+    @MockitoBean
+    private JwtProvider jwtProvider;
+
+    @MockitoBean
+    private CustomUserDetailsService customUserDetailsService;
 
     private UUID followerId;
     private UUID followeeId;
