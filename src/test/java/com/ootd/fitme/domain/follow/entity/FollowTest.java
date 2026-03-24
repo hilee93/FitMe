@@ -31,10 +31,10 @@ class FollowTest {
     void create_follow_fail() {
 
         //given
-        UUID Id = UUID.randomUUID();
+        UUID sameId = UUID.randomUUID();
 
         //when & then
-        assertThatThrownBy(() -> Follow.create(Id, Id))
+        assertThatThrownBy(() -> Follow.create(sameId, sameId))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("자신을 팔로우 할 수 없습니다.");
     }
