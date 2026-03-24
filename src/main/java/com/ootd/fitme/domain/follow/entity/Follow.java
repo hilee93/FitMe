@@ -30,6 +30,9 @@ public class Follow extends BaseEntity {
     }
 
     public static Follow create(UUID followerId, UUID followeeId) {
+        if (followerId.equals(followeeId)) {
+            throw new IllegalArgumentException("자신을 팔로우 할 수 없습니다.");
+        }
         return new Follow(followerId, followeeId);
     }
 }
