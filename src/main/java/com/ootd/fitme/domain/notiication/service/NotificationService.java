@@ -4,6 +4,7 @@ import com.ootd.fitme.domain.notiication.entity.Notification;
 import com.ootd.fitme.domain.notiication.entity.NotificationFactory;
 import com.ootd.fitme.domain.notiication.repository.NotificationRepository;
 import com.ootd.fitme.domain.user.entity.User;
+import com.ootd.fitme.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,11 +17,16 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final NotificationFactory notificationFactory;
+    private final UserRepository userRepository;
 
 
     @Transactional
-    public Notification notifyDirectMessage(User user, String senderName,String message) {
-        Notification notification = notificationFactory.dm(user, senderName,message);
+    public Notification notifyDirectMessage(UUID userId, String senderName,String message) {
+
+        User receiver = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("user not found"));
+
+        Notification notification = notificationFactory.dm(receiver, senderName,message);
         return notificationRepository.save(notification);
     }
 
