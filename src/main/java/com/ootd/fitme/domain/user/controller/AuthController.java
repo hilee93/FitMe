@@ -5,6 +5,7 @@ import com.ootd.fitme.domain.user.dto.response.JwtDto;
 import com.ootd.fitme.domain.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,7 +18,8 @@ public class AuthController {
     private final UserService userService;
 
     @PostMapping("/sign-in")
-    public JwtDto signIn(@Valid @RequestBody SignInRequest signInRequest) {
-        return userService.signIn(signInRequest);
+    public ResponseEntity<JwtDto> signIn(@Valid @RequestBody SignInRequest signInRequest) {
+        JwtDto response = userService.signIn(signInRequest);
+        return ResponseEntity.ok(response);
     }
 }

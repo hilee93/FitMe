@@ -64,7 +64,6 @@ public class UserServiceImpl implements UserService {
             throw new AuthException(ErrorCode.AUTH_INVALID_CREDENTIALS);
         }
 
-
         return user;
     }
 
