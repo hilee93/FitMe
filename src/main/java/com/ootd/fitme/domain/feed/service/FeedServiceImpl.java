@@ -1,6 +1,8 @@
 package com.ootd.fitme.domain.feed.service;
 
 
+import com.ootd.fitme.domain.clothes.entity.Clothes;
+import com.ootd.fitme.domain.clothes.repository.ClothesRepository;
 import com.ootd.fitme.domain.comment.dto.response.CommentCursorResponseDto;
 import com.ootd.fitme.domain.comment.dto.response.CommentResponseDto;
 import com.ootd.fitme.domain.feed.dto.request.FeedCommentCreateRequest;
@@ -9,12 +11,31 @@ import com.ootd.fitme.domain.feed.dto.request.FeedCreateRequest;
 import com.ootd.fitme.domain.feed.dto.request.FeedSearchCondition;
 import com.ootd.fitme.domain.feed.dto.response.FeedCursorResponseDto;
 import com.ootd.fitme.domain.feed.dto.response.FeedResponseDto;
+import com.ootd.fitme.domain.feed.entity.Feed;
+import com.ootd.fitme.domain.feed.repository.FeedRepository;
+import com.ootd.fitme.domain.feedclothes.entity.FeedClothes;
+import com.ootd.fitme.domain.feedclothes.repository.FeedClothesRepository;
+import com.ootd.fitme.domain.user.entity.User;
+import com.ootd.fitme.domain.user.repository.UserRepository;
+import com.ootd.fitme.domain.weatherforecast.entity.WeatherForecast;
+import com.ootd.fitme.domain.weatherforecast.repository.WeatherForecastRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class FeedServiceImpl implements FeedService {
+
+    final private FeedRepository feedRepository;
+    private final WeatherForecastRepository weatherForecastRepository;
+    private final UserRepository userRepository;
+    private final ClothesRepository clothesRepository;
+    private final FeedClothesRepository feedClothesRepository;
+    private final FeedQueryService feedQueryService;
 
     @Override
     public FeedCursorResponseDto searchFeeds(FeedSearchCondition feedSearchCondition) {
@@ -22,8 +43,29 @@ public class FeedServiceImpl implements FeedService {
     }
 
     @Override
+    @Transactional
     public FeedResponseDto createFeed(FeedCreateRequest feedCreateRequest) {
-        return null;
+        WeatherForecast weatherForecast = weatherForecastRepository.findById(feedCreateRequest.weatherId()).orElseThrow();
+        User user = userRepository.getReferenceById(feedCreateRequest.authorId());
+        List<Clothes> clothesList = clothesRepository.findAllById(feedCreateRequest.clothesIds());
+
+        Feed feed = Feed.create(
+                feedCreateRequest.content(),
+                0,
+                0,
+                weatherForecast,
+                user
+        );
+
+        Feed savedFeed = feedRepository.save(feed);
+
+        List<FeedClothes> feedClothes = clothesList.stream()
+                .map(clothes -> FeedClothes.create(savedFeed, clothes))
+                .toList();
+
+        feedClothesRepository.saveAll(feedClothes);
+
+        return feedQueryService.getFeed(savedFeed.getId(), feedCreateRequest.authorId());
     }
 
     @Override
