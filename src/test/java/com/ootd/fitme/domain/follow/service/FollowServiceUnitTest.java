@@ -1,7 +1,6 @@
 package com.ootd.fitme.domain.follow.service;
 
 import com.ootd.fitme.domain.follow.dto.request.FollowCreateRequest;
-import com.ootd.fitme.domain.follow.dto.response.FollowDto;
 import com.ootd.fitme.domain.follow.entity.Follow;
 import com.ootd.fitme.domain.follow.repository.FollowRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -15,11 +14,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.never;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -39,8 +38,8 @@ class FollowServiceUnitTest {
     class FollowCreateTest {
 
         @Test
-        @DisplayName("팔로우를 할 수 있다")
-        void createFollow_success() {
+        @DisplayName("성공 - 중복이 없으면 저장과 팔로우 카운트가 증가한다")
+        void createFollow_noDuplication_savesAndIncreasesCount() {
 
             //given
             UUID followerId = UUID.randomUUID();
@@ -50,21 +49,19 @@ class FollowServiceUnitTest {
             given(followRepository.findByFollowerIdAndFolloweeId(followerId, followeeId))
                     .willReturn(Optional.empty());
 
-            given(followRepository.save(any()))
+            given(followRepository.save(any(Follow.class)))
                     .willReturn(Follow.create(followerId, followeeId));
 
             //when
-            FollowDto result = followServiceImpl.createFollow(request);
+            followServiceImpl.createFollow(request);
 
             //then
-            assertThat(result).isNotNull();
-            assertThat(result.follower().userId()).isEqualTo(followerId);
-            assertThat(result.followee().userId()).isEqualTo(followeeId);
-            then(followRepository).should().save(any());
+            then(followRepository).should().save(any(Follow.class));
+            then(followCountService).should().increaseFollowCount(any(Follow.class));
         }
 
         @Test
-        @DisplayName("이미 팔로우한 사용자를 다시 팔로우 할 수 없다")
+        @DisplayName("실패 - 팔로우 중이면 예외가 발생하고 저장되지 않는다")
         void createFollow_alreadyFollowed_fail() {
 
             //given
@@ -79,6 +76,9 @@ class FollowServiceUnitTest {
             assertThatThrownBy(() -> followServiceImpl.createFollow(request))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("이미 팔로우한 사용자입니다.");
+
+            then(followRepository).should(never()).save(any(Follow.class));
+            then(followCountService).should(never()).increaseFollowCount(any(Follow.class));
         }
     }
 
@@ -87,7 +87,7 @@ class FollowServiceUnitTest {
     class FollowCancelTest {
 
         @Test
-        @DisplayName("팔로우 취소 할 수 있다")
+        @DisplayName("성공 - 팔로우가 존재하면 삭제가 호출된다")
         void cancelFollow_success() {
 
             //given
@@ -101,11 +101,12 @@ class FollowServiceUnitTest {
             followServiceImpl.cancelFollow(followId);
 
             //then
+            then(followCountService).should().decreaseFollowCount(follow);
             then(followRepository).should().deleteById(followId);
         }
 
         @Test
-        @DisplayName("존재하지 않는 팔로우는 취소할 수 없다")
+        @DisplayName("실패 - 존재하지 않은 팔로우를 취소하면 예외가 발생하고 삭제되지 않는다")
         void cancelFollow_fail() {
 
             //given
@@ -117,6 +118,9 @@ class FollowServiceUnitTest {
             assertThatThrownBy(() -> followServiceImpl.cancelFollow(followId))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("존재하지 않는 팔로우입니다.");
+
+            then(followCountService).should(never()).decreaseFollowCount(any(Follow.class));
+            then(followRepository).should(never()).deleteById(any(UUID.class));
         }
     }
 }

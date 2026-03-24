@@ -11,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class FollowTest {
 
     @Test
-    @DisplayName("팔로우를 생성할 수 있다")
-    void create_follow_success() {
+    @DisplayName("성공 - 서로 다른 ID로 Follow가 생성된다")
+    void create_Follow_returnFollow() {
 
         //given
         UUID followerId = UUID.randomUUID();
@@ -27,8 +27,8 @@ class FollowTest {
     }
 
     @Test
-    @DisplayName("자기 자신을 팔로우 할 수 없다")
-    void create_follow_fail() {
+    @DisplayName("실패 - 자기 자신을 팔로우하면 예외가 발생한다")
+    void create_Follow_throwsException() {
 
         //given
         UUID sameId = UUID.randomUUID();
