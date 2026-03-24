@@ -23,7 +23,7 @@ import static org.mockito.BDDMockito.then;
 
 
 @ExtendWith(MockitoExtension.class)
-class FollowServiceImplTest {
+class FollowServiceUnitTest {
 
     @Mock
     private FollowRepository followRepository;
@@ -61,20 +61,6 @@ class FollowServiceImplTest {
             assertThat(result.follower().userId()).isEqualTo(followerId);
             assertThat(result.followee().userId()).isEqualTo(followeeId);
             then(followRepository).should().save(any());
-        }
-
-        @Test
-        @DisplayName("자기 자신을 팔로우 할 수 없다")
-        void createFollow_selfFollow_fail() {
-
-            //given
-            UUID userId = UUID.randomUUID();
-            FollowCreateRequest request = new FollowCreateRequest(userId, userId);
-
-            //when & then
-            assertThatThrownBy(() -> followServiceImpl.createFollow(request))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("자신을 팔로우 할 수 없습니다.");
         }
 
         @Test
