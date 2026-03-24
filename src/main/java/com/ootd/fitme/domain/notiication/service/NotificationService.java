@@ -37,8 +37,8 @@ public class NotificationService {
     }
 
     @Transactional
-    public Notification notifyWeatherAlert(User user, String message) {
-        Notification notification = notificationFactory.weatherAlert(user, message);
+    public Notification notifyWeatherAlert(User user, String weatherAlert) {
+        Notification notification = notificationFactory.weatherAlert(user, weatherAlert);
         return notificationRepository.save(notification);
     }
 
