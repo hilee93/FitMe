@@ -6,6 +6,7 @@ import com.ootd.fitme.domain.follow.dto.response.FollowDto;
 import com.ootd.fitme.domain.follow.dto.response.FollowListResponse;
 import com.ootd.fitme.domain.follow.dto.response.FollowSummaryDto;
 import com.ootd.fitme.domain.follow.service.FollowService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +22,8 @@ public class FollowController implements FollowControllerDocs {
 
     @Override
     @PostMapping
-    public ResponseEntity<FollowDto> createFollow(@RequestBody FollowCreateRequest request) {
+    public ResponseEntity<FollowDto> createFollow(@Valid @RequestBody FollowCreateRequest request) {
+        // TODO: followerId는 인증된 사용자 ID로 교체 예정 (@AuthenticationPrincipal)
         FollowDto follow = followService.createFollow(request);
         return ResponseEntity.status(201).body(follow);
     }
