@@ -91,18 +91,17 @@ class FollowServiceUnitTest {
         void cancelFollow_success() {
 
             //given
-            UUID followerId = UUID.randomUUID();
-            UUID followeeId = UUID.randomUUID();
-            Follow follow = Follow.create(followerId, followeeId);
+            UUID followId = UUID.randomUUID();
+            Follow follow = Follow.create(UUID.randomUUID(), UUID.randomUUID());
 
-            given(followRepository.findById(followerId))
+            given(followRepository.findById(followId))
                     .willReturn(Optional.of(follow));
 
             //when
-            followServiceImpl.cancelFollow(followerId);
+            followServiceImpl.cancelFollow(followId);
 
             //then
-            then(followRepository).should().deleteById(followerId);
+            then(followRepository).should().deleteById(followId);
         }
 
         @Test
