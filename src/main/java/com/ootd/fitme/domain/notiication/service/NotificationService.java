@@ -31,52 +31,67 @@ public class NotificationService {
     }
 
     @Transactional
-    public Notification notifyFollowed(User user, String followerName) {
+    public Notification notifyFollowed(UUID userId, String followerName) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("user not found"));
+
         Notification notification = notificationFactory.followed(user, followerName);
         return notificationRepository.save(notification);
     }
 
     @Transactional
-    public Notification notifyWeatherAlert(User user, String weatherAlert) {
+    public Notification notifyWeatherAlert(UUID userId, String weatherAlert) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("user not found"));
+
         Notification notification = notificationFactory.weatherAlert(user, weatherAlert);
         return notificationRepository.save(notification);
     }
 
     @Transactional
-    public Notification notifyFeedLiked(User user, String likerName) {
+    public Notification notifyFeedLiked(UUID userId, String likerName) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("user not found"));
+
         Notification notification = notificationFactory.feedLiked(user, likerName);
         return notificationRepository.save(notification);
     }
 
     @Transactional
-    public Notification notifyFeedCommented(User user, String commenterName, String comment) {
+    public Notification notifyFeedCommented(UUID userId, String commenterName, String comment) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("user not found"));
+
         Notification notification = notificationFactory.feedCommented(user, commenterName,comment);
         return notificationRepository.save(notification);
     }
 
     @Transactional
-    public Notification notifyFollowerNewFeed(User user, String writerName, String feedName) {
+    public Notification notifyFollowerNewFeed(UUID userId, String writerName, String feedName) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("user not found"));
+
         Notification notification = notificationFactory.followerNewFeed(user, writerName,feedName);
         return notificationRepository.save(notification);
     }
 
-    @Transactional
-    public Notification notifyAttributeUpdated(User user, String attributeName) {
-        Notification notification = notificationFactory.attributeUpdated(user, attributeName);
-        return notificationRepository.save(notification);
-    }
 
     @Transactional
-    public Notification notifyAttributeAdded(User user, String attributeName) {
+    public Notification notifyAttributeAdded(UUID userId, String attributeName) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("user not found"));
+
         Notification notification = notificationFactory.attributeAdded(user, attributeName);
         return notificationRepository.save(notification);
     }
 
-    @Transactional
-    public Notification notifyAttributeDeleted(User user, String attributeName) {
-        Notification notification = notificationFactory.attributeDeleted(user, attributeName);
-        return notificationRepository.save(notification);
-    }
+
 
     @Transactional
     public void delete(UUID notificationId) {
