@@ -26,10 +26,6 @@ public class FollowServiceImpl implements FollowService {
     @Override
     @Transactional
     public FollowDto createFollow(FollowCreateRequest request) {
-
-        if(request.followerId().equals(request.followeeId())) {
-            throw new IllegalArgumentException("자신을 팔로우 할 수 없습니다.");
-        }
         if(followRepository.findByFollowerIdAndFolloweeId(
                 request.followerId(), request.followeeId()).isPresent()) {
             throw new IllegalArgumentException("이미 팔로우한 사용자입니다.");
