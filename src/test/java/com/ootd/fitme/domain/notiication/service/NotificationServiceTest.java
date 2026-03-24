@@ -5,6 +5,7 @@ import com.ootd.fitme.domain.notiication.entity.NotificationFactory;
 import com.ootd.fitme.domain.notiication.repository.NotificationRepository;
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.repository.UserRepository;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -34,7 +35,8 @@ class NotificationServiceTest {
     private NotificationService notificationService;
 
     @Test
-    void DM_알림_생성된다() {
+    @DisplayName("DM 알림이 정상적으로 생성된다")
+    void shouldCreateNotification_whenDirectMessageReceived() {
 
         UUID userId = UUID.randomUUID();
         User user = mock(User.class);

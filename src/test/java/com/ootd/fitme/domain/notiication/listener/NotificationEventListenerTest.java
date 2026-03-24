@@ -2,6 +2,7 @@ package com.ootd.fitme.domain.notiication.listener;
 
 import com.ootd.fitme.domain.notiication.event.DirectMessageReceivedEvent;
 import com.ootd.fitme.domain.notiication.service.NotificationService;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -22,14 +23,15 @@ class NotificationEventListenerTest {
     private NotificationEventListener listener;
 
     @Test
-    void 이벤트_받으면_서비스_호출된다() {
+    @DisplayName("이벤트를 받으면 알림 서비스가 호출된다")
+    void shouldCallNotificationService_whenEventReceived() {
 
         UUID userId = UUID.randomUUID();
 
         DirectMessageReceivedEvent event =
                 new DirectMessageReceivedEvent(userId, "sender", "msg");
 
-        listener.DirectMessageEvent(event);
+        listener.directMessageEvent(event);
 
         verify(notificationService)
                 .notifyDirectMessage(userId, "sender", "msg");
