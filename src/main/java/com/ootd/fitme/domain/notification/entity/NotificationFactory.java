@@ -1,7 +1,7 @@
-package com.ootd.fitme.domain.notiication.entity;
+package com.ootd.fitme.domain.notification.entity;
 
-import com.ootd.fitme.domain.notiication.enums.NotificationLevel;
-import com.ootd.fitme.domain.notiication.enums.NotificationType;
+import com.ootd.fitme.domain.notification.enums.NotificationLevel;
+import com.ootd.fitme.domain.notification.enums.NotificationType;
 import com.ootd.fitme.domain.user.entity.User;
 import org.springframework.stereotype.Component;
 

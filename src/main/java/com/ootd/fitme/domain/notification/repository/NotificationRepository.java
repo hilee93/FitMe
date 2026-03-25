@@ -1,6 +1,6 @@
-package com.ootd.fitme.domain.notiication.repository;
+package com.ootd.fitme.domain.notification.repository;
 
-import com.ootd.fitme.domain.notiication.entity.Notification;
+import com.ootd.fitme.domain.notification.entity.Notification;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.UUID;
