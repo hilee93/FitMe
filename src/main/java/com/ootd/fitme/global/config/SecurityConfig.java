@@ -26,13 +26,27 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfTokenRepository)
                         // TODO: 보안 강화 단계에서 ignoringRequestMatchers 제거 예정
-                        .ignoringRequestMatchers("/api/auth/**")
+                        // csrf-token 엔드포인트는 제외하지 않음 ( 토큰 발급용)
+                        .ignoringRequestMatchers(
+                                "/api/auth/sign-in",
+                                "/api/auth/sign-out",
+                                "/api/auth/refresh",
+                                "/api/auth/reset-password"
+                        )
                 )
                 .httpBasic(httpBasic -> httpBasic.disable())
                 .formLogin(formLogin -> formLogin.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/api/sse", "/ws/**").permitAll()
+                        .requestMatchers(
+                                "/api/auth/sign-in",
+                                "/api/auth/sign-out",
+                                "/api/auth/refresh",
+                                "/api/auth/reset-password",
+                                "/api/auth/csrf-token",
+                                "/api/sse",
+                                "/ws/**"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

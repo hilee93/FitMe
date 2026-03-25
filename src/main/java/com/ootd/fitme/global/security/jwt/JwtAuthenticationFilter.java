@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.UUID;
 
 @Component
@@ -25,6 +26,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
     private final CustomUserDetailsService userDetailsService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -35,9 +37,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (header != null && header.startsWith(BEARER_PREFIX)) {
             String token = header.substring(BEARER_PREFIX.length());
 
-            if (jwtProvider.validateToken(token)) {
+            if (jwtProvider.validateToken(token) && jwtProvider.isAccessToken(token)) {
                 try {
                     UUID userId = jwtProvider.getUserId(token);
+                    String jti = jwtProvider.getTokenId(token);
+                    Instant iat = jwtProvider.getIssuedAt(token);
+
+                    if (tokenBlacklistService.isBlacklisted(jti)) {
+                        SecurityContextHolder.clearContext();
+                        filterChain.doFilter(request, response);
+                        return;
+                    }
+
+                    Instant cutoff = tokenBlacklistService.getRevokeAllBefore(userId);
+                    if (cutoff != null && iat.isBefore(cutoff)) {
+                        SecurityContextHolder.clearContext();
+                        filterChain.doFilter(request, response);
+                        return;
+                    }
+
                     UserDetails userDetails = userDetailsService.loadUserById(userId);
 
                     UsernamePasswordAuthenticationToken authentication =
@@ -56,4 +74,5 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
         filterChain.doFilter(request, response);
     }
+
 }

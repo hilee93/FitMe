@@ -3,6 +3,7 @@ package com.ootd.fitme.domain.user.service;
 import com.ootd.fitme.domain.user.dto.request.SignInRequest;
 import com.ootd.fitme.domain.user.dto.request.UserCreateRequest;
 import com.ootd.fitme.domain.user.dto.response.JwtDto;
+import com.ootd.fitme.domain.user.dto.response.SignInResult;
 import com.ootd.fitme.domain.user.dto.response.UserDto;
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.exception.auth.AuthException;
@@ -11,10 +12,14 @@ import com.ootd.fitme.domain.user.mapper.UserMapper;
 import com.ootd.fitme.domain.user.repository.UserRepository;
 import com.ootd.fitme.global.exception.ErrorCode;
 import com.ootd.fitme.global.security.jwt.JwtProvider;
+import com.ootd.fitme.global.security.jwt.TokenBlacklistService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.util.UUID;
 
 // TODO: 인증 관련 로직(signIn/토큰 발급)은 AuthService로 분리 검토
 @Service
@@ -25,6 +30,7 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
     private final JwtProvider jwtProvider;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Override
     public String encodePassword(String password) {
@@ -69,12 +75,65 @@ public class UserServiceImpl implements UserService {
 
     @Transactional(readOnly = true)
     @Override
-    public JwtDto signIn(SignInRequest signInRequest) {
+    public SignInResult signIn(SignInRequest signInRequest) {
         User user = validateSignIn(signInRequest);
 
-        String accessToken = jwtProvider.generateAccessToken(user.getId(), user.getRole().name());
-        UserDto userDto = userMapper.toDto(user);
+        // 기존 로그인 강제 무효화
+        Instant cutoff = Instant.now();
+        tokenBlacklistService.setRevokeAllBefore(user.getId(), cutoff);
 
-        return new JwtDto(userDto, accessToken);
+        String accessToken = jwtProvider.generateAccessToken(user.getId(), user.getRole().name());
+        String refreshToken = jwtProvider.generateRefreshToken(user.getId(), user.getRole().name());
+
+        JwtDto jwtDto = new JwtDto(userMapper.toDto(user), accessToken);
+
+        return new SignInResult(jwtDto, refreshToken);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public JwtDto refresh(String refreshToken) {
+        if (refreshToken == null || !jwtProvider.validateToken(refreshToken) || !jwtProvider.isRefreshToken(refreshToken)) {
+            throw new AuthException(ErrorCode.AUTH_INVALID_TOKEN);
+        }
+
+        UUID userId = jwtProvider.getUserId(refreshToken);
+        String jti = jwtProvider.getTokenId(refreshToken);
+        Instant iat = jwtProvider.getIssuedAt(refreshToken);
+
+        if (tokenBlacklistService.isBlacklisted(jti)) {
+            throw new AuthException(ErrorCode.AUTH_INVALID_TOKEN);
+        }
+
+        Instant cutoff = tokenBlacklistService.getRevokeAllBefore(userId);
+        if (cutoff != null && iat.isBefore(cutoff)) {
+            throw new AuthException(ErrorCode.AUTH_INVALID_TOKEN);
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AuthException(ErrorCode.AUTH_INVALID_TOKEN));
+
+        if (user.isLocked()) {
+            throw new UserException(ErrorCode.USER_ACCOUNT_LOCKED);
+        }
+
+        String newAccessToken = jwtProvider.generateAccessToken(userId, user.getRole().name());
+        return new JwtDto(userMapper.toDto(user), newAccessToken);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public void signOut(String accessToken, String refreshToken) {
+        blacklistIfValid(accessToken);
+        blacklistIfValid(refreshToken);
+    }
+
+    private void blacklistIfValid(String token) {
+        if (token == null || !jwtProvider.validateToken(token)) {
+            return;
+        }
+
+        tokenBlacklistService.blacklist(jwtProvider.getTokenId(token), jwtProvider.getExpiration(token));
+
     }
 }

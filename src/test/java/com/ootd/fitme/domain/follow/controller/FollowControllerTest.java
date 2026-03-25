@@ -16,29 +16,27 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.List;
 import java.util.UUID;
 
-import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = FollowController.class,
+@WebMvcTest(
+        controllers = FollowController.class,
         excludeFilters = @ComponentScan.Filter(
                 type = FilterType.ASSIGNABLE_TYPE,
                 classes = JwtAuthenticationFilter.class
-        ))
+        )
+)
 @AutoConfigureMockMvc(addFilters = false) // Security 필터 비활성화
 class FollowControllerTest {
 
@@ -78,14 +76,13 @@ class FollowControllerTest {
 
             //when & then
             mockMvc.perform(post("/api/follows")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(request)))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.id").exists())
                     .andExpect(jsonPath("$.followee.userId").value(followeeId.toString()))
                     .andExpect(jsonPath("$.follower.userId").value(followerId.toString()));
         }
-
         @Test
         @DisplayName("실패 - followerId가 null이면 400을 반환한다")
         void createFollow_nullFollowerId_return400() throws Exception {
@@ -248,4 +245,7 @@ class FollowControllerTest {
                     .andExpect(status().isBadRequest());
         }
     }
+
+
+
 }
