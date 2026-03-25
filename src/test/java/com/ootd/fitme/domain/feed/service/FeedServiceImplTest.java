@@ -27,8 +27,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @Transactional
@@ -61,7 +64,7 @@ class FeedServiceImplTest {
 
         @Test
         @DisplayName("[Positive] 피드 생성 시 Feed가 저장되고 응답값이 올바르게 반환된다")
-        void createFeed_success() {
+        void createFeed_success_when_valid_request() {
 
             // given
             User user = userRepository.save(
@@ -137,6 +140,65 @@ class FeedServiceImplTest {
             assertThat(savedFeed.getWeatherForecast().getId()).isEqualTo(weather.getId());
             assertThat(savedFeed.getUser().getId()).isEqualTo(user.getId());
         }
+
+        @Test
+        @DisplayName("[Negative] 존재하지 않는 날씨 ID로 피드 생성 시 예외가 발생한다")
+        void createFeed_fail_when_weather_not_found() {
+            User user = userRepository.save(
+                    User.create("email@test.com", "password")
+            );
+
+            FeedCreateRequest request = new FeedCreateRequest(
+                    user.getId(),
+                    UUID.randomUUID(),
+                    List.of(),
+                    "테스트 피드"
+            );
+
+            assertThatThrownBy(() -> feedService.createFeed(request))
+                    .isInstanceOf(NoSuchElementException.class);
+        }
+
+        @Test
+        @DisplayName("[Negative] 존재하지 않는 작성자 ID로 피드 생성 시 예외가 발생한다")
+        void createFeed_fail_when_user_not_found() {
+            Region region = Region.create(
+                    "1234567810", "경기도 남양주시 테스트읍 테스트동",
+                    "경기도", "남양주시", "테스트읍 테스트동", "",
+                    0.0, 0.0, 0, 0
+            );
+            regionRepository.save(region);
+
+            WeatherForecast weather = weatherForecastRepository.save(
+                    WeatherForecast.create(
+                            Instant.now(),
+                            Instant.now(),
+                            SkyStatus.CLEAR,
+                            PrecipitationType.NONE,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            0.0,
+                            WindStrengthWord.WEAK, region
+                    )
+            );
+
+            FeedCreateRequest request = new FeedCreateRequest(
+                    UUID.randomUUID(),
+                    weather.getId(),
+                    List.of(),
+                    "테스트 피드"
+            );
+
+            assertThatThrownBy(() -> feedService.createFeed(request))
+                    .isInstanceOf(NoSuchElementException.class);
+        }
+
     }
 
 }
