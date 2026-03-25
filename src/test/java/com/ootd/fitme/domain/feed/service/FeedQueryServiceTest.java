@@ -30,6 +30,8 @@ import com.ootd.fitme.domain.weatherforecast.enums.SkyStatus;
 import com.ootd.fitme.domain.weatherforecast.enums.WindStrengthWord;
 import com.ootd.fitme.domain.weatherforecast.repository.WeatherForecastRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -84,113 +86,121 @@ class FeedQueryServiceTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @Test
-    void getFeed_success() throws JsonProcessingException {
-        // given
-        User user = userRepository.save(
-                User.create("email@test.com", "password")
-        );
+    @Nested
+    class GetFeedTest {
 
-        Profile profile = profileRepository.save(
-                Profile.create("name", null, null, null, null, null, null, null, null, null, null, user)
-        );
+        @Test
+        @DisplayName("[Positive] 피드 조회 - 피드 단건 조회 시 연관된 작성자/날씨/의상/속성 정보가 올바르게 조합되어 반환된다 ")
+        void getFeed_success() throws JsonProcessingException {
+            // given
+            User user = userRepository.save(
+                    User.create("email@test.com", "password")
+            );
 
-        Region region = Region.create(
-                "1234567810",
-                "경기도 남양주시 테스트읍 테스트동",
-                "경기도",
-                "남양주시",
-                "테스트읍 테스트동",
-                "",
-                0.0,
-                0.0,
-                0,
-                0
-        );
+            Profile profile = profileRepository.save(
+                    Profile.create("name", null, null, null, null, null, null, null, null, null, null, user)
+            );
 
-        regionRepository.save(region);
+            Region region = Region.create(
+                    "1234567810",
+                    "경기도 남양주시 테스트읍 테스트동",
+                    "경기도",
+                    "남양주시",
+                    "테스트읍 테스트동",
+                    "",
+                    0.0,
+                    0.0,
+                    0,
+                    0
+            );
 
-        WeatherForecast weatherForecast = weatherForecastRepository.save(
-                WeatherForecast.create(
-                        Instant.now(),
-                        Instant.now(),
-                        SkyStatus.CLEAR,
-                        PrecipitationType.NONE,
-                        0.0,
-                        0.0,
-                        9.34,
-                        -0.70,
-                        5.64,
-                        17.55,
-                        0.0,
-                        10.0,
-                        0.0,
-                        WindStrengthWord.WEAK,
-                        region
-                )
-        );
+            regionRepository.save(region);
 
-        Feed feed = feedRepository.save(
-                Feed.create("테스트 피드 내용", 0, 0, weatherForecast, user)
-        );
+            WeatherForecast weatherForecast = weatherForecastRepository.save(
+                    WeatherForecast.create(
+                            Instant.now(),
+                            Instant.now(),
+                            SkyStatus.CLEAR,
+                            PrecipitationType.NONE,
+                            0.0,
+                            0.0,
+                            9.34,
+                            -0.70,
+                            5.64,
+                            17.55,
+                            0.0,
+                            10.0,
+                            0.0,
+                            WindStrengthWord.WEAK,
+                            region
+                    )
+            );
 
-        Clothes dress = clothesRepository.save(
-                Clothes.create("원피스", ClothesType.DRESS, user)
-        );
+            Feed feed = feedRepository.save(
+                    Feed.create("테스트 피드 내용", 0, 0, weatherForecast, user)
+            );
 
-        Clothes top = clothesRepository.save(
-                Clothes.create("상의", ClothesType.TOP, user)
-        );
+            Clothes dress = clothesRepository.save(
+                    Clothes.create("원피스", ClothesType.DRESS, user)
+            );
 
-        feedClothesRepository.saveAll(List.of(
-                FeedClothes.create(feed, dress),
-                FeedClothes.create(feed, top)
-        ));
+            Clothes top = clothesRepository.save(
+                    Clothes.create("상의", ClothesType.TOP, user)
+            );
 
-        Attribute sizeAttribute = attributeRepository.save(
-                Attribute.create("사이즈")
-        );
+            feedClothesRepository.saveAll(List.of(
+                    FeedClothes.create(feed, dress),
+                    FeedClothes.create(feed, top)
+            ));
 
-        SelectableValue s = selectableValueRepository.save(SelectableValue.create("S", sizeAttribute));
-        SelectableValue m = selectableValueRepository.save(SelectableValue.create("M", sizeAttribute));
-        SelectableValue l = selectableValueRepository.save(SelectableValue.create("L", sizeAttribute));
-        SelectableValue free = selectableValueRepository.save(SelectableValue.create("FREE", sizeAttribute));
+            Attribute sizeAttribute = attributeRepository.save(
+                    Attribute.create("사이즈")
+            );
 
-        ClothesAttribute topSize = clothesAttributeRepository.save(
-                ClothesAttribute.create(top, sizeAttribute)
-        );
+            SelectableValue s = selectableValueRepository.save(SelectableValue.create("S", sizeAttribute));
+            SelectableValue m = selectableValueRepository.save(SelectableValue.create("M", sizeAttribute));
+            SelectableValue l = selectableValueRepository.save(SelectableValue.create("L", sizeAttribute));
+            SelectableValue free = selectableValueRepository.save(SelectableValue.create("FREE", sizeAttribute));
 
-        clothesAttributeSelectableValueRepository.save(
-                ClothesAttributeSelectableValue.create(topSize, free)
-        );
+            ClothesAttribute topSize = clothesAttributeRepository.save(
+                    ClothesAttribute.create(top, sizeAttribute)
+            );
 
-        // when
-        FeedResponseDto result = feedQueryService.getFeed(feed.getId(), user.getId());
+            clothesAttributeSelectableValueRepository.save(
+                    ClothesAttributeSelectableValue.create(topSize, free)
+            );
 
-        // then
-        assertThat(result).isNotNull();
-        assertThat(result.id()).isEqualTo(feed.getId());
-        assertThat(result.author().userId()).isEqualTo(user.getId());
-        assertThat(result.author().name()).isEqualTo("name");
-        assertThat(result.weather().skyStatus()).isEqualTo(SkyStatus.CLEAR);
-        assertThat(result.ootds()).hasSize(2);
+            // when
+            FeedResponseDto result = feedQueryService.getFeed(feed.getId(), user.getId());
 
-        assertThat(result.ootds())
-                .anySatisfy(clothes -> {
-                    if (clothes.type() == ClothesType.TOP) {
+            // then
+            assertThat(result).isNotNull();
+            assertThat(result.id()).isEqualTo(feed.getId());
+            assertThat(result.author().userId()).isEqualTo(user.getId());
+            assertThat(result.author().name()).isEqualTo("name");
+            assertThat(result.weather().skyStatus()).isEqualTo(SkyStatus.CLEAR);
+            assertThat(result.ootds()).hasSize(2);
+
+            assertThat(result.ootds())
+                    .filteredOn(c -> c.type() == ClothesType.TOP)
+                    .hasSize(1)
+                    .first()
+                    .satisfies(clothes -> {
                         assertThat(clothes.attributes()).hasSize(1);
                         assertThat(clothes.attributes().get(0).definitionName()).isEqualTo("사이즈");
                         assertThat(clothes.attributes().get(0).value()).isEqualTo("FREE");
                         assertThat(clothes.attributes().get(0).selectableValues())
                                 .contains("S", "M", "L", "FREE");
-                    }
-                });
+                    });
 
-        log.debug("FeedResponseDto = {}", result);
+            log.debug("FeedResponseDto = {}", result);
 
-        String prettyJson = objectMapper.writerWithDefaultPrettyPrinter()
-                .writeValueAsString(result);
+            String prettyJson = objectMapper.writerWithDefaultPrettyPrinter()
+                    .writeValueAsString(result);
 
-        log.debug("FeedResponseDto JSON:\n{}", prettyJson);
+            log.debug("FeedResponseDto JSON:\n{}", prettyJson);
+        }
+
+
     }
 }
