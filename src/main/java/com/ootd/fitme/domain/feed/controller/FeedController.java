@@ -11,6 +11,7 @@ import com.ootd.fitme.domain.feed.dto.response.FeedResponseDto;
 import com.ootd.fitme.domain.feed.service.FeedService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,7 +34,7 @@ public class FeedController implements FeedControllerDocs {
     @PostMapping
     public ResponseEntity<FeedResponseDto> createFeed(@RequestBody @Valid FeedCreateRequest feedCreateRequest) {
         FeedResponseDto responseDto = feedService.createFeed(feedCreateRequest);
-        return ResponseEntity.ok(responseDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
     }
 
     @Override
