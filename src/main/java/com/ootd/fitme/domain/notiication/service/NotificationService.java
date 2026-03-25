@@ -1,5 +1,6 @@
 package com.ootd.fitme.domain.notiication.service;
 
+import com.ootd.fitme.domain.follow.repository.FollowRepository;
 import com.ootd.fitme.domain.notiication.entity.Notification;
 import com.ootd.fitme.domain.notiication.entity.NotificationFactory;
 import com.ootd.fitme.domain.notiication.repository.NotificationRepository;
@@ -19,12 +20,13 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final NotificationFactory notificationFactory;
     private final UserRepository userRepository;
+    private final FollowRepository followRepository;
 
 
     @Transactional
-    public Notification notifyDirectMessage(UUID userId, String senderName,String message) {
+    public Notification notifyDirectMessage(UUID receiverId, String senderName,String message) {
 
-        User receiver = userRepository.findById(userId)
+        User receiver = userRepository.findById(receiverId)
                 .orElseThrow(() -> new IllegalArgumentException("user not found"));
 
         Notification notification = notificationFactory.dm(receiver, senderName,message);
@@ -32,9 +34,9 @@ public class NotificationService {
     }
 
     @Transactional
-    public Notification notifyFollowed(UUID userId, String followerName) {
+    public Notification notifyFollowed(UUID followeeId, String followerName) {
 
-        User user = userRepository.findById(userId)
+        User user = userRepository.findById(followeeId)
                 .orElseThrow(() -> new IllegalArgumentException("user not found"));
 
         Notification notification = notificationFactory.followed(user, followerName);
@@ -54,9 +56,9 @@ public class NotificationService {
     }
 
     @Transactional
-    public Notification notifyFeedLiked(UUID userId, String likerName) {
+    public Notification notifyFeedLiked(UUID likedId, String likerName) {
 
-        User user = userRepository.findById(userId)
+        User user = userRepository.findById(likedId)
                 .orElseThrow(() -> new IllegalArgumentException("user not found"));
 
         Notification notification = notificationFactory.feedLiked(user, likerName);
@@ -64,9 +66,9 @@ public class NotificationService {
     }
 
     @Transactional
-    public Notification notifyFeedCommented(UUID userId, String commenterName, String comment) {
+    public Notification notifyFeedCommented(UUID feedOwnerId, String commenterName, String comment) {
 
-        User user = userRepository.findById(userId)
+        User user = userRepository.findById(feedOwnerId)
                 .orElseThrow(() -> new IllegalArgumentException("user not found"));
 
         Notification notification = notificationFactory.feedCommented(user, commenterName,comment);
@@ -74,12 +76,15 @@ public class NotificationService {
     }
 
     @Transactional
-    public List<Notification> notifyFollowerNewFeed(UUID userId, String writerName, String feedName) {
+    public List<Notification> notifyFollowerNewFeed(UUID followeeId, String writerName, String feedName) {
 
-        List<User> users = userRepository.findAll();
 
-        List<Notification> notifications = users.stream()
-                .map(user -> notificationFactory.followerNewFeed(user,writerName,feedName))
+        List<UUID> followerIds = followRepository.findFollowerIdsByFolloweeId(followeeId);
+
+        List<User> followers = userRepository.findAllById(followerIds);
+
+        List<Notification> notifications = followers.stream()
+                .map(user -> notificationFactory.followerNewFeed(user, writerName, feedName))
                 .toList();
 
         return notificationRepository.saveAll(notifications);
