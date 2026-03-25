@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -41,13 +42,15 @@ public class NotificationService {
     }
 
     @Transactional
-    public Notification notifyWeatherAlert(UUID userId, String weatherAlert) {
+    public List<Notification> notifyWeatherAlert(String weatherAlert) {
+        List<User> users = userRepository.findAll();
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("user not found"));
+        List<Notification> notifications = users.stream()
+                .map(user -> notificationFactory.weatherAlert(user, weatherAlert))
+                .toList();
 
-        Notification notification = notificationFactory.weatherAlert(user, weatherAlert);
-        return notificationRepository.save(notification);
+        return notificationRepository.saveAll(notifications);
+
     }
 
     @Transactional
@@ -71,24 +74,28 @@ public class NotificationService {
     }
 
     @Transactional
-    public Notification notifyFollowerNewFeed(UUID userId, String writerName, String feedName) {
+    public List<Notification> notifyFollowerNewFeed(UUID userId, String writerName, String feedName) {
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("user not found"));
+        List<User> users = userRepository.findAll();
 
-        Notification notification = notificationFactory.followerNewFeed(user, writerName,feedName);
-        return notificationRepository.save(notification);
+        List<Notification> notifications = users.stream()
+                .map(user -> notificationFactory.followerNewFeed(user,writerName,feedName))
+                .toList();
+
+        return notificationRepository.saveAll(notifications);
     }
 
 
     @Transactional
-    public Notification notifyAttributeAdded(UUID userId, String attributeName) {
+    public List<Notification> notifyAttributeAdded(String attributeName) {
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("user not found"));
+        List<User> users = userRepository.findAll();
 
-        Notification notification = notificationFactory.attributeAdded(user, attributeName);
-        return notificationRepository.save(notification);
+        List<Notification> notifications = users.stream()
+                .map(user -> notificationFactory.attributeAdded(user,attributeName))
+                .toList();
+
+        return notificationRepository.saveAll(notifications);
     }
 
 
