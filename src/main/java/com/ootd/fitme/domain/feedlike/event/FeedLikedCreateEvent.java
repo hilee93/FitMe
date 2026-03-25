@@ -4,8 +4,8 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record FeedLikedCreateEvent(
+        UUID feedLikeId,
         UUID feedId,
-        UUID likeId,
         UUID likedId,
         UUID likerId,
         String likerName,
