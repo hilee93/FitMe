@@ -8,7 +8,6 @@ import com.ootd.fitme.domain.feed.dto.request.*;
 import com.ootd.fitme.domain.feed.dto.response.FeedCursorResponseDto;
 import com.ootd.fitme.domain.feed.dto.response.FeedResponseDto;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 
 import java.util.UUID;
@@ -18,9 +17,9 @@ public interface FeedControllerDocs {
 
     ResponseEntity<FeedCursorResponseDto> getAllFeeds(FeedSearchCondition feedSearchCondition);
 
-    ResponseEntity<FeedResponseDto> createFeed(@Valid FeedCreateRequest feedCreateRequest);
+    ResponseEntity<FeedResponseDto> createFeed(FeedCreateRequest feedCreateRequest);
 
-    ResponseEntity<FeedResponseDto> updateFeed(UUID feedId, @Valid FeedUpdateRequestDto feedUpdateRequestDto);
+    ResponseEntity<FeedResponseDto> updateFeed(UUID feedId, FeedUpdateRequestDto feedUpdateRequestDto);
 
     ResponseEntity<Void> deleteFeed(UUID feedId);
 
