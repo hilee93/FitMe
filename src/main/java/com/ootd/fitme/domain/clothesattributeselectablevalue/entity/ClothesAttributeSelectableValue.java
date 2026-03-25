@@ -26,4 +26,13 @@ public class ClothesAttributeSelectableValue extends BaseEntity {
     @OnDelete(action = OnDeleteAction.CASCADE)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private SelectableValue selectableValue;
+
+    private ClothesAttributeSelectableValue(ClothesAttribute clothesAttribute, SelectableValue selectableValue) {
+        this.clothesAttribute = clothesAttribute;
+        this.selectableValue = selectableValue;
+    }
+
+    public static ClothesAttributeSelectableValue create(ClothesAttribute clothesAttribute, SelectableValue selectableValue) {
+        return new ClothesAttributeSelectableValue(clothesAttribute, selectableValue);
+    }
 }
