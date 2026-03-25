@@ -190,7 +190,7 @@ class FeedQueryServiceTest {
                         assertThat(clothes.attributes().get(0).definitionName()).isEqualTo("사이즈");
                         assertThat(clothes.attributes().get(0).value()).isEqualTo("FREE");
                         assertThat(clothes.attributes().get(0).selectableValues())
-                                .contains("S", "M", "L", "FREE");
+                                .contains("S", "M", "L", "FREE"); // TODO: 추후 넣는 순서대로 순서보장되는 containExactly 변경할것
                     });
 
             log.debug("FeedResponseDto = {}", result);
