@@ -6,7 +6,9 @@ import com.ootd.fitme.domain.follow.dto.response.FollowDto;
 import com.ootd.fitme.domain.follow.dto.response.UserSummary;
 import com.ootd.fitme.domain.follow.service.FollowService;
 import com.ootd.fitme.global.security.auth.CustomUserDetailsService;
+import com.ootd.fitme.global.security.jwt.JwtAuthenticationFilter;
 import com.ootd.fitme.global.security.jwt.JwtProvider;
+import com.ootd.fitme.global.security.jwt.TokenBlacklistService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -14,6 +16,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -28,10 +32,15 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(FollowController.class)
+@WebMvcTest(
+        controllers = FollowController.class,
+        excludeFilters = @ComponentScan.Filter(
+                type = FilterType.ASSIGNABLE_TYPE,
+                classes = JwtAuthenticationFilter.class
+        )
+)
 @AutoConfigureMockMvc(addFilters = false) // Security 필터 비활성화
 class FollowControllerTest {
-
     @Autowired
     private MockMvc mockMvc;
 
@@ -40,12 +49,6 @@ class FollowControllerTest {
 
     @MockitoBean
     private FollowService followService;
-
-    @MockitoBean
-    private JwtProvider jwtProvider;
-
-    @MockitoBean
-    private CustomUserDetailsService customUserDetailsService;
 
     private UUID followerId;
     private UUID followeeId;

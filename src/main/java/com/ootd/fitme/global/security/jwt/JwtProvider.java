@@ -17,6 +17,10 @@ import java.util.UUID;
 @Component
 public class JwtProvider {
     private static final String ROLE_CLAIM = "role";
+    private static final String TOKEN_TYPE_CLAIM = "tokenType";
+    private static final String ACCESS_TOKEN_TYPE = "ACCESS";
+    private static final String REFRESH_TOKEN_TYPE = "REFRESH";
+
     private final JwtProperties jwtProperties;
     private final SecretKey secretKey;
 
@@ -26,17 +30,11 @@ public class JwtProvider {
     }
 
     public String generateAccessToken(UUID userId, String role) {
-        Instant now = Instant.now();
-        Instant expiry = now.plusMillis(jwtProperties.accessTokenExpirationMs());
+        return generateToken(userId, role, jwtProperties.accessTokenExpirationMs(), ACCESS_TOKEN_TYPE);
+    }
 
-        return Jwts.builder()
-                .subject(userId.toString())
-                .issuer(jwtProperties.issuer())
-                .issuedAt(Date.from(now))
-                .expiration(Date.from(expiry))
-                .claim(ROLE_CLAIM, role)
-                .signWith(secretKey)
-                .compact();
+    public String generateRefreshToken(UUID userId, String role) {
+        return generateToken(userId, role, jwtProperties.refreshTokenExpirationMs(), REFRESH_TOKEN_TYPE);
     }
 
     public boolean validateToken(String token) {
@@ -52,9 +50,47 @@ public class JwtProvider {
         return UUID.fromString(parseClaims(token).getSubject());
     }
 
+    public String getTokenId(String token) {
+        return parseClaims(token).getId();
+    }
+
+    public Instant getIssuedAt(String token) {
+        return parseClaims(token).getIssuedAt().toInstant();
+    }
+
+    public Instant getExpiration(String token) {
+        return parseClaims(token).getExpiration().toInstant();
+    }
+
     public String getRole(String token) {
         Object role = parseClaims(token).get(ROLE_CLAIM);
         return role == null ? null : role.toString();
+    }
+
+    public boolean isRefreshToken(String token) {
+        Object tokenType = parseClaims(token).get(TOKEN_TYPE_CLAIM);
+        return tokenType != null && REFRESH_TOKEN_TYPE.equals(tokenType.toString());
+    }
+
+    public boolean isAccessToken(String token) {
+        Object tokenType = parseClaims(token).get(TOKEN_TYPE_CLAIM);
+        return tokenType != null && ACCESS_TOKEN_TYPE.equals(tokenType.toString());
+    }
+
+    private String generateToken(UUID userId, String role, long expirationMs, String tokenType) {
+        Instant now = Instant.now();
+        Instant expiry = now.plusMillis(expirationMs);
+
+        return Jwts.builder()
+                .id(UUID.randomUUID().toString()) // jti
+                .subject(userId.toString())
+                .issuer(jwtProperties.issuer())
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(expiry))
+                .claim(ROLE_CLAIM, role)
+                .claim(TOKEN_TYPE_CLAIM, tokenType)
+                .signWith(secretKey)
+                .compact();
     }
 
     private Claims parseClaims(String token) {
@@ -65,3 +101,4 @@ public class JwtProvider {
                 .getPayload();
     }
 }
+
