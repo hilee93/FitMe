@@ -5,7 +5,8 @@ import java.util.UUID;
 
 public record FeedLikedCreateEvent(
         UUID feedId,
-        UUID userId,
+        UUID likeId,
+        UUID likedId,
         UUID likerId,
         String likerName,
         Instant createdAt

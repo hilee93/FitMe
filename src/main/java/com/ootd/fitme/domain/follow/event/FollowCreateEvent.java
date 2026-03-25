@@ -4,8 +4,9 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record FollowCreateEvent(
+        UUID followId,
         UUID followeeId,
-        UUID userId,
+        UUID followerId,
         String followerName,
         Instant createAt
 ) {

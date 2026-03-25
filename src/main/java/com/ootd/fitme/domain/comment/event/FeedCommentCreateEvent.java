@@ -4,8 +4,10 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record FeedCommentCreateEvent(
+        UUID commentId,
+        UUID feedId,
+        UUID feedOwnerId,
         UUID commenterId,
-        UUID userId,
         String commenterName,
         String comment,
         Instant createdAt
