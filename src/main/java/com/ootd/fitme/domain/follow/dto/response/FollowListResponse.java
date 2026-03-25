@@ -1,5 +1,6 @@
 package com.ootd.fitme.domain.follow.dto.response;
 
+import com.ootd.fitme.domain.follow.enums.SortBy;
 import com.ootd.fitme.domain.follow.enums.SortDirection;
 
 import java.util.List;
@@ -11,6 +12,6 @@ public record FollowListResponse (
         UUID nextIdAfter,
         boolean hasNext,
         long totalCount,
-        String sortBy,
+        SortBy sortBy,
         SortDirection sortDirection
 ) {}

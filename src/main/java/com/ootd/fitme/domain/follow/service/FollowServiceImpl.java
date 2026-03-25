@@ -6,6 +6,7 @@ import com.ootd.fitme.domain.follow.dto.response.FollowDto;
 import com.ootd.fitme.domain.follow.dto.response.FollowListResponse;
 import com.ootd.fitme.domain.follow.dto.response.FollowSummaryDto;
 import com.ootd.fitme.domain.follow.entity.Follow;
+import com.ootd.fitme.domain.follow.enums.SortBy;
 import com.ootd.fitme.domain.follow.enums.SortDirection;
 import com.ootd.fitme.domain.follow.mapper.FollowMapper;
 import com.ootd.fitme.domain.follow.repository.FollowRepository;
@@ -94,6 +95,6 @@ public class FollowServiceImpl implements FollowService {
 
         // TODO : totalcount (count 기능) 구현하기
         return new FollowListResponse(
-                data, nextCursor, nextIdAfter, hasNext, 0L, "createdAt", SortDirection.DESCENDING);
+                data, nextCursor, nextIdAfter, hasNext, 0L, SortBy.createdAt, SortDirection.DESCENDING);
     }
 }
