@@ -54,46 +54,58 @@ class NotificationEventListenerTest {
         @DisplayName("팔로우 이벤트 -> notifyFollowed 호출")
         void followed() {
             UUID followedId = UUID.randomUUID();
-            UUID userId = UUID.randomUUID();
+            UUID followeeId = UUID.randomUUID();
+            UUID followerId = UUID.randomUUID();
 
             FollowCreateEvent event =
-                    new FollowCreateEvent(followedId,userId, "follower",Instant.now());
+                    new FollowCreateEvent(followedId,followeeId,followerId, "follower",Instant.now());
 
             listener.followed(event);
 
             verify(notificationService)
-                    .notifyFollowed(userId, "follower");
+                    .notifyFollowed(followeeId, "follower");
         }
 
         @Test
         @DisplayName("좋아요 이벤트 -> notifyFeedLiked 호출")
         void feedLiked() {
             UUID feedId = UUID.randomUUID();
-            UUID userId = UUID.randomUUID();
+            UUID likeId = UUID.randomUUID();
+            UUID likedId = UUID.randomUUID();
             UUID likerId = UUID.randomUUID();
 
+
             FeedLikedCreateEvent event =
-                    new FeedLikedCreateEvent(feedId,userId,likerId, "liker", Instant.now());
+                    new FeedLikedCreateEvent(feedId,likeId,likedId,likerId, "liker", Instant.now());
 
             listener.feedLiked(event);
 
             verify(notificationService)
-                    .notifyFeedLiked(userId, "liker");
+                    .notifyFeedLiked(likedId, "liker");
         }
 
         @Test
         @DisplayName("댓글 이벤트 -> notifyFeedCommented 호출")
         void feedCommented() {
-            UUID userId = UUID.randomUUID();
             UUID commentId = UUID.randomUUID();
+            UUID feedId = UUID.randomUUID();
+            UUID feedOwnerId = UUID.randomUUID();
+            UUID commenterId = UUID.randomUUID();
 
             FeedCommentCreateEvent event =
-                    new FeedCommentCreateEvent(commentId,userId, "commenter", "nice", Instant.now());
+                    new FeedCommentCreateEvent(
+                            commentId,
+                            feedId,
+                            feedOwnerId,
+                            commenterId,
+                            "commenter",
+                             "nice",
+                            Instant.now());
 
             listener.feedCommented(event);
 
             verify(notificationService)
-                    .notifyFeedCommented(userId, "commenter", "nice");
+                    .notifyFeedCommented(feedOwnerId, "commenter", "nice");
         }
 
         @Test

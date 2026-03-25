@@ -33,9 +33,9 @@ public class NotificationEventListener {
                     event.senderName(),
                     event.message()
             );
-            log.info("[DM] 알림이벤트 처리 성공. receiverId={}", event.receiverId());
+            log.info("[DM] 알림이벤트 처리 성공. messageId={}", event.messageId());
         } catch (Exception e) {
-            log.error("[DM] 알림이벤트 처리 실패. receiverId={}", event.receiverId(), e);
+            log.error("[DM] 알림이벤트 처리 실패. messageId={}", event.messageId(), e);
         }
     }
 
@@ -44,12 +44,12 @@ public class NotificationEventListener {
     public void followed(FollowCreateEvent event) {
         try {
             notificationService.notifyFollowed(
-                    event.userId(),
+                    event.followeeId(),
                     event.followerName()
             );
-            log.info("[FOLLOW] 알림이벤트 처리 성공. userId={}", event.userId());
+            log.info("[FOLLOW] 알림이벤트 처리 성공. followId={}", event.followId());
         } catch (Exception e) {
-            log.error("[FOLLOW] 알림이벤트 처리 실패. userId={}", event.userId(), e);
+            log.error("[FOLLOW] 알림이벤트 처리 실패. followId={}", event.followId(),e);
         }
     }
 
@@ -58,12 +58,12 @@ public class NotificationEventListener {
     public void feedLiked(FeedLikedCreateEvent event) {
         try {
             notificationService.notifyFeedLiked(
-                    event.userId(),
+                    event.likedId(),
                     event.likerName()
             );
-            log.info("[LIKE] 알림이벤트 처리 성공. userId={}", event.userId());
+            log.info("[LIKE] 알림이벤트 처리 성공. likeId={}", event.feedLikeId());
         } catch (Exception e) {
-            log.error("[LIKE] 알림이벤트 처리 실패. userId={}", event.userId(), e);
+            log.error("[LIKE] 알림이벤트 처리 실패. likeId={}", event.feedLikeId(), e);
         }
     }
 
@@ -72,13 +72,13 @@ public class NotificationEventListener {
     public void feedCommented(FeedCommentCreateEvent event) {
         try {
             notificationService.notifyFeedCommented(
-                    event.userId(),
+                    event.feedOwnerId(),
                     event.commenterName(),
                     event.comment()
             );
-            log.info("[COMMENT] 알림이벤트 처리 성공. userId={}", event.userId());
+            log.info("[COMMENT] 알림이벤트 처리 성공. commentId={}", event.commentId());
         } catch (Exception e) {
-            log.error("[COMMENT] 알림이벤트 처리 실패. userId={}", event.userId(), e);
+            log.error("[COMMENT] 알림이벤트 처리 실패. commentId={}", event.commentId(), e);
         }
     }
 
@@ -89,9 +89,9 @@ public class NotificationEventListener {
             notificationService.notifyAttributeAdded(
                     event.attributeName()
             );
-            log.info("[ATTRIBUTE_ADDED] 알림이벤트 처리 성공.");
+            log.info("[ATTRIBUTE_ADDED] 알림이벤트 처리 성공. attributeId={}", event.attributeId());
         } catch (Exception e) {
-            log.error("[ATTRIBUTE_ADDED] 알림이벤트 처리 실패.", e);
+            log.error("[ATTRIBUTE_ADDED] 알림이벤트 처리 실패. attributeId={}", event.attributeId(), e);
         }
     }
 
@@ -104,9 +104,9 @@ public class NotificationEventListener {
                     event.writerName(),
                     event.feedName()
             );
-            log.info("[FOLLOWER_FEED] 알림이벤트 처리 성공. userId={}", event.userId());
+            log.info("[FOLLOWER_FEED] 알림이벤트 처리 성공. feedId={}", event.feedId());
         } catch (Exception e) {
-            log.error("[FOLLOWER_FEED] 알림이벤트 처리 실패. userId={}", event.userId(), e);
+            log.error("[FOLLOWER_FEED] 알림이벤트 처리 실패. feedId={}", event.feedId(), e);
         }
     }
 
