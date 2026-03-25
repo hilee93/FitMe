@@ -56,7 +56,7 @@ class FeedControllerTest {
     class CreateFeedTest {
 
         @Test
-        @DisplayName("[Success] 유효한 요청이면 피드 생성 후 200 OK와 응답을 반환한다")
+        @DisplayName("[Success] 유효한 요청이면 피드 생성 후 201 Created와 응답을 반환한다")
         void createFeed_success_when_valid_request() throws Exception {
 
             FeedCreateRequest request = new FeedCreateRequest(
@@ -83,7 +83,7 @@ class FeedControllerTest {
             mockMvc.perform(post("/api/feeds")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isOk())
+                    .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.content").value("테스트 피드"));
                     then(feedService).should(times(1)).createFeed(request);
         }
