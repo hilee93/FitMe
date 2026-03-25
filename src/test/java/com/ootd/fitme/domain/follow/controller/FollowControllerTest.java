@@ -3,10 +3,12 @@ package com.ootd.fitme.domain.follow.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ootd.fitme.domain.follow.dto.request.FollowCreateRequest;
 import com.ootd.fitme.domain.follow.dto.response.FollowDto;
+import com.ootd.fitme.domain.follow.dto.response.FollowListResponse;
 import com.ootd.fitme.domain.follow.dto.response.UserSummary;
+import com.ootd.fitme.domain.follow.enums.SortBy;
+import com.ootd.fitme.domain.follow.enums.SortDirection;
 import com.ootd.fitme.domain.follow.service.FollowService;
-import com.ootd.fitme.global.security.auth.CustomUserDetailsService;
-import com.ootd.fitme.global.security.jwt.JwtProvider;
+import com.ootd.fitme.global.security.jwt.JwtAuthenticationFilter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -14,21 +16,29 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(FollowController.class)
+@WebMvcTest(controllers = FollowController.class,
+        excludeFilters = @ComponentScan.Filter(
+                type = FilterType.ASSIGNABLE_TYPE,
+                classes = JwtAuthenticationFilter.class
+        ))
 @AutoConfigureMockMvc(addFilters = false) // Security 필터 비활성화
 class FollowControllerTest {
 
@@ -40,12 +50,6 @@ class FollowControllerTest {
 
     @MockitoBean
     private FollowService followService;
-
-    @MockitoBean
-    private JwtProvider jwtProvider;
-
-    @MockitoBean
-    private CustomUserDetailsService customUserDetailsService;
 
     private UUID followerId;
     private UUID followeeId;
@@ -74,13 +78,14 @@ class FollowControllerTest {
 
             //when & then
             mockMvc.perform(post("/api/follows")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(request)))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.id").exists())
                     .andExpect(jsonPath("$.followee.userId").value(followeeId.toString()))
                     .andExpect(jsonPath("$.follower.userId").value(followerId.toString()));
         }
+
         @Test
         @DisplayName("실패 - followerId가 null이면 400을 반환한다")
         void createFollow_nullFollowerId_return400() throws Exception {
@@ -144,6 +149,103 @@ class FollowControllerTest {
 
     }
 
+    @Nested
+    @DisplayName("팔로잉 목록 조회")
+    class GetFollowingsTest {
 
+        @Test
+        @DisplayName("성공 - 팔로잉 목록 조회 시 200을 반환한다")
+        void getFollowing_request_return200() throws Exception {
 
+            //given
+            FollowListResponse response = new FollowListResponse(
+                    List.of(), null, null, false, 0L,
+                    SortBy.createdAt, SortDirection.DESCENDING);
+
+            given(followService.getFollowings(any(), any(), any(), anyInt(), any()))
+                    .willReturn(response);
+
+            // when & then
+            mockMvc.perform(get("/api/follows/followings")
+                            .param("followerId", followerId.toString())
+                            .param("limit", "10"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data").isArray())
+                    .andExpect(jsonPath("$.nextCursor").value(nullValue()))
+                    .andExpect(jsonPath("$.nextIdAfter").value(nullValue()))
+                    .andExpect(jsonPath("$.hasNext").value(false))
+                    .andExpect(jsonPath("$.totalCount").value(0))
+                    .andExpect(jsonPath("$.sortBy").value("createdAt"))
+                    .andExpect(jsonPath("$.sortDirection").value("DESCENDING"));
+        }
+        @Test
+        @DisplayName("실패 - followerId가 없으면 400을 반환한다")
+        void getFollowing_notExistFollowerId_return400() throws Exception {
+
+            //when & then
+            mockMvc.perform(get("/api/follows/followings")
+                    .param("limit", "10"))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("실패 - limit가 없으면 400을 반환한다")
+        void getFollowing_notExistLimit_return400() throws Exception{
+
+            //when & then
+            mockMvc.perform(get("/api/follows/followings")
+                    .param("followerId", followerId.toString()))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+    @Nested
+    @DisplayName("팔로우 목록 조회")
+    class GetFollowersTest {
+
+        @Test
+        @DisplayName("성공 - 팔로잉 목록 조회 시 200을 반환한다")
+        void getFollowers_request_return200() throws Exception {
+
+            //given
+            FollowListResponse response = new FollowListResponse(
+                    List.of(), null, null, false, 0L,
+                    SortBy.createdAt, SortDirection.DESCENDING);
+
+            given(followService.getFollowers(any(), any(), any(), anyInt(), any()))
+                    .willReturn(response);
+
+            // when & then
+            mockMvc.perform(get("/api/follows/followers")
+                            .param("followeeId", followerId.toString())
+                            .param("limit", "10"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data").isArray())
+                    .andExpect(jsonPath("$.nextCursor").value(nullValue()))
+                    .andExpect(jsonPath("$.nextIdAfter").value(nullValue()))
+                    .andExpect(jsonPath("$.hasNext").value(false))
+                    .andExpect(jsonPath("$.totalCount").value(0))
+                    .andExpect(jsonPath("$.sortBy").value("createdAt"))
+                    .andExpect(jsonPath("$.sortDirection").value("DESCENDING"));
+        }
+
+        @Test
+        @DisplayName("실패 - followeeId가 없으면 400을 반환한다")
+        void getFollowers_notExistFolloweeId_return400() throws Exception {
+
+            //when & then
+            mockMvc.perform(get("/api/follows/followers")
+                            .param("limit", "10"))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("실패 - limit가 없으면 400을 반환한다")
+        void getFollowers_notExistLimit_return400() throws Exception {
+
+            //when & then
+            mockMvc.perform(get("/api/follows/followers")
+                            .param("followerId", followerId.toString()))
+                    .andExpect(status().isBadRequest());
+        }
+    }
 }
