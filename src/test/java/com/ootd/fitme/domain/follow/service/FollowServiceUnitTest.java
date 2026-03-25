@@ -11,11 +11,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
@@ -121,6 +122,50 @@ class FollowServiceUnitTest {
 
             then(followCountService).should(never()).decreaseFollowCount(any(Follow.class));
             then(followRepository).should(never()).deleteById(any(UUID.class));
+        }
+    }
+    @Nested
+    @DisplayName("팔로잉 목록 조회")
+    class GetFollowingsTest {
+
+        @Test
+        @DisplayName("성공 - 팔로잉 목록 조회 시 findFollowings가 호출된다.")
+        void getFollowings_call_findFollowings() {
+
+            //given
+            int limit = 2;
+            UUID followerId = UUID.randomUUID();
+
+            given(followRepository.findFollowings(any(), any(), any(), anyInt(), any())).willReturn(List.of());
+
+            //when
+            followServiceImpl.getFollowings(followerId, null, null, limit, null);
+
+            //then
+            then(followRepository).should().findFollowings(eq(followerId), any(), any(), eq(limit), any());
+        }
+
+    }
+
+    @Nested
+    @DisplayName("팔로워 목록 조회")
+    class GetFollowersTest {
+        @Test
+        @DisplayName("성공 - 팔로워 목록 조회 시 findFollowers가 호출된다")
+        void getFollowers_call_findFollowers() {
+
+            //given
+            int limit = 2;
+            UUID followeeId = UUID.randomUUID();
+
+            given(followRepository.findFollowers(any(), any(), any(), anyInt(), any())).willReturn(List.of());
+
+            //when
+            followServiceImpl.getFollowers(followeeId, null, null, limit, null);
+
+            //then
+            then(followRepository).should().findFollowers(eq(followeeId), any(), any(), eq(limit), any());
+
         }
     }
 }
