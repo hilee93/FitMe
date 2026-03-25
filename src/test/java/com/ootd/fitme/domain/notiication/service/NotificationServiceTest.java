@@ -1,5 +1,6 @@
 package com.ootd.fitme.domain.notiication.service;
 
+import com.ootd.fitme.domain.follow.repository.FollowRepository;
 import com.ootd.fitme.domain.notiication.entity.Notification;
 import com.ootd.fitme.domain.notiication.entity.NotificationFactory;
 import com.ootd.fitme.domain.notiication.repository.NotificationRepository;
@@ -13,9 +14,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -31,6 +34,9 @@ class NotificationServiceTest {
 
     @Mock
     private NotificationFactory notificationFactory;
+
+    @Mock
+    private FollowRepository followRepository;
 
     @InjectMocks
     private NotificationService notificationService;
@@ -102,46 +108,78 @@ class NotificationServiceTest {
         @Test
         @DisplayName("속성 추가 알림이 정상적으로 생성된다")
         void shouldCreateNotification_whenAttributeAdded() {
-            UUID userId = UUID.randomUUID();
-            User user = mock(User.class);
-            Notification notification = mock(Notification.class);
+            User user1 = mock(User.class);
+            User user2 = mock(User.class);
 
-            given(userRepository.findById(userId)).willReturn(Optional.of(user));
-            given(notificationFactory.attributeAdded(user, "color")).willReturn(notification);
+            Notification notification1 = mock(Notification.class);
+            Notification notification2 = mock(Notification.class);
 
-            notificationService.notifyAttributeAdded("color");
+            List<User> users = List.of(user1, user2);
+            List<Notification> notifications = List.of(notification1, notification2);
 
-            verify(notificationRepository).save(notification);
+            given(userRepository.findAll()).willReturn(users);
+            given(notificationFactory.attributeAdded(user1, "color")).willReturn(notification1);
+            given(notificationFactory.attributeAdded(user2, "color")).willReturn(notification2);
+            given(notificationRepository.saveAll(notifications)).willReturn(notifications);
+
+            List<Notification> result = notificationService.notifyAttributeAdded("color");
+
+            assertThat(result).isEqualTo(notifications);
+
+            verify(userRepository).findAll();
+            verify(notificationFactory).attributeAdded(user1, "color");
+            verify(notificationFactory).attributeAdded(user2, "color");
+            verify(notificationRepository).saveAll(notifications);
         }
 
         @Test
         @DisplayName("팔로우한 사용자 새 피드 알림이 정상적으로 생성된다")
         void shouldCreateNotification_whenFollowerNewFeed() {
-            UUID userId = UUID.randomUUID();
-            User user = mock(User.class);
+            UUID followeeId = UUID.randomUUID();
+            UUID followerId = UUID.randomUUID();
+
+            User follower = mock(User.class);
             Notification notification = mock(Notification.class);
 
-            given(userRepository.findById(userId)).willReturn(Optional.of(user));
-            given(notificationFactory.followerNewFeed(user, "writer", "feed")).willReturn(notification);
+            List<UUID> followerIds = List.of(followerId);
+            List<User> followers = List.of(follower);
+            List<Notification> notifications = List.of(notification);
 
-            notificationService.notifyFollowerNewFeed(userId, "writer", "feed");
+            given(followRepository.findFollowerIdsByFolloweeId(followeeId)).willReturn(followerIds);
+            given(userRepository.findAllById(followerIds)).willReturn(followers);
+            given(notificationFactory.followerNewFeed(follower, "writer", "feed")).willReturn(notification);
+            given(notificationRepository.saveAll(notifications)).willReturn(notifications);
 
-            verify(notificationRepository).save(notification);
+            List<Notification> result = notificationService.notifyFollowerNewFeed(followeeId, "writer", "feed");
+
+            assertThat(result).containsExactly(notification);
+
+            verify(followRepository).findFollowerIdsByFolloweeId(followeeId);
+            verify(userRepository).findAllById(followerIds);
+            verify(notificationFactory).followerNewFeed(follower, "writer", "feed");
+            verify(notificationRepository).saveAll(notifications);
         }
 
         @Test
         @DisplayName("날씨 알림이 정상적으로 생성된다")
         void shouldCreateNotification_whenWeatherAlert() {
-            UUID userId = UUID.randomUUID();
             User user = mock(User.class);
             Notification notification = mock(Notification.class);
 
-            given(userRepository.findById(userId)).willReturn(Optional.of(user));
+            List<User> users = List.of(user);
+            List<Notification> notifications = List.of(notification);
+
+            given(userRepository.findAll()).willReturn(users);
             given(notificationFactory.weatherAlert(user, "비 온다")).willReturn(notification);
+            given(notificationRepository.saveAll(notifications)).willReturn(notifications);
 
-            notificationService.notifyWeatherAlert("비 온다");
+            List<Notification> result = notificationService.notifyWeatherAlert("비 온다");
 
-            verify(notificationRepository).save(notification);
+            assertThat(result).containsExactly(notification);
+
+            verify(userRepository).findAll();
+            verify(notificationFactory).weatherAlert(user, "비 온다");
+            verify(notificationRepository).saveAll(notifications);
         }
     }
 }
