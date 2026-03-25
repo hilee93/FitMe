@@ -26,5 +26,13 @@ public class ClothesAttribute extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private Attribute attribute;
 
+    private ClothesAttribute(Clothes clothes, Attribute attribute) {
+        this.clothes = clothes;
+        this.attribute = attribute;
+    }
+
+    public static ClothesAttribute create(Clothes clothes, Attribute attribute) {
+        return new ClothesAttribute(clothes, attribute);
+    }
 
 }
