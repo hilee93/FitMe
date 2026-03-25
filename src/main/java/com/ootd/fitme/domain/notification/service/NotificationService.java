@@ -1,7 +1,8 @@
 package com.ootd.fitme.domain.notification.service;
 
 import com.ootd.fitme.domain.follow.repository.FollowRepository;
-import com.ootd.fitme.domain.notification.dto.request.NotificationPageResponse;
+import com.ootd.fitme.domain.notification.dto.request.NotificationPageRequest;
+import com.ootd.fitme.domain.notification.dto.response.NotificationPageResponse;
 import com.ootd.fitme.domain.notification.dto.response.NotificationDto;
 import com.ootd.fitme.domain.notification.entity.Notification;
 import com.ootd.fitme.domain.notification.entity.NotificationFactory;
@@ -14,6 +15,7 @@ import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -108,12 +110,13 @@ public class NotificationService {
         return notificationRepository.saveAll(notifications);
     }
 
+
     @Transactional(readOnly = true)
-    public NotificationPageResponse<NotificationDto> findUnconfirmedCustom(NotificationPageRequest request) {
+    public NotificationPageResponse getNotifications(NotificationPageRequest request) {
 
         Slice<Notification> search = notificationRepository.search(request);
 
-        long totalElements = notificationRepository.countByUserIdAndConfirmedFalse(request.userId());
+        long totalElements = notificationRepository.countByUserId(request.userId());
 
         List<NotificationDto> pageDtoList = search.getContent()
                 .stream()
@@ -122,15 +125,22 @@ public class NotificationService {
 
         List<Notification> content = search.getContent();
         String nextCursor = null;
-        LocalDateTime nextAfter = null;
+        String nextIdAfter = null;
 
         if (search.hasNext() && !content.isEmpty()) {
             Notification last = content.get(content.size() - 1);
-            nextCursor = last.getCreatedAt().toString() + "_" + last.getId().toString();
-            nextAfter = last.getCreatedAt();
+            nextCursor = last.getCreatedAt().toString();
+            nextIdAfter = last.getId().toString();
         }
 
-        return new NotificationPageResponse<>(pageDtoList, nextCursor, nextAfter, search.getSize(), totalElements, search.hasNext());
+        return new NotificationPageResponse(
+                pageDtoList,
+                nextCursor,
+                nextIdAfter,
+                search.hasNext(),
+                totalElements,
+                "createdAt",
+                "DESCENDING");
     }
 
 
