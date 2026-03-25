@@ -1,5 +1,6 @@
 package com.ootd.fitme.domain.follow.mapper;
 
+import com.ootd.fitme.domain.follow.dto.response.FollowCursorDto;
 import com.ootd.fitme.domain.follow.dto.response.FollowDto;
 import com.ootd.fitme.domain.follow.dto.response.UserSummary;
 import com.ootd.fitme.domain.follow.entity.Follow;
@@ -17,5 +18,9 @@ public class FollowMapper {
         UserSummary followee = new UserSummary(follow.getFolloweeId(), null, null);
 
         return new FollowDto(follow.getId(), followee, follower);
+    }
+
+    public static FollowDto toDto(FollowCursorDto dto) {
+        return new FollowDto(dto.id(), dto.followee(), dto.follower());
     }
 }
