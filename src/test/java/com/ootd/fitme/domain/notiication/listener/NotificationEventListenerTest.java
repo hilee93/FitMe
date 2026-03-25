@@ -1,7 +1,13 @@
 package com.ootd.fitme.domain.notiication.listener;
 
-import com.ootd.fitme.domain.notiication.event.*;
+import com.ootd.fitme.domain.attribute.event.AttributeAddedEvent;
+import com.ootd.fitme.domain.comment.event.FeedCommentCreateEvent;
+import com.ootd.fitme.domain.directmessage.event.DirectMessageCreateEvent;
+import com.ootd.fitme.domain.feed.event.FeedCreateEvent;
+import com.ootd.fitme.domain.feedlike.event.FeedLikedCreateEvent;
+import com.ootd.fitme.domain.follow.event.FollowCreateEvent;
 import com.ootd.fitme.domain.notiication.service.NotificationService;
+import com.ootd.fitme.domain.weatherforecast.event.WeatherAlertEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -10,6 +16,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import static org.mockito.Mockito.verify;
@@ -31,9 +38,11 @@ class NotificationEventListenerTest {
         @DisplayName("DM 이벤트 -> notifyDirectMessage 호출")
         void directMessage() {
             UUID userId = UUID.randomUUID();
+            UUID senderId = UUID.randomUUID();
+            Instant now = Instant.now();
 
-            DirectMessageReceivedEvent event =
-                    new DirectMessageReceivedEvent(userId, "sender", "msg");
+            DirectMessageCreateEvent event =
+                    new DirectMessageCreateEvent(null,userId,senderId, "sender","msg",now );
 
             listener.directMessage(event);
 
@@ -44,10 +53,11 @@ class NotificationEventListenerTest {
         @Test
         @DisplayName("팔로우 이벤트 -> notifyFollowed 호출")
         void followed() {
+            UUID followedId = UUID.randomUUID();
             UUID userId = UUID.randomUUID();
 
-            FollowedEvent event =
-                    new FollowedEvent(userId, "follower");
+            FollowCreateEvent event =
+                    new FollowCreateEvent(followedId,userId, "follower",Instant.now());
 
             listener.followed(event);
 
@@ -58,10 +68,12 @@ class NotificationEventListenerTest {
         @Test
         @DisplayName("좋아요 이벤트 -> notifyFeedLiked 호출")
         void feedLiked() {
+            UUID feedId = UUID.randomUUID();
             UUID userId = UUID.randomUUID();
+            UUID likerId = UUID.randomUUID();
 
-            FeedLikedEvent event =
-                    new FeedLikedEvent(userId, "liker");
+            FeedLikedCreateEvent event =
+                    new FeedLikedCreateEvent(feedId,userId,likerId, "liker", Instant.now());
 
             listener.feedLiked(event);
 
@@ -73,9 +85,10 @@ class NotificationEventListenerTest {
         @DisplayName("댓글 이벤트 -> notifyFeedCommented 호출")
         void feedCommented() {
             UUID userId = UUID.randomUUID();
+            UUID commentId = UUID.randomUUID();
 
-            FeedCommentedEvent event =
-                    new FeedCommentedEvent(userId, "commenter", "nice");
+            FeedCommentCreateEvent event =
+                    new FeedCommentCreateEvent(commentId,userId, "commenter", "nice", Instant.now());
 
             listener.feedCommented(event);
 
@@ -86,24 +99,26 @@ class NotificationEventListenerTest {
         @Test
         @DisplayName("속성 추가 이벤트 -> notifyAttributeAdded 호출")
         void attributeAdded() {
+            UUID attributeId = UUID.randomUUID();
             UUID userId = UUID.randomUUID();
 
             AttributeAddedEvent event =
-                    new AttributeAddedEvent(userId, "color");
+                    new AttributeAddedEvent(attributeId,"color",Instant.now());
 
             listener.attributeAdded(event);
 
             verify(notificationService)
-                    .notifyAttributeAdded(userId, "color");
+                    .notifyAttributeAdded("color");
         }
 
         @Test
         @DisplayName("팔로우 피드 이벤트 -> notifyFollowerNewFeed 호출")
         void followerNewFeed() {
+            UUID feedId = UUID.randomUUID();
             UUID userId = UUID.randomUUID();
 
-            FollowerNewFeedEvent event =
-                    new FollowerNewFeedEvent(userId, "writer", "feed");
+            FeedCreateEvent event =
+                    new FeedCreateEvent(feedId,userId, "writer", "feed", Instant.now());
 
             listener.followerNewFeed(event);
 
@@ -114,15 +129,15 @@ class NotificationEventListenerTest {
         @Test
         @DisplayName("날씨 이벤트 -> notifyWeatherAlert 호출")
         void weatherAlert() {
-            UUID userId = UUID.randomUUID();
+
 
             WeatherAlertEvent event =
-                    new WeatherAlertEvent(userId, "비 온다");
+                    new WeatherAlertEvent("비 온다",Instant.now());
 
             listener.weatherAlert(event);
 
             verify(notificationService)
-                    .notifyWeatherAlert(userId, "비 온다");
+                    .notifyWeatherAlert("비 온다");
         }
     }
 }

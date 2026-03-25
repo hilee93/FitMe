@@ -109,7 +109,7 @@ class NotificationServiceTest {
             given(userRepository.findById(userId)).willReturn(Optional.of(user));
             given(notificationFactory.attributeAdded(user, "color")).willReturn(notification);
 
-            notificationService.notifyAttributeAdded(userId, "color");
+            notificationService.notifyAttributeAdded("color");
 
             verify(notificationRepository).save(notification);
         }
@@ -139,7 +139,7 @@ class NotificationServiceTest {
             given(userRepository.findById(userId)).willReturn(Optional.of(user));
             given(notificationFactory.weatherAlert(user, "비 온다")).willReturn(notification);
 
-            notificationService.notifyWeatherAlert(userId, "비 온다");
+            notificationService.notifyWeatherAlert("비 온다");
 
             verify(notificationRepository).save(notification);
         }
