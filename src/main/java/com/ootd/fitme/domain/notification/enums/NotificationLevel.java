@@ -1,4 +1,4 @@
-package com.ootd.fitme.domain.notiication.enums;
+package com.ootd.fitme.domain.notification.enums;
 
 public enum NotificationLevel {
     INFO,WARN,ERROR
