@@ -45,8 +45,8 @@ public class FeedServiceImpl implements FeedService {
     @Override
     @Transactional
     public FeedResponseDto createFeed(FeedCreateRequest feedCreateRequest) {
-        WeatherForecast weatherForecast = weatherForecastRepository.findById(feedCreateRequest.weatherId()).orElseThrow();
-        User user = userRepository.getReferenceById(feedCreateRequest.authorId());
+        WeatherForecast weatherForecast = weatherForecastRepository.findById(feedCreateRequest.weatherId()).orElseThrow();  // TODO: 세부 exception 추후 진행
+        User user = userRepository.findById(feedCreateRequest.authorId()).orElseThrow(); // TODO: 세부 exception 추후 진행
         List<Clothes> clothesList = clothesRepository.findAllById(feedCreateRequest.clothesIds());
 
         Feed feed = Feed.create(

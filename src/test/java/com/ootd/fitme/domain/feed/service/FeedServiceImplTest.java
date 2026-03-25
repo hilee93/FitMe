@@ -60,7 +60,7 @@ class FeedServiceImplTest {
     class CreateFeedTest {
 
         @Test
-        @DisplayName("[Positive] 피드 생성 시 Feed, FeedClothes 저장 및 응답값이 올바르게 반환된다")
+        @DisplayName("[Positive] 피드 생성 시 Feed가 저장되고 응답값이 올바르게 반환된다")
         void createFeed_success() {
 
             // given
