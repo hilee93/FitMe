@@ -124,7 +124,7 @@ class FollowServiceImplTest {
 
     @Nested
     @DisplayName("목록 조회")
-    class GetFollowsTest {
+    class GetFollowsListTest {
 
         private UUID follower1Id;
         private UUID follower2Id;

@@ -47,7 +47,7 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
     }
 
     private List<FollowCursorDto> findFollowList(
-            BooleanExpression condition, QProfile profile, String cursor, UUID idAfter, int limit, String nameLike) {
+            BooleanExpression condition, QProfile nameSearchProfile, String cursor, UUID idAfter, int limit, String nameLike) {
         QFollow follow = QFollow.follow;
         QProfile followeeProfile = new QProfile("followeeProfile");
         QProfile followerProfile = new QProfile("followerProfile");
@@ -74,7 +74,7 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
                 .join(followerProfile).on(followerProfile.user.id.eq(follow.followerId))
                 .where(
                         condition,
-                        nameLikeCondition(profile, nameLike),
+                        nameLikeCondition(nameSearchProfile, nameLike),
                         cursorCondition(cursor, idAfter)
                 )
                 .orderBy(follow.createdAt.desc(), follow.id.asc())

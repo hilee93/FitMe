@@ -201,11 +201,11 @@ class FollowControllerTest {
     }
 
     @Nested
-    @DisplayName("팔로우 목록 조회")
+    @DisplayName("팔로워 목록 조회")
     class GetFollowersTest {
 
         @Test
-        @DisplayName("성공 - 팔로잉 목록 조회 시 200을 반환한다")
+        @DisplayName("성공 - 팔로워 목록 조회 시 200을 반환한다")
         void getFollowers_request_return200() throws Exception {
 
             //given
