@@ -29,10 +29,11 @@ import com.ootd.fitme.domain.weatherforecast.enums.PrecipitationType;
 import com.ootd.fitme.domain.weatherforecast.enums.SkyStatus;
 import com.ootd.fitme.domain.weatherforecast.enums.WindStrengthWord;
 import com.ootd.fitme.domain.weatherforecast.repository.WeatherForecastRepository;
-import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,10 +43,11 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Slf4j
 @SpringBootTest
 @Transactional
 class FeedQueryServiceTest {
+
+    private static final Logger log = LoggerFactory.getLogger(FeedQueryServiceTest.class);
 
     @Autowired
     private FeedQueryService feedQueryService;
