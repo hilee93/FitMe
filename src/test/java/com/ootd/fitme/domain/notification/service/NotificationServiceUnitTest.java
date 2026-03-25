@@ -1,9 +1,9 @@
-package com.ootd.fitme.domain.notiication.service;
+package com.ootd.fitme.domain.notification.service;
 
 import com.ootd.fitme.domain.follow.repository.FollowRepository;
-import com.ootd.fitme.domain.notiication.entity.Notification;
-import com.ootd.fitme.domain.notiication.entity.NotificationFactory;
-import com.ootd.fitme.domain.notiication.repository.NotificationRepository;
+import com.ootd.fitme.domain.notification.entity.Notification;
+import com.ootd.fitme.domain.notification.entity.NotificationFactory;
+import com.ootd.fitme.domain.notification.repository.NotificationRepository;
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -24,7 +24,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class NotificationServiceTest {
+class NotificationServiceUnitTest {
 
     @Mock
     private UserRepository userRepository;

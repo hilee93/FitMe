@@ -1,4 +1,4 @@
-package com.ootd.fitme.domain.notiication.listener;
+package com.ootd.fitme.domain.notification.listener;
 
 import com.ootd.fitme.domain.attribute.event.AttributeAddedEvent;
 import com.ootd.fitme.domain.comment.event.FeedCommentCreateEvent;
@@ -6,7 +6,7 @@ import com.ootd.fitme.domain.directmessage.event.DirectMessageCreateEvent;
 import com.ootd.fitme.domain.feed.event.FeedCreateEvent;
 import com.ootd.fitme.domain.feedlike.event.FeedLikedCreateEvent;
 import com.ootd.fitme.domain.follow.event.FollowCreateEvent;
-import com.ootd.fitme.domain.notiication.service.NotificationService;
+import com.ootd.fitme.domain.notification.service.NotificationService;
 import com.ootd.fitme.domain.weatherforecast.event.WeatherAlertEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -22,7 +22,7 @@ import java.util.UUID;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class NotificationEventListenerTest {
+class NotificationEventListenerUnitTest {
 
     @Mock
     private NotificationService notificationService;
