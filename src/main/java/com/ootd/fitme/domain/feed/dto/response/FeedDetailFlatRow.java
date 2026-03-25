@@ -1,4 +1,4 @@
-package com.ootd.fitme.domain.feed.repository;
+package com.ootd.fitme.domain.feed.dto.response;
 
 import com.ootd.fitme.domain.weatherforecast.enums.PrecipitationType;
 import com.ootd.fitme.domain.weatherforecast.enums.SkyStatus;

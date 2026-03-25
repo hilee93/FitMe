@@ -1,5 +1,6 @@
 package com.ootd.fitme.domain.feed.repository;
 
+import com.ootd.fitme.domain.feed.dto.response.FeedDetailFlatRow;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +21,6 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
 
     @Override
     public Optional<FeedDetailFlatRow> findFeedDetail(UUID feedId) {
-
 
         FeedDetailFlatRow result = queryFactory.select(
                         Projections.constructor(
