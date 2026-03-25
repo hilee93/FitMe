@@ -1,10 +1,5 @@
-package com.ootd.fitme.domain.notification.dto.request;
+package com.ootd.fitme.domain.notification.dto.response;
 
-import com.ootd.fitme.domain.clothes.enums.SortBy;
-import com.ootd.fitme.domain.notification.dto.response.NotificationDto;
-
-import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 
 public record NotificationPageResponse(
