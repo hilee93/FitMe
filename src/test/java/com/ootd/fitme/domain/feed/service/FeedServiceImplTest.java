@@ -1,35 +1,27 @@
 package com.ootd.fitme.domain.feed.service;
 
-import com.ootd.fitme.domain.attribute.entity.Attribute;
 import com.ootd.fitme.domain.attribute.repository.AttributeRepository;
 import com.ootd.fitme.domain.clothes.entity.Clothes;
 import com.ootd.fitme.domain.clothes.enums.ClothesType;
 import com.ootd.fitme.domain.clothes.repository.ClothesRepository;
-import com.ootd.fitme.domain.clothesattribute.entity.ClothesAttribute;
 import com.ootd.fitme.domain.clothesattribute.repository.ClothesAttributeRepository;
-import com.ootd.fitme.domain.clothesattributeselectablevalue.entity.ClothesAttributeSelectableValue;
 import com.ootd.fitme.domain.clothesattributeselectablevalue.repository.ClothesAttributeSelectableValueRepository;
 import com.ootd.fitme.domain.feed.dto.request.FeedCreateRequest;
+import com.ootd.fitme.domain.feed.dto.request.FeedUpdateRequestDto;
 import com.ootd.fitme.domain.feed.dto.response.FeedResponseDto;
 import com.ootd.fitme.domain.feed.entity.Feed;
+import com.ootd.fitme.domain.feed.exception.FeedAccessDeniedException;
 import com.ootd.fitme.domain.feed.exception.FeedNotFoundException;
 import com.ootd.fitme.domain.feed.fixture.FeedFixtureBuilder;
 import com.ootd.fitme.domain.feed.fixture.FeedFixtureBuilder.FeedFixture;
 import com.ootd.fitme.domain.feed.repository.FeedRepository;
-import com.ootd.fitme.domain.feedclothes.entity.FeedClothes;
 import com.ootd.fitme.domain.feedclothes.repository.FeedClothesRepository;
-import com.ootd.fitme.domain.profile.entity.Profile;
 import com.ootd.fitme.domain.profile.repository.ProfileRepository;
-import com.ootd.fitme.domain.region.entity.Region;
 import com.ootd.fitme.domain.region.repository.RegionRepository;
-import com.ootd.fitme.domain.selectablevalue.entity.SelectableValue;
 import com.ootd.fitme.domain.selectablevalue.repository.SelectableValueRepository;
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.repository.UserRepository;
 import com.ootd.fitme.domain.weatherforecast.entity.WeatherForecast;
-import com.ootd.fitme.domain.weatherforecast.enums.PrecipitationType;
-import com.ootd.fitme.domain.weatherforecast.enums.SkyStatus;
-import com.ootd.fitme.domain.weatherforecast.enums.WindStrengthWord;
 import com.ootd.fitme.domain.weatherforecast.repository.WeatherForecastRepository;
 import com.ootd.fitme.global.exception.ErrorCode;
 import jakarta.persistence.EntityManager;
@@ -40,7 +32,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -177,7 +168,7 @@ class FeedServiceImplTest {
 
         @Test
         @DisplayName("[Positive] 피드삭제 - 정상 삭제후 해당 조회없음")
-         void deleteFeed_success_when_valid_request() {
+        void deleteFeed_success_when_valid_request() {
             // given
             FeedFixture feedFixture = feedFixtureBuilder.createFeedFixture();
 
@@ -203,6 +194,79 @@ class FeedServiceImplTest {
 
     }
 
+    @Nested
+    @DisplayName("피드수정")
+    class UpdateFeedTest {
+
+        @Test
+        @DisplayName("[Positive] 작성자가 피드 수정 요청 시 응답과 DB에 수정 내용이 반영된다")
+        void updateFeed_success_when_valid_request() {
+
+            // given
+            FeedFixture feedFixture = feedFixtureBuilder.createFeedFixture();
+            Feed feed = feedFixture.feed();
+            User user = feedFixture.user();
+
+            UUID feedId = feed.getId();
+            UUID userId = user.getId();
+
+            FeedUpdateRequestDto request = new FeedUpdateRequestDto("수정된 내용");
+
+            // when
+            FeedResponseDto response = feedService.updateFeed(feedId, userId, request);
+
+            // then 1: 응답 검증
+            assertThat(response.content()).isEqualTo("수정된 내용");
+
+            // then 2: DB 검증
+            em.flush();
+            em.clear();
+
+            Feed reloadedFeed = feedRepository.findById(feedId).orElseThrow();
+            assertThat(reloadedFeed.getContent()).isEqualTo("수정된 내용");
+        }
+
+        @Test
+        @DisplayName("[Negative] 존재하지 않는 피드 수정 요청 시 FeedNotFoundException이 발생한다")
+        void updateFeed_fail_when_feed_not_found() {
+            // given
+            UUID notExistsFeedId = UUID.randomUUID();
+            UUID userId = UUID.randomUUID();
+            FeedUpdateRequestDto request = new FeedUpdateRequestDto("수정된 내용");
+
+            // when & then
+            assertThatThrownBy(() -> feedService.updateFeed(notExistsFeedId, userId, request))
+                    .isInstanceOf(FeedNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("[Negative] 작성자가 아닌 사용자가 피드 수정 요청 시 FeedAccessDeniedException이 발생한다")
+        void updateFeed_fail_when_user_is_not_author() {
+            // given
+            FeedFixture feedFixture = feedFixtureBuilder.createFeedFixture();
+            Feed feed = feedFixture.feed();
+
+            User otherUser = userRepository.save(
+                    User.create("other@test.com", "password")
+            );
+
+            UUID feedId = feed.getId();
+            UUID otherUserId = otherUser.getId();
+
+            FeedUpdateRequestDto request = new FeedUpdateRequestDto("수정된 내용");
+
+            // when & then
+            assertThatThrownBy(() -> feedService.updateFeed(feedId, otherUserId, request))
+                    .isInstanceOf(FeedAccessDeniedException.class);
+
+            em.flush();
+            em.clear();
+
+            Feed reloadedFeed = feedRepository.findById(feedId).orElseThrow();
+            assertThat(reloadedFeed.getContent()).isNotEqualTo("수정된 내용");
+        }
+
+    }
 
 
 }
