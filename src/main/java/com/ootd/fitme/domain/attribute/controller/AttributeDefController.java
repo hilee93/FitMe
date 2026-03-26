@@ -46,6 +46,6 @@ public class AttributeDefController implements AttributeDefControllerDocs {
     @Override
     public ResponseEntity<Void> deleteClothesAttributeDef(UUID definitionId) {
         service.deleteClothesAttributeDef(definitionId);
-        return ResponseEntity.noContent().build(); // 204 No Content 반환
+        return ResponseEntity.noContent().build();
     }
 }
