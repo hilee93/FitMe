@@ -33,18 +33,29 @@ public class FollowController implements FollowControllerDocs {
         return null;
     }
 
-    //TODO : 커서 페이지네이션
+
     @Override
+    @GetMapping("/followings")
     public ResponseEntity<FollowListResponse> getFollowings(
-            UUID followerId, String cursor, UUID idAfter, int limit, String nameLike) {
-        return null;
+            @RequestParam UUID followerId,
+            @RequestParam(required = false) String cursor,
+            @RequestParam(required = false) UUID idAfter,
+            @RequestParam int limit,
+            @RequestParam(required = false) String nameLike) {
+        FollowListResponse followings = followService.getFollowings(followerId, cursor, idAfter, limit, nameLike);
+        return ResponseEntity.status(200).body(followings);
     }
 
-    //TODO : 커서 페이지네이션
     @Override
+    @GetMapping("/followers")
     public ResponseEntity<FollowListResponse> getFollowers(
-            UUID followeeId, String cursor, UUID idAfter, int limit, String nameLike) {
-        return null;
+            @RequestParam UUID followeeId,
+            @RequestParam(required = false) String cursor,
+            @RequestParam(required = false) UUID idAfter,
+            @RequestParam int limit,
+            @RequestParam(required = false) String nameLike) {
+        FollowListResponse followers = followService.getFollowers(followeeId, cursor, idAfter, limit, nameLike);
+        return ResponseEntity.status(200).body(followers);
     }
 
     @Override
