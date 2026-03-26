@@ -10,6 +10,7 @@ import com.ootd.fitme.domain.feed.dto.response.FeedCursorResponseDto;
 import com.ootd.fitme.domain.feed.dto.response.FeedResponseDto;
 import com.ootd.fitme.domain.feed.entity.Feed;
 import com.ootd.fitme.domain.feed.exception.FeedAccessDeniedException;
+import com.ootd.fitme.domain.feed.exception.FeedLikeAlreadyExistsException;
 import com.ootd.fitme.domain.feed.exception.FeedNotFoundException;
 import com.ootd.fitme.domain.feed.repository.FeedRepository;
 import com.ootd.fitme.domain.feedclothes.entity.FeedClothes;
@@ -117,8 +118,7 @@ public class FeedServiceImpl implements FeedService {
     public void likeFeed(UUID feedId, UUID userId) {
         Feed feed = feedRepository.findById(feedId).orElseThrow(() -> new FeedNotFoundException(ErrorCode.FEED_NOT_FOUND));
         if (feedLikeRepository.existsByFeedIdAndUserId(feedId, userId)) {
-            throw new IllegalStateException();
-//            throw new FeedLikeAlreadyExistsException(); // TODO: 이걸로 변경
+            throw new FeedLikeAlreadyExistsException(ErrorCode.FEED_LIKE_ALREADY_EXISTS);
         }
         User user = userRepository.findById(userId).orElseThrow();
 

@@ -18,6 +18,7 @@ public enum ErrorCode {
     // feed
     FEED_NOT_FOUND(HttpStatus.NOT_FOUND, "피드를 찾을 수 없습니다.", "F-001"),
     FEED_ACCESS_DENIED(HttpStatus.FORBIDDEN, "해당 피드에 대한 권한이 없습니다" , "F-002"),
+    FEED_LIKE_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 해당 피드에 좋아요를 눌렀습니다" , "F-003" ),
 
     // common
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "요청이 올바르지 않습니다.", "CM-001"),
