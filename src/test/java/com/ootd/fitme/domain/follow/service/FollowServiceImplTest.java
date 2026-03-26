@@ -3,6 +3,7 @@ package com.ootd.fitme.domain.follow.service;
 import com.ootd.fitme.domain.follow.dto.request.FollowCreateRequest;
 import com.ootd.fitme.domain.follow.dto.response.FollowDto;
 import com.ootd.fitme.domain.follow.dto.response.FollowListResponse;
+import com.ootd.fitme.domain.follow.dto.response.FollowSummaryDto;
 import com.ootd.fitme.domain.follow.entity.Follow;
 import com.ootd.fitme.domain.follow.repository.FollowRepository;
 import com.ootd.fitme.domain.profile.entity.Profile;
@@ -50,6 +51,9 @@ class FollowServiceImplTest {
         User followee = userRepository.save(User.create("followee@a.com", "123456"));
         followerId = follower.getId();
         followeeId = followee.getId();
+
+        saveProfile(follower);
+        saveProfile(followee);
     }
 
     @Nested
@@ -57,17 +61,21 @@ class FollowServiceImplTest {
     class FollowCreateTest {
 
         @Test
-        @DisplayName("성공 - 중복이 없으면 follow가 DB에 저장된다")
-        void createFollow_noDuplicate_saveDB() {
+        @DisplayName("성공 - 중복이 없으면 follow가 DB에 저장되고 카운트가 증가한다")
+        void createFollow_noDuplicate_saveDBAndIncreaseCount() {
 
             //given
             FollowCreateRequest request = new FollowCreateRequest(followerId, followeeId);
 
             //when
             followServiceImpl.createFollow(request);
+            Profile followerProfile = profileRepository.findByUserId(followerId).get();
+            Profile followeeProfile = profileRepository.findByUserId(followeeId).get();
 
             //then
             assertThat(followRepository.findByFollowerIdAndFolloweeId(followerId, followeeId)).isPresent();
+            assertThat(followerProfile.getFolloweeCount()).isEqualTo(1);
+            assertThat(followeeProfile.getFollowerCount()).isEqualTo(1);
         }
 
         @Test
@@ -83,8 +91,13 @@ class FollowServiceImplTest {
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("이미 팔로우한 사용자입니다.");
 
+            Profile followerProfile = profileRepository.findByUserId(followerId).get();
+            Profile followeeProfile = profileRepository.findByUserId(followeeId).get();
+
             assertThat(followRepository.findByFollowerIdAndFolloweeId(followerId, followeeId)).isPresent();
             assertThat(followRepository.findAll()).hasSize(1);
+            assertThat(followerProfile.getFolloweeCount()).isEqualTo(1);
+            assertThat(followeeProfile.getFollowerCount()).isEqualTo(1);
         }
     }
 
@@ -93,8 +106,8 @@ class FollowServiceImplTest {
     class FollowCancelTest {
 
         @Test
-        @DisplayName("성공 - 팔로우가 존재하면 DB에서 삭제된다")
-        void cancelFollow_existFollow_deletedDB() {
+        @DisplayName("성공 - 팔로우가 존재하면 DB에서 삭제되고 카운트가 감소한다")
+        void cancelFollow_existFollow_deletedDBAndDecreaseCount() {
 
             //given
             FollowCreateRequest request = new FollowCreateRequest(followerId, followeeId);
@@ -102,9 +115,13 @@ class FollowServiceImplTest {
 
             //when
             followServiceImpl.cancelFollow(follow.id());
+            Profile followerProfile = profileRepository.findByUserId(followerId).get();
+            Profile followeeProfile = profileRepository.findByUserId(followeeId).get();
 
             //then
             assertThat(followRepository.findById(follow.id())).isEmpty();
+            assertThat(followerProfile.getFolloweeCount()).isEqualTo(0);
+            assertThat(followeeProfile.getFollowerCount()).isEqualTo(0);
         }
 
         @Test
@@ -118,6 +135,13 @@ class FollowServiceImplTest {
             assertThatThrownBy(() -> followServiceImpl.cancelFollow(randomId))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessage("존재하지 않는 팔로우입니다.");
+
+            Profile followerProfile = profileRepository.findByUserId(followerId).get();
+            Profile followeeProfile = profileRepository.findByUserId(followeeId).get();
+
+            assertThat(followRepository.findById(randomId)).isEmpty();
+            assertThat(followerProfile.getFolloweeCount()).isEqualTo(0);
+            assertThat(followeeProfile.getFollowerCount()).isEqualTo(0);
         }
 
     }
@@ -251,6 +275,79 @@ class FollowServiceImplTest {
             //then
             assertThat(followers.data().size()).isEqualTo(2);
             assertThat(followers.hasNext()).isFalse();
+        }
+    }
+
+    @Nested
+    @DisplayName("팔로우 요약 조회")
+    class GetFollowSummaryTest {
+
+        @Test
+        @DisplayName("성공 - 내가 팔로우 중이면 followedByMe는 true이다")
+        void getFollowSummary_following_followedByMeTrue() {
+
+            //given
+            Follow follow = followRepository.save(Follow.create(followerId, followeeId));
+
+            //when
+            FollowSummaryDto followSummary = followServiceImpl.getFollowSummary(followeeId, followerId);
+
+            //then
+            assertThat(followSummary.followedByMe()).isTrue();
+            assertThat(followSummary.followedByMeId()).isEqualTo(follow.getId());
+        }
+
+        @Test
+        @DisplayName("성공 - 내가 팔로우 안 한 상태면 followedByMe는 false이다")
+        void getFollowSummary_notFollowing_followedByMeFalse() {
+
+            //when
+            FollowSummaryDto followSummary = followServiceImpl.getFollowSummary(followeeId, followerId);
+
+            //then
+            assertThat(followSummary.followedByMe()).isFalse();
+            assertThat(followSummary.followedByMeId()).isNull();
+        }
+
+        @Test
+        @DisplayName("성공 - 상대방이 나를 팔로우하면 followingMe는 true이다")
+        void getFollowSummary_followeeFollowingMe_followingMeTrue() {
+
+            //given
+            followRepository.save(Follow.create(followeeId, followerId));
+
+            //when
+            FollowSummaryDto followSummary = followServiceImpl.getFollowSummary(followeeId, followerId);
+
+            //then
+            assertThat(followSummary.followingMe()).isTrue();
+        }
+
+        @Test
+        @DisplayName("성공 - 상대방이 나를 팔로우를 안하면 followingMe는 false이다")
+        void getFollowSummary_followeeNotFollowingMe_followingMeFalse() {
+
+            //when
+            FollowSummaryDto followSummary = followServiceImpl.getFollowSummary(followeeId, followerId);
+
+            //then
+            assertThat(followSummary.followingMe()).isFalse();
+        }
+
+        @Test
+        @DisplayName("성공 - 팔로우하면 followerCount와 followingCount가 반환된다")
+        void getFollowSummary_follow_followerAndFollowingCountIncrease() {
+
+            //given
+            FollowCreateRequest request = new FollowCreateRequest(followerId, followeeId);
+            followServiceImpl.createFollow(request);
+
+            //when
+            FollowSummaryDto followSummary = followServiceImpl.getFollowSummary(followeeId, followerId);
+
+            //then
+            assertThat(followSummary.followerCount()).isEqualTo(1);
+            assertThat(followSummary.followingCount()).isEqualTo(0);
         }
     }
 

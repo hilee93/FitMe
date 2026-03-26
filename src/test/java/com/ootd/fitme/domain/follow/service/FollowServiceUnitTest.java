@@ -1,8 +1,11 @@
 package com.ootd.fitme.domain.follow.service;
 
 import com.ootd.fitme.domain.follow.dto.request.FollowCreateRequest;
+import com.ootd.fitme.domain.follow.dto.response.FollowSummaryDto;
 import com.ootd.fitme.domain.follow.entity.Follow;
 import com.ootd.fitme.domain.follow.repository.FollowRepository;
+import com.ootd.fitme.domain.profile.entity.Profile;
+import com.ootd.fitme.domain.profile.repository.ProfileRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -19,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 
 
@@ -30,6 +34,9 @@ class FollowServiceUnitTest {
 
     @Mock
     private FollowCountService followCountService;
+
+    @Mock
+    private ProfileRepository profileRepository;
 
     @InjectMocks
     private FollowServiceImpl followServiceImpl;
@@ -137,6 +144,7 @@ class FollowServiceUnitTest {
             UUID followerId = UUID.randomUUID();
 
             given(followRepository.findFollowings(any(), any(), any(), anyInt(), any())).willReturn(List.of());
+            given(profileRepository.findByUserId(any())).willReturn(Optional.of(mock(Profile.class)));
 
             //when
             followServiceImpl.getFollowings(followerId, null, null, limit, null);
@@ -159,6 +167,7 @@ class FollowServiceUnitTest {
             UUID followeeId = UUID.randomUUID();
 
             given(followRepository.findFollowers(any(), any(), any(), anyInt(), any())).willReturn(List.of());
+            given(profileRepository.findByUserId(any())).willReturn(Optional.of(mock(Profile.class)));
 
             //when
             followServiceImpl.getFollowers(followeeId, null, null, limit, null);
@@ -166,6 +175,49 @@ class FollowServiceUnitTest {
             //then
             then(followRepository).should().findFollowers(eq(followeeId), any(), any(), eq(limit), any());
 
+        }
+    }
+
+    @Nested
+    @DisplayName("팔로우 요약 조회")
+    class GetFollowSummary{
+
+        @Test
+        @DisplayName("성공 - followSummary 호출 시 profile과 follow 조회가 호출된다")
+        void getFollowSummary_called_profileAndFollow() {
+
+            //given
+            UUID userId = UUID.randomUUID();
+            UUID myId = UUID.randomUUID();
+            Profile profile = mock(Profile.class);
+
+            given(profileRepository.findByUserId(userId)).willReturn(Optional.of(profile));
+            given(followRepository.findByFollowerIdAndFolloweeId(myId, userId)).willReturn(Optional.empty());
+            given(followRepository.findByFollowerIdAndFolloweeId(userId, myId)).willReturn(Optional.empty());
+
+            //when
+            followServiceImpl.getFollowSummary(userId, myId);
+
+            //then
+            then(profileRepository).should().findByUserId(userId);
+            then(followRepository).should().findByFollowerIdAndFolloweeId(myId, userId);
+            then(followRepository).should().findByFollowerIdAndFolloweeId(userId, myId);
+        }
+
+        @Test
+        @DisplayName("실패 - Profile이 없으면 예외가 발생한다")
+        void getFollowSummary_profileNotExist_throwException(){
+
+            //given
+            UUID userId = UUID.randomUUID();
+            UUID myId = UUID.randomUUID();
+
+            given(profileRepository.findByUserId(userId)).willReturn(Optional.empty());
+
+            //when & then
+            assertThatThrownBy(() -> followServiceImpl.getFollowSummary(userId, myId))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("프로필을 찾을 수 없습니다.");
         }
     }
 }
