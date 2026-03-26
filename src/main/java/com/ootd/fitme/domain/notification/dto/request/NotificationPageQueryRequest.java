@@ -22,4 +22,5 @@ public record NotificationPageQueryRequest(
         @Max(value = 100, message = "limit는 100 이하로 설정하세요")
         Integer limit
 ) {
+
 }
