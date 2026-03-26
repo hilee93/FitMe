@@ -2,6 +2,8 @@ package com.ootd.fitme.domain.user.service;
 
 import com.ootd.fitme.domain.user.dto.request.SignInRequest;
 import com.ootd.fitme.domain.user.dto.request.UserCreateRequest;
+import com.ootd.fitme.domain.user.dto.request.UserLockUpdateRequest;
+import com.ootd.fitme.domain.user.dto.request.UserRoleUpdateRequest;
 import com.ootd.fitme.domain.user.dto.response.JwtDto;
 import com.ootd.fitme.domain.user.dto.response.SignInResult;
 import com.ootd.fitme.domain.user.dto.response.UserDto;
@@ -126,6 +128,32 @@ public class UserServiceImpl implements UserService {
     public void signOut(String accessToken, String refreshToken) {
         blacklistIfValid(accessToken);
         blacklistIfValid(refreshToken);
+    }
+
+    @Transactional
+    @Override
+    public UserDto updateRole(UUID userId, UserRoleUpdateRequest userRoleUpdateRequest) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
+
+        user.updateRole(userRoleUpdateRequest.role());
+
+        tokenBlacklistService.setRevokeAllBefore(userId, Instant.now());
+
+        return userMapper.toDto(user);
+    }
+
+    @Transactional
+    @Override
+    public UserDto updateLock(UUID userId, UserLockUpdateRequest userLockUpdateRequest) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
+
+        user.updateLocked(userLockUpdateRequest.locked());
+
+        tokenBlacklistService.setRevokeAllBefore(userId, Instant.now());
+
+        return userMapper.toDto(user);
     }
 
     private void blacklistIfValid(String token) {
