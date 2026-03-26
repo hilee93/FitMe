@@ -119,4 +119,28 @@ public class Profile extends BaseUpdateEntity {
         );
     }
 
+    public void increaseFollowerCount() {
+        this.followerCount++;
+    }
+
+    public void decreaseFollowerCount() {
+        // TODO : 커스텀 예외 처리
+        if (this.followerCount <= 0) {
+            throw new IllegalStateException("팔로워 수가 이미 0명 입니다.");
+        }
+        this.followerCount--;
+    }
+
+    public void increaseFolloweeCount() {
+        this.followeeCount++;
+    }
+
+    public void decreaseFolloweeCount() {
+        // TODO : 커스텀 예외 처리
+        if (this.followeeCount <= 0) {
+            throw new IllegalStateException("팔로우 수가 이미 0명 입니다.");
+        }
+        this.followeeCount--;
+    }
+
 }
