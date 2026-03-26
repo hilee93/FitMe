@@ -30,6 +30,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 @Component
 public class FeedFixtureBuilder {
@@ -76,7 +77,7 @@ public class FeedFixtureBuilder {
 
     public FeedFixture createFeedFixture() {
         User user = userRepository.save(
-                User.create("email@test.com", "password")
+                User.create("email-" + UUID.randomUUID() + "@test.com", "password")
         );
 
         profileRepository.save(
