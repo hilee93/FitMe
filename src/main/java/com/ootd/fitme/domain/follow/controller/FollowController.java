@@ -6,9 +6,11 @@ import com.ootd.fitme.domain.follow.dto.response.FollowDto;
 import com.ootd.fitme.domain.follow.dto.response.FollowListResponse;
 import com.ootd.fitme.domain.follow.dto.response.FollowSummaryDto;
 import com.ootd.fitme.domain.follow.service.FollowService;
+import com.ootd.fitme.global.security.auth.CustomUserPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -29,10 +31,16 @@ public class FollowController implements FollowControllerDocs {
     }
 
     @Override
-    public ResponseEntity<FollowSummaryDto> getFollowSummary(UUID userId) {
-        return null;
-    }
+    @GetMapping("/summary")
+    public ResponseEntity<FollowSummaryDto> getFollowSummary(
+            @RequestParam UUID userId,
+            @AuthenticationPrincipal CustomUserPrincipal principal) {
 
+        UUID myId = principal.getUserId();
+
+        FollowSummaryDto result = followService.getFollowSummary(userId, myId);
+        return ResponseEntity.status(200).body(result);
+    }
 
     @Override
     @GetMapping("/followings")
