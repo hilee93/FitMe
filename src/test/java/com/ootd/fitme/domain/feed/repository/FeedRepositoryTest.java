@@ -10,11 +10,13 @@ import com.ootd.fitme.domain.weatherforecast.enums.PrecipitationType;
 import com.ootd.fitme.domain.weatherforecast.enums.SkyStatus;
 import com.ootd.fitme.domain.weatherforecast.enums.WindStrengthWord;
 import com.ootd.fitme.domain.weatherforecast.repository.WeatherForecastRepository;
+import com.ootd.fitme.global.config.QuerydslConfig;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.Import;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -23,6 +25,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
+@Import(QuerydslConfig.class)
 class FeedRepositoryTest {
 
     @Autowired
@@ -48,7 +51,6 @@ class FeedRepositoryTest {
             User user = userRepository.save(
                     User.create("email@test.com", "password")
             );
-
 
             Region region = regionRepository.save(
                     Region.create(
