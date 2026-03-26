@@ -1,9 +1,6 @@
 package com.ootd.fitme.domain.user.service;
 
-import com.ootd.fitme.domain.user.dto.request.SignInRequest;
-import com.ootd.fitme.domain.user.dto.request.UserCreateRequest;
-import com.ootd.fitme.domain.user.dto.request.UserLockUpdateRequest;
-import com.ootd.fitme.domain.user.dto.request.UserRoleUpdateRequest;
+import com.ootd.fitme.domain.user.dto.request.*;
 import com.ootd.fitme.domain.user.dto.response.JwtDto;
 import com.ootd.fitme.domain.user.dto.response.SignInResult;
 import com.ootd.fitme.domain.user.dto.response.UserDto;
@@ -16,23 +13,31 @@ import com.ootd.fitme.global.exception.ErrorCode;
 import com.ootd.fitme.global.security.jwt.JwtProvider;
 import com.ootd.fitme.global.security.jwt.TokenBlacklistService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
 // TODO: 인증 관련 로직(signIn/토큰 발급)은 AuthService로 분리 검토
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
+    private static final String TEMP_PASSWORD_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+    private static final int TEMP_PASSWORD_LENGTH = 12;
+    private static final Duration TEMP_PASSWORD_TTL = Duration.ofMinutes(3);
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
     private final JwtProvider jwtProvider;
     private final TokenBlacklistService tokenBlacklistService;
+    private final TemporaryPasswordStore temporaryPasswordStore;
 
     @Override
     public String encodePassword(String password) {
@@ -68,8 +73,15 @@ public class UserServiceImpl implements UserService {
             throw new UserException(ErrorCode.USER_ACCOUNT_LOCKED);
         }
 
-        if (!passwordEncoder.matches(signInRequest.password(), user.getPassword())) {
-            throw new AuthException(ErrorCode.AUTH_INVALID_CREDENTIALS);
+        boolean normalPasswordMatched = passwordEncoder.matches(signInRequest.password(), user.getPassword());
+        if (!normalPasswordMatched) {
+            boolean temporaryPasswordMatched = temporaryPasswordStore.findValidEncodedPassword(user.getId())
+                    .map(encoded -> passwordEncoder.matches(signInRequest.password(), encoded))
+                    .orElse(false);
+
+            if (!temporaryPasswordMatched) {
+                throw new AuthException(ErrorCode.AUTH_INVALID_CREDENTIALS);
+            }
         }
 
         return user;
@@ -156,6 +168,40 @@ public class UserServiceImpl implements UserService {
         return userMapper.toDto(user);
     }
 
+    @Override
+    public void resetPassword(ResetPasswordRequest resetPasswordRequest) {
+        User user = userRepository.findByEmail(resetPasswordRequest.email())
+                .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
+
+        String tempPassword = generateTemporaryPassword();
+        String encodedTempPassword = passwordEncoder.encode(tempPassword);
+
+        temporaryPasswordStore.save(
+                user.getId(),
+                encodedTempPassword,
+                Instant.now().plus(TEMP_PASSWORD_TTL)
+        );
+
+        tokenBlacklistService.setRevokeAllBefore(user.getId(), Instant.now());
+
+        // TODO: 메일 발송 연동
+        log.info("[TEMP PASSWORD] userEmail={}", user.getEmail());
+    }
+
+    @Transactional
+    @Override
+    public void changePassword(UUID userId, ChangePasswordRequest changePasswordRequest) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
+
+        String encodedPassword = passwordEncoder.encode(changePasswordRequest.password());
+        user.updatePassword(encodedPassword);
+
+        temporaryPasswordStore.delete(userId);
+
+        tokenBlacklistService.setRevokeAllBefore(userId, Instant.now());
+    }
+
     private void blacklistIfValid(String token) {
         if (token == null || !jwtProvider.validateToken(token)) {
             return;
@@ -163,5 +209,16 @@ public class UserServiceImpl implements UserService {
 
         tokenBlacklistService.blacklist(jwtProvider.getTokenId(token), jwtProvider.getExpiration(token));
 
+    }
+
+    private String generateTemporaryPassword() {
+        SecureRandom random = new SecureRandom();
+        StringBuilder sb = new StringBuilder(TEMP_PASSWORD_LENGTH);
+
+        for (int i = 0; i < TEMP_PASSWORD_LENGTH; i++) {
+            int idx = random.nextInt(TEMP_PASSWORD_CHARS.length());
+            sb.append(TEMP_PASSWORD_CHARS.charAt(idx));
+        }
+        return sb.toString();
     }
 }
