@@ -2,10 +2,13 @@ package com.ootd.fitme.domain.feed.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ootd.fitme.domain.feed.dto.request.FeedCreateRequest;
+import com.ootd.fitme.domain.feed.dto.request.FeedUpdateRequestDto;
 import com.ootd.fitme.domain.feed.dto.response.FeedResponseDto;
+import com.ootd.fitme.domain.feed.exception.FeedAccessDeniedException;
 import com.ootd.fitme.domain.feed.exception.FeedNotFoundException;
 import com.ootd.fitme.domain.feed.service.FeedService;
 import com.ootd.fitme.global.exception.ErrorCode;
+import com.ootd.fitme.global.security.auth.CustomUserPrincipal;
 import com.ootd.fitme.global.security.jwt.JwtAuthenticationFilter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -16,8 +19,13 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 
 import java.time.Instant;
@@ -28,8 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.*;
 import static org.mockito.Mockito.times;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -123,7 +130,7 @@ class FeedControllerTest {
     class DeleteFeedTest {
 
         @Test
-        @DisplayName("[200] 정상 feedId로 삭제 요청시 200 ok 반환한다")
+        @DisplayName("[204] 정상 feedId로 삭제 요청시 204 noContent 반환한다")
         void deleteFeed_success_when_valid_request() throws Exception {
 
             //given
@@ -154,6 +161,102 @@ class FeedControllerTest {
             then(feedService).should(times(1)).deleteFeed(feedId);
         }
 
+    }
+
+    @Nested
+    @DisplayName("PATCH /api/feeds (피드수정)")
+    class UpdateFeedTest {
+        @Test
+        @DisplayName("[200] 작성자가 피드 수정 요청 시 200 OK와 content 수정된 FeedResponseDto 반환한다")
+        void updateFeed_success_when_author() throws Exception {
+            // given
+            UUID feedId = UUID.randomUUID();
+            UUID userId = UUID.randomUUID();
+
+            FeedUpdateRequestDto request = new FeedUpdateRequestDto("수정된 내용");
+
+            FeedResponseDto response = new FeedResponseDto(
+                    feedId,
+                    Instant.now(),
+                    Instant.now(),
+                    null, null, null,
+                    "수정된 내용",
+                    0,
+                    0,
+                    false
+            );
+
+            given(feedService.updateFeed(eq(feedId), eq(userId), any()))
+                    .willReturn(response);
+
+            // when & then
+            mockMvc.perform(patch("/api/feeds/{feedId}", feedId)
+                            .with(userPrincipal(userId)) // 커스텀 principal 세팅
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content").value("수정된 내용"));
+        }
+
+        @Test
+        @DisplayName("[403] 작성자가 아닌 사용자가 수정 요청 시 403 Forbidden을 반환한다")
+        void updateFeed_fail_when_not_author() throws Exception {
+            // given
+            UUID feedId = UUID.randomUUID();
+            UUID userId = UUID.randomUUID();
+
+            FeedUpdateRequestDto request = new FeedUpdateRequestDto("수정된 내용");
+
+            given(feedService.updateFeed(eq(feedId), eq(userId), any()))
+                    .willThrow(new FeedAccessDeniedException(ErrorCode.FEED_ACCESS_DENIED));
+
+            // when & then
+            mockMvc.perform(patch("/api/feeds/{feedId}", feedId)
+                            .with(userPrincipal(userId))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("[404] 존재하지 않는 피드 수정 요청 시 404 Not Found를 반환한다")
+        void updateFeed_fail_when_feed_not_found() throws Exception {
+            // given
+            UUID feedId = UUID.randomUUID();
+            UUID userId = UUID.randomUUID();
+
+            FeedUpdateRequestDto request = new FeedUpdateRequestDto("수정된 내용");
+
+            given(feedService.updateFeed(eq(feedId), eq(userId), any()))
+                    .willThrow(new FeedNotFoundException(ErrorCode.FEED_NOT_FOUND));
+
+            // when & then
+            mockMvc.perform(patch("/api/feeds/{feedId}", feedId)
+                            .with(userPrincipal(userId))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isNotFound());
+        }
+    }
+
+    // NOTE: MockMvc 테스트에서 인증된 사용자 요청을 만들기 위해 SecurityContext에 Authentication(principal)을 설정한다.
+    private RequestPostProcessor userPrincipal(UUID userId) {
+        return request -> {
+            CustomUserPrincipal principal = mock(CustomUserPrincipal.class);
+            given(principal.getUserId()).willReturn(userId);
+            given(principal.getAuthorities()).willReturn(List.of());
+
+            Authentication auth = new UsernamePasswordAuthenticationToken(
+                    principal,
+                    null,
+                    principal.getAuthorities()
+            );
+
+            SecurityContext context = SecurityContextHolder.createEmptyContext();
+            context.setAuthentication(auth);
+            SecurityContextHolder.setContext(context);
+            return request;
+        };
     }
 
 }
