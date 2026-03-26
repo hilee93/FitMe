@@ -1,14 +1,17 @@
 package com.ootd.fitme.domain.feed.controller;
 
+import com.ootd.fitme.domain.feed.dto.request.FeedCommentCreateRequest;
+import com.ootd.fitme.domain.feed.dto.request.FeedCommentSearchCondition;
+import com.ootd.fitme.domain.comment.dto.response.CommentCursorResponseDto;
 import com.ootd.fitme.domain.comment.dto.response.CommentResponseDto;
 import com.ootd.fitme.domain.feed.controller.docs.FeedControllerDocs;
-import com.ootd.fitme.domain.feed.controller.docs.FeedCreateRequest;
-import com.ootd.fitme.domain.feed.dto.request.FeedSearchCondition;
-import com.ootd.fitme.domain.feed.dto.request.FeedUpdateRequestDto;
+import com.ootd.fitme.domain.feed.dto.request.*;
 import com.ootd.fitme.domain.feed.dto.response.FeedCursorResponseDto;
 import com.ootd.fitme.domain.feed.dto.response.FeedResponseDto;
+import com.ootd.fitme.domain.feed.service.FeedService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,6 +21,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @RequestMapping("/api/feeds")
 public class FeedController implements FeedControllerDocs {
+
+    private final FeedService feedService;
+
     @Override
     @GetMapping
     public ResponseEntity<FeedCursorResponseDto> getAllFeeds(FeedSearchCondition feedSearchCondition) {
@@ -25,8 +31,10 @@ public class FeedController implements FeedControllerDocs {
     }
 
     @Override
-    public ResponseEntity<FeedResponseDto> createFeed(FeedCreateRequest feedCreateRequest) {
-        return null;
+    @PostMapping
+    public ResponseEntity<FeedResponseDto> createFeed(@RequestBody @Valid FeedCreateRequest feedCreateRequest) {
+        FeedResponseDto responseDto = feedService.createFeed(feedCreateRequest);
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
     }
 
     @Override
@@ -39,22 +47,32 @@ public class FeedController implements FeedControllerDocs {
     }
 
     @Override
-    public ResponseEntity<Void> deleteFeed(UUID feedId) {
+    @DeleteMapping("/{feedId}")
+    public ResponseEntity<Void> deleteFeed(@PathVariable UUID feedId) {
         return null;
     }
 
     @Override
-    public ResponseEntity<Void> addLike(UUID feedId) {
+    @PostMapping("/{feedId}/like")
+    public ResponseEntity<Void> addLike(@PathVariable UUID feedId) {
         return null;
     }
 
     @Override
-    public ResponseEntity<Void> removeLike(UUID feedId) {
+    @DeleteMapping("/{feedId}/like")
+    public ResponseEntity<Void> removeLike(@PathVariable UUID feedId) {
         return null;
     }
 
     @Override
-    public ResponseEntity<CommentResponseDto> addComment(UUID feedId, String comment) {
+    @PostMapping("/{feedId}/comments")
+    public ResponseEntity<CommentResponseDto> addComment(@RequestBody @Valid FeedCommentCreateRequest feedCommentCreateRequest) {
+        return null;
+    }
+
+    @Override
+    @GetMapping("/{feedId}/comments")
+    public ResponseEntity<CommentCursorResponseDto> getAllFeedComments(@Valid FeedCommentSearchCondition feedCommentSearchCondition) {
         return null;
     }
 }

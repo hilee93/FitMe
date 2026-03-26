@@ -1,4 +1,4 @@
-package com.ootd.fitme.domain.feed.controller.docs;
+package com.ootd.fitme.domain.feed.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
