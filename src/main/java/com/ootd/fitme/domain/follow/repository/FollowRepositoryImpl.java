@@ -23,11 +23,10 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
     @Override
     public List<FollowCursorDto> findFollowers(UUID followeeId, String cursor, UUID idAfter, int limit, String nameLike) {
 
-        QFollow follow = QFollow.follow;
         QProfile followerProfile = new QProfile("followerProfile");
 
         return findFollowList(
-                follow.followeeId.eq(followeeId),
+                QFollow.follow.followeeId.eq(followeeId),
                 followerProfile,
                 cursor, idAfter, limit, nameLike
         );
@@ -36,11 +35,10 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
     @Override
     public List<FollowCursorDto> findFollowings(UUID followerId, String cursor, UUID idAfter, int limit, String nameLike) {
 
-        QFollow follow = QFollow.follow;
         QProfile followeeProfile = new QProfile("followeeProfile");
 
         return findFollowList(
-                follow.followerId.eq(followerId),
+                QFollow.follow.followerId.eq(followerId),
                 followeeProfile,
                 cursor, idAfter, limit, nameLike
         );
@@ -88,12 +86,10 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
     }
 
     private BooleanExpression cursorCondition(String cursor, UUID idAfter) {
-        if (cursor == null) return null;
+        if (cursor == null || idAfter == null) return null;
+
         Instant nextCursor = Instant.parse(cursor);
         BooleanExpression condition = QFollow.follow.createdAt.lt(nextCursor);
-        if (idAfter != null) {
-            condition = condition.or(QFollow.follow.createdAt.eq(nextCursor).and(QFollow.follow.id.gt(idAfter)));
-        }
-        return condition;
+        return condition.or(QFollow.follow.createdAt.eq(nextCursor).and(QFollow.follow.id.gt(idAfter)));
     }
 }

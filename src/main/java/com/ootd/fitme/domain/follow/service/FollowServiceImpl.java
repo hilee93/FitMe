@@ -83,7 +83,7 @@ public class FollowServiceImpl implements FollowService {
 
         String nextCursor = null;
         UUID nextIdAfter = null;
-        if (hasNext && !followCursorDto.isEmpty()) {
+        if (hasNext) {
             FollowCursorDto lastItem = followCursorDto.get(followCursorDto.size() - 1);
             nextCursor = lastItem.createdAt().toString();
             nextIdAfter = lastItem.id();
