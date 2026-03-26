@@ -1,15 +1,22 @@
 package com.ootd.fitme.domain.notification.service;
 
 import com.ootd.fitme.domain.follow.repository.FollowRepository;
+import com.ootd.fitme.domain.notification.dto.request.NotificationPageRequest;
+import com.ootd.fitme.domain.notification.dto.response.NotificationPageResponse;
+import com.ootd.fitme.domain.notification.dto.response.NotificationDto;
 import com.ootd.fitme.domain.notification.entity.Notification;
 import com.ootd.fitme.domain.notification.entity.NotificationFactory;
+import com.ootd.fitme.domain.notification.mapper.NotificationMapper;
 import com.ootd.fitme.domain.notification.repository.NotificationRepository;
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -104,6 +111,37 @@ public class NotificationService {
     }
 
 
+    @Transactional(readOnly = true)
+    public NotificationPageResponse getNotifications(NotificationPageRequest request) {
+
+        Slice<Notification> search = notificationRepository.search(request);
+
+        long totalElements = notificationRepository.countByUserId(request.userId());
+
+        List<NotificationDto> pageDtoList = search.getContent()
+                .stream()
+                .map(NotificationMapper::toDto)
+                .toList();
+
+        List<Notification> content = search.getContent();
+        String nextCursor = null;
+        String nextIdAfter = null;
+
+        if (search.hasNext() && !content.isEmpty()) {
+            Notification last = content.get(content.size() - 1);
+            nextCursor = last.getCreatedAt().toString();
+            nextIdAfter = last.getId().toString();
+        }
+
+        return new NotificationPageResponse(
+                pageDtoList,
+                nextCursor,
+                nextIdAfter,
+                search.hasNext(),
+                totalElements,
+                "createdAt",
+                "DESCENDING");
+    }
 
     @Transactional
     public void delete(UUID notificationId) {
