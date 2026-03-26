@@ -1,6 +1,7 @@
 package com.ootd.fitme.domain.feed.repository;
 
 import com.ootd.fitme.domain.feed.entity.Feed;
+import com.ootd.fitme.domain.feed.fixture.FeedFixtureBuilder;
 import com.ootd.fitme.domain.region.entity.Region;
 import com.ootd.fitme.domain.region.repository.RegionRepository;
 import com.ootd.fitme.domain.user.entity.User;
@@ -10,7 +11,9 @@ import com.ootd.fitme.domain.weatherforecast.enums.PrecipitationType;
 import com.ootd.fitme.domain.weatherforecast.enums.SkyStatus;
 import com.ootd.fitme.domain.weatherforecast.enums.WindStrengthWord;
 import com.ootd.fitme.domain.weatherforecast.repository.WeatherForecastRepository;
+import com.ootd.fitme.global.config.JpaAuditingConfig;
 import com.ootd.fitme.global.config.QuerydslConfig;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -25,7 +28,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
-@Import(QuerydslConfig.class)
+@Import({QuerydslConfig.class, FeedFixtureBuilder.class, JpaAuditingConfig.class})
 class FeedRepositoryTest {
 
     @Autowired
@@ -39,6 +42,11 @@ class FeedRepositoryTest {
 
     @Autowired
     private RegionRepository regionRepository;
+    @Autowired
+    private FeedFixtureBuilder feedFixtureBuilder;
+
+    @Autowired
+    private EntityManager em;
 
     @Nested
     @DisplayName("피드삭제")
@@ -114,5 +122,50 @@ class FeedRepositoryTest {
             assertThat(feedRepository.findById(invalidId)).isEmpty();
         }
     }
+
+    @Nested
+    @DisplayName("피드수정")
+    class UpdateFeedTest {
+
+        @Test
+        @DisplayName("[positive] 피드수정 - content 수정시 DB에 반영된다")
+        void updateFeed_success_when_valid_request() {
+
+            //given
+            FeedFixtureBuilder.FeedFixture feedFixture = feedFixtureBuilder.createFeedFixture();
+            Feed feed = feedFixture.feed();
+
+            // when
+            feed.updateContent("수정된 내용");
+
+            em.flush();
+            em.clear();
+
+            Feed reloadedFeed = feedRepository.findById(feed.getId()).orElseThrow();
+            assertThat(reloadedFeed.getContent()).isEqualTo("수정된 내용");
+
+
+        }
+
+    }
+
+    @Nested
+    @DisplayName("피드 조회")
+    class FindFeedTest {
+
+        @Test
+        @DisplayName("[Negative] 존재하지 않는 feedId 조회 시 빈 Optional을 반환한다")
+        void findFeed_fail_when_feed_not_found() {
+            // given
+            UUID notExistsFeedId = UUID.randomUUID();
+
+            // when
+            Optional<Feed> result = feedRepository.findById(notExistsFeedId);
+
+            // then
+            assertThat(result).isEmpty();
+        }
+    }
+
 
 }

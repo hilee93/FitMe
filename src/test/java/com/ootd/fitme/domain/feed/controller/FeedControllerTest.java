@@ -7,7 +7,6 @@ import com.ootd.fitme.domain.feed.dto.response.FeedResponseDto;
 import com.ootd.fitme.domain.feed.exception.FeedAccessDeniedException;
 import com.ootd.fitme.domain.feed.exception.FeedNotFoundException;
 import com.ootd.fitme.domain.feed.service.FeedService;
-import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.global.exception.ErrorCode;
 import com.ootd.fitme.global.security.auth.CustomUserPrincipal;
 import com.ootd.fitme.global.security.jwt.JwtAuthenticationFilter;
@@ -240,6 +239,7 @@ class FeedControllerTest {
         }
     }
 
+    // NOTE: MockMvc 테스트에서 인증된 사용자 요청을 만들기 위해 SecurityContext에 Authentication(principal)을 설정한다.
     private RequestPostProcessor userPrincipal(UUID userId) {
         return request -> {
             CustomUserPrincipal principal = mock(CustomUserPrincipal.class);
