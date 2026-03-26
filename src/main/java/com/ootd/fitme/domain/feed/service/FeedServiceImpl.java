@@ -5,13 +5,11 @@ import com.ootd.fitme.domain.clothes.entity.Clothes;
 import com.ootd.fitme.domain.clothes.repository.ClothesRepository;
 import com.ootd.fitme.domain.comment.dto.response.CommentCursorResponseDto;
 import com.ootd.fitme.domain.comment.dto.response.CommentResponseDto;
-import com.ootd.fitme.domain.feed.dto.request.FeedCommentCreateRequest;
-import com.ootd.fitme.domain.feed.dto.request.FeedCommentSearchCondition;
-import com.ootd.fitme.domain.feed.dto.request.FeedCreateRequest;
-import com.ootd.fitme.domain.feed.dto.request.FeedSearchCondition;
+import com.ootd.fitme.domain.feed.dto.request.*;
 import com.ootd.fitme.domain.feed.dto.response.FeedCursorResponseDto;
 import com.ootd.fitme.domain.feed.dto.response.FeedResponseDto;
 import com.ootd.fitme.domain.feed.entity.Feed;
+import com.ootd.fitme.domain.feed.exception.FeedAccessDeniedException;
 import com.ootd.fitme.domain.feed.exception.FeedNotFoundException;
 import com.ootd.fitme.domain.feed.repository.FeedRepository;
 import com.ootd.fitme.domain.feedclothes.entity.FeedClothes;
@@ -47,6 +45,7 @@ public class FeedServiceImpl implements FeedService {
 
     @Override
     @Transactional
+    // TODO:PreAuthorized() 추가하여 자기작성인지 체크 추가
     public FeedResponseDto createFeed(FeedCreateRequest feedCreateRequest) {
         WeatherForecast weatherForecast = weatherForecastRepository.findById(feedCreateRequest.weatherId()).orElseThrow();  // TODO: 세부 exception 추후 진행
         User user = userRepository.findById(feedCreateRequest.authorId()).orElseThrow(); // TODO: 세부 exception 추후 진행
@@ -76,7 +75,24 @@ public class FeedServiceImpl implements FeedService {
     public void deleteFeed(UUID feedId) {
         Feed feed = feedRepository.findById(feedId)
                 .orElseThrow(() -> new FeedNotFoundException(ErrorCode.FEED_NOT_FOUND));
+        // TODO: principal userId와 feed의 authorId 비교 자기자신인지 체크
         feedRepository.delete(feed);
+    }
+
+    @Override
+    @Transactional
+    public FeedResponseDto updateFeed(UUID feedId, UUID userId, FeedUpdateRequestDto feedUpdateRequestDto) {
+
+        Feed feed = feedRepository.findById(feedId)
+                .orElseThrow(() -> new FeedNotFoundException(ErrorCode.FEED_NOT_FOUND));
+
+        if(!feed.getUser().getId().equals(userId)){
+            throw new FeedAccessDeniedException(ErrorCode.FEED_ACCESS_DENIED);
+        }
+
+        feed.updateContent(feedUpdateRequestDto.content());
+
+        return feedQueryService.getFeed(feed.getId(), userId);
     }
 
     @Override

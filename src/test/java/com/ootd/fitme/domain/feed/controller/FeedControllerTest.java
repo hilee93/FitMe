@@ -123,7 +123,7 @@ class FeedControllerTest {
     class DeleteFeedTest {
 
         @Test
-        @DisplayName("[200] 정상 feedId로 삭제 요청시 200 ok 반환한다")
+        @DisplayName("[204] 정상 feedId로 삭제 요청시 204 noContent 반환한다")
         void deleteFeed_success_when_valid_request() throws Exception {
 
             //given
