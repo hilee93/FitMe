@@ -3,7 +3,9 @@ package com.ootd.fitme.domain.feed.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ootd.fitme.domain.feed.dto.request.FeedCreateRequest;
 import com.ootd.fitme.domain.feed.dto.response.FeedResponseDto;
+import com.ootd.fitme.domain.feed.exception.FeedNotFoundException;
 import com.ootd.fitme.domain.feed.service.FeedService;
+import com.ootd.fitme.global.exception.ErrorCode;
 import com.ootd.fitme.global.security.jwt.JwtAuthenticationFilter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -24,9 +26,9 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.*;
 import static org.mockito.Mockito.times;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -52,11 +54,11 @@ class FeedControllerTest {
     private ObjectMapper objectMapper;
 
     @Nested
-    @DisplayName("")
+    @DisplayName("POST /api/feeds (피드생성)")
     class CreateFeedTest {
 
         @Test
-        @DisplayName("[Success] 유효한 요청이면 피드 생성 후 201 Created와 응답을 반환한다")
+        @DisplayName("[201] 유효한 요청이면 피드 생성 후 201 Created와 응답을 반환한다")
         void createFeed_success_when_valid_request() throws Exception {
 
             FeedCreateRequest request = new FeedCreateRequest(
@@ -85,11 +87,11 @@ class FeedControllerTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.content").value("테스트 피드"));
-                    then(feedService).should(times(1)).createFeed(request);
+            then(feedService).should(times(1)).createFeed(request);
         }
 
         @Test
-        @DisplayName("[Fail] 피드생성 요청시 clothesIds가 비어있으면 MethodArgumentNotValidException과 400 Bad Request를 반환한다")
+        @DisplayName("[400] 피드생성 요청시 clothesIds가 비어있으면 MethodArgumentNotValidException과 400 Bad Request를 반환한다")
         void createFeed_fail_when_empty_clothesIds() throws Exception {
             String json = """
                     {
@@ -103,7 +105,6 @@ class FeedControllerTest {
             mockMvc.perform(post("/api/feeds")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(json)
-
                     )
                     .andDo(print())
                     .andExpect(status().isBadRequest())
@@ -115,6 +116,44 @@ class FeedControllerTest {
                     .andExpect(jsonPath("$.details.clothesIds").value("must not be empty"))
             ;
         }
+    }
+
+    @Nested
+    @DisplayName("DELETE /api/feeds (피드삭제)")
+    class DeleteFeedTest {
+
+        @Test
+        @DisplayName("[200] 정상 feedId로 삭제 요청시 200 ok 반환한다")
+        void deleteFeed_success_when_valid_request() throws Exception {
+
+            //given
+            UUID feedId = UUID.randomUUID();
+
+            willDoNothing().given(feedService).deleteFeed(feedId);
+
+            //when & then
+            mockMvc.perform(delete("/api/feeds/{feedId}", feedId))
+                    .andExpect(status().isNoContent());
+
+            then(feedService).should(times(1)).deleteFeed(feedId);
+        }
+
+        @Test
+        @DisplayName("[404] 유효하지않은 feedId로 삭제 요청시 404 Not Found 반환")
+        void deleteFeed_fail() throws Exception {
+
+            // given
+            UUID feedId = UUID.randomUUID();
+
+            willThrow(new FeedNotFoundException(ErrorCode.FEED_NOT_FOUND)).given(feedService).deleteFeed(feedId);
+
+            // when & then
+            mockMvc.perform(delete("/api/feeds/{feedId}", feedId))
+                    .andExpect(status().isNotFound());
+
+            then(feedService).should(times(1)).deleteFeed(feedId);
+        }
+
     }
 
 }
