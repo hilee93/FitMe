@@ -12,6 +12,7 @@ import com.ootd.fitme.domain.feed.dto.request.FeedSearchCondition;
 import com.ootd.fitme.domain.feed.dto.response.FeedCursorResponseDto;
 import com.ootd.fitme.domain.feed.dto.response.FeedResponseDto;
 import com.ootd.fitme.domain.feed.entity.Feed;
+import com.ootd.fitme.domain.feed.exception.FeedNotFoundException;
 import com.ootd.fitme.domain.feed.repository.FeedRepository;
 import com.ootd.fitme.domain.feedclothes.entity.FeedClothes;
 import com.ootd.fitme.domain.feedclothes.repository.FeedClothesRepository;
@@ -19,6 +20,7 @@ import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.repository.UserRepository;
 import com.ootd.fitme.domain.weatherforecast.entity.WeatherForecast;
 import com.ootd.fitme.domain.weatherforecast.repository.WeatherForecastRepository;
+import com.ootd.fitme.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,7 +32,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class FeedServiceImpl implements FeedService {
 
-    final private FeedRepository feedRepository;
+    private final FeedRepository feedRepository;
     private final WeatherForecastRepository weatherForecastRepository;
     private final UserRepository userRepository;
     private final ClothesRepository clothesRepository;
@@ -38,6 +40,7 @@ public class FeedServiceImpl implements FeedService {
     private final FeedQueryService feedQueryService;
 
     @Override
+    @Transactional(readOnly = true)
     public FeedCursorResponseDto searchFeeds(FeedSearchCondition feedSearchCondition) {
         return null; // TODO: 검색로직 작성
     }
@@ -69,28 +72,35 @@ public class FeedServiceImpl implements FeedService {
     }
 
     @Override
+    @Transactional
     public void deleteFeed(UUID feedId) {
-
+        Feed feed = feedRepository.findById(feedId)
+                .orElseThrow(() -> new FeedNotFoundException(ErrorCode.FEED_NOT_FOUND));
+        feedRepository.delete(feed);
     }
 
     @Override
+    @Transactional
     public CommentResponseDto addCommentToFeed(FeedCommentCreateRequest feedCommentCreateRequest) {
 
         return null;
     }
 
     @Override
+    @Transactional(readOnly = true)
     public CommentCursorResponseDto getFeedComments(FeedCommentSearchCondition feedCommentSearchCondition) {
 
         return null;
     }
 
     @Override
+    @Transactional
     public void likeFeed(UUID feedId) {
 
     }
 
     @Override
+    @Transactional
     public void unlikeFeed(UUID feedId) {
 
     }

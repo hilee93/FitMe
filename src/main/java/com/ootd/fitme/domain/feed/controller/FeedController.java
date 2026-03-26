@@ -41,7 +41,7 @@ public class FeedController implements FeedControllerDocs {
     @PatchMapping("/{feedId}")
     public ResponseEntity<FeedResponseDto> updateFeed(
             @PathVariable UUID feedId,
-            @RequestBody @Valid FeedUpdateRequestDto feedUpdateRequestDto // TODO: MethodArgumentNotValidException 추가 처리
+            @RequestBody @Valid FeedUpdateRequestDto feedUpdateRequestDto
     ) {
         return null;
     }
@@ -49,7 +49,8 @@ public class FeedController implements FeedControllerDocs {
     @Override
     @DeleteMapping("/{feedId}")
     public ResponseEntity<Void> deleteFeed(@PathVariable UUID feedId) {
-        return null;
+        feedService.deleteFeed(feedId);
+        return ResponseEntity.noContent().build();
     }
 
     @Override

@@ -15,6 +15,9 @@ public enum ErrorCode {
     USER_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "유저가 이미 존재합니다.", "U-007"),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다.", "U-008"),
 
+    // feed
+    FEED_NOT_FOUND(HttpStatus.NOT_FOUND, "피드를 찾을 수 없습니다.", "F-001"),
+
     // common
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "요청이 올바르지 않습니다.", "CM-001"),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.", "CM-002"),

@@ -52,11 +52,11 @@ class FeedControllerTest {
     private ObjectMapper objectMapper;
 
     @Nested
-    @DisplayName("")
+    @DisplayName("POST /api/feeds (피드생성)")
     class CreateFeedTest {
 
         @Test
-        @DisplayName("[Success] 유효한 요청이면 피드 생성 후 201 Created와 응답을 반환한다")
+        @DisplayName("[201] 유효한 요청이면 피드 생성 후 201 Created와 응답을 반환한다")
         void createFeed_success_when_valid_request() throws Exception {
 
             FeedCreateRequest request = new FeedCreateRequest(
@@ -89,7 +89,7 @@ class FeedControllerTest {
         }
 
         @Test
-        @DisplayName("[Fail] 피드생성 요청시 clothesIds가 비어있으면 MethodArgumentNotValidException과 400 Bad Request를 반환한다")
+        @DisplayName("[400] 피드생성 요청시 clothesIds가 비어있으면 MethodArgumentNotValidException과 400 Bad Request를 반환한다")
         void createFeed_fail_when_empty_clothesIds() throws Exception {
             String json = """
                     {
