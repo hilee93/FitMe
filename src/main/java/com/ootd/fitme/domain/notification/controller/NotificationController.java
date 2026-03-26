@@ -12,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
@@ -20,23 +22,27 @@ public class NotificationController {
     private final NotificationService notificationService;
 
     @GetMapping
-    public ResponseEntity<NotificationPageResponse>  getNotifications(
+    public ResponseEntity<NotificationPageResponse> getNotifications(
             @AuthenticationPrincipal CustomUserPrincipal principal,
             @Valid @ModelAttribute NotificationPageQueryRequest query
     ) {
 
-        int limit = (query.limit() == null) ? 20 : query.limit();
 
-        NotificationPageRequest request = new NotificationPageRequest(
-                principal.getUserId(),
-                query.cursor(),
-                query.idAfter(),
-                limit
-        );
+        NotificationPageRequest request = NotificationPageRequest.from(principal, query);
 
         NotificationPageResponse notifications = notificationService.getNotifications(request);
 
         return ResponseEntity.ok(notifications);
+    }
+
+    @DeleteMapping("/{notificationId}")
+    public ResponseEntity<Void>  deleteNotification(
+            @AuthenticationPrincipal CustomUserPrincipal principal,
+            @PathVariable UUID notificationId
+    ) {
+        notificationService.delete(notificationId);
+
+        return ResponseEntity.noContent().build();
     }
 
 }
