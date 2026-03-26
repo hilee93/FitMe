@@ -218,7 +218,7 @@ class FollowControllerTest {
 
             // when & then
             mockMvc.perform(get("/api/follows/followers")
-                            .param("followeeId", followerId.toString())
+                            .param("followeeId", followeeId.toString())
                             .param("limit", "10"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data").isArray())
