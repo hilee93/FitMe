@@ -11,6 +11,7 @@ import com.ootd.fitme.domain.feed.dto.response.FeedResponseDto;
 import com.ootd.fitme.domain.feed.entity.Feed;
 import com.ootd.fitme.domain.feed.exception.FeedAccessDeniedException;
 import com.ootd.fitme.domain.feed.exception.FeedLikeAlreadyExistsException;
+import com.ootd.fitme.domain.feed.exception.FeedLikeNotFoundException;
 import com.ootd.fitme.domain.feed.exception.FeedNotFoundException;
 import com.ootd.fitme.domain.feed.repository.FeedRepository;
 import com.ootd.fitme.domain.feedclothes.entity.FeedClothes;
@@ -134,7 +135,7 @@ public class FeedServiceImpl implements FeedService {
     public void unlikeFeed(UUID feedId, UUID userId) {
         Feed feed = feedRepository.findById(feedId).orElseThrow(() -> new FeedNotFoundException(ErrorCode.FEED_NOT_FOUND));
 
-        FeedLike feedLike = feedLikeRepository.findByFeedIdAndUserId(feedId, userId).orElseThrow();// TODO: 해당피드에 user의 좋아요가없다면 FeedLikeNotFound 예외
+        FeedLike feedLike = feedLikeRepository.findByFeedIdAndUserId(feedId, userId).orElseThrow(() -> new FeedLikeNotFoundException(ErrorCode.FEED_LIKE_NOT_FOUND));
 
         feedLikeRepository.delete(feedLike);
         int updatedCount = feedRepository.decreaseLike(feedId);// NOTE: 동시성이슈 해결을 위해 bulk update 처리

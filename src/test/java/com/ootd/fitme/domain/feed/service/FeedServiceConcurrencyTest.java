@@ -18,6 +18,7 @@ import com.ootd.fitme.domain.weatherforecast.repository.WeatherForecastRepositor
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -104,61 +105,131 @@ public class FeedServiceConcurrencyTest {
         userRepository.deleteAllInBatch();
     }
 
-    @Test
-//    @Sql(scripts = "/sql/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD) // NOTE: 롤백안된 데이터 실제 Sql drop table 읽도록할때 추가
-    @DisplayName("[Concurrency] 서로 다른 사용자가 같은 피드에 동시에 좋아요를 누르면 likeCount가 정확히 증가한다")
-    void likeFeed_success_when_concurrent_like() throws InterruptedException, ExecutionException {
+    @Nested
+    @DisplayName("피드 좋아요 생성 동시성")
+    class LikeFeedConcurrencyTest {
 
-        //given
-        FeedFixtureBuilder.FeedFixture feedFixture = feedFixtureBuilder.createFeedFixture();
-        Feed feed = feedFixture.feed();
-        User author = feedFixture.user();
-        User liker1 = userRepository.save(
-                User.create("liker-" + UUID.randomUUID() + "@test.com", "password")
-        );
-        User liker2 = userRepository.save(
-                User.create("liker-" + UUID.randomUUID() + "@test.com", "password")
-        );
+        @Test
+        @DisplayName("[Concurrency] 서로 다른 사용자가 같은 피드에 동시에 좋아요를 누르면 likeCount가 정확히 증가한다")
+        void likeFeed_success_when_concurrent_like() throws InterruptedException, ExecutionException {
 
-        UUID feedId = feed.getId();
+            // given
+            FeedFixtureBuilder.FeedFixture feedFixture = feedFixtureBuilder.createFeedFixture();
+            Feed feed = feedFixture.feed();
 
-        int threadCount = 2;
-        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
-        CountDownLatch readyLatch = new CountDownLatch(threadCount);
-        CountDownLatch startLatch = new CountDownLatch(1);
-        CountDownLatch doneLatch = new CountDownLatch(threadCount);
+            User liker1 = userRepository.save(
+                    User.create("liker-" + UUID.randomUUID() + "@test.com", "password")
+            );
+            User liker2 = userRepository.save(
+                    User.create("liker-" + UUID.randomUUID() + "@test.com", "password")
+            );
 
-        List<Future<Object>> futures = List.of(liker1.getId(), liker2.getId()).stream()
-                .map(likerId -> executorService.submit(() -> {
-                    readyLatch.countDown();
-                    startLatch.await();
+            UUID feedId = feed.getId();
 
-                    try {
-                        feedService.likeFeed(feedId, likerId);
-                    } finally {
-                        doneLatch.countDown();
-                    }
-                    return null;
-                }))
-                .toList();
+            int threadCount = 2;
+            ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+            CountDownLatch readyLatch = new CountDownLatch(threadCount);
+            CountDownLatch startLatch = new CountDownLatch(1);
+            CountDownLatch doneLatch = new CountDownLatch(threadCount);
 
-        readyLatch.await();
-        startLatch.countDown();
-        doneLatch.await();
+            List<Future<Object>> futures = List.of(liker1.getId(), liker2.getId()).stream()
+                    .map(likerId -> executorService.submit(() -> {
+                        readyLatch.countDown();
+                        startLatch.await();
 
-        for (Future<?> future : futures) {
-            future.get(); // 여기서 작업 스레드 예외를 메인 스레드가 알 수 있음
+                        try {
+                            feedService.likeFeed(feedId, likerId);
+                        } finally {
+                            doneLatch.countDown();
+                        }
+                        return null;
+                    }))
+                    .toList();
+
+            readyLatch.await();
+            startLatch.countDown();
+            doneLatch.await();
+
+            for (Future<?> future : futures) {
+                future.get();
+            }
+
+            em.clear();
+
+            Feed reloadFeed = feedRepository.findById(feedId).orElseThrow();
+            assertThat(reloadFeed.getLikeCount()).isEqualTo(2);
+
+            assertThat(feedLikeRepository.existsByFeedIdAndUserId(feedId, liker1.getId())).isTrue();
+            assertThat(feedLikeRepository.existsByFeedIdAndUserId(feedId, liker2.getId())).isTrue();
+
+            executorService.shutdown();
         }
+    }
 
-        em.clear();
 
-        Feed reloadFeed = feedRepository.findById(feedId).orElseThrow();
-        assertThat(reloadFeed.getLikeCount()).isEqualTo(2);
+    @Nested
+    @DisplayName("피드 좋아요 취소 동시성")
+    class UnlikeFeedConcurrencyTest {
 
-        assertThat(feedLikeRepository.existsByFeedIdAndUserId(feedId, liker1.getId())).isTrue();
-        assertThat(feedLikeRepository.existsByFeedIdAndUserId(feedId, liker2.getId())).isTrue();
+        @Test
+        @DisplayName("[Concurrency] 서로 다른 사용자가 같은 피드의 좋아요를 동시에 취소하면 likeCount가 정확히 감소한다")
+        void unlikeFeed_success_when_concurrent_unlike() throws InterruptedException, ExecutionException {
 
-        executorService.shutdown();
+            // given
+            FeedFixtureBuilder.FeedFixture feedFixture = feedFixtureBuilder.createFeedFixture();
+            Feed feed = feedFixture.feed();
 
+            User liker1 = userRepository.save(
+                    User.create("liker-" + UUID.randomUUID() + "@test.com", "password")
+            );
+            User liker2 = userRepository.save(
+                    User.create("liker-" + UUID.randomUUID() + "@test.com", "password")
+            );
+
+            UUID feedId = feed.getId();
+
+            feedService.likeFeed(feedId, liker1.getId());
+            feedService.likeFeed(feedId, liker2.getId());
+
+            em.clear();
+
+            int threadCount = 2;
+            ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+            CountDownLatch readyLatch = new CountDownLatch(threadCount);
+            CountDownLatch startLatch = new CountDownLatch(1);
+            CountDownLatch doneLatch = new CountDownLatch(threadCount);
+
+            List<Future<Object>> futures = List.of(liker1.getId(), liker2.getId()).stream()
+                    .map(likerId -> executorService.submit(() -> {
+                        readyLatch.countDown();
+                        startLatch.await();
+
+                        try {
+                            feedService.unlikeFeed(feedId, likerId);
+                        } finally {
+                            doneLatch.countDown();
+                        }
+                        return null;
+                    }))
+                    .toList();
+
+            readyLatch.await();
+            startLatch.countDown();
+            doneLatch.await();
+
+            for (Future<?> future : futures) {
+                future.get();
+            }
+
+            em.clear();
+
+            Feed reloadFeed = feedRepository.findById(feedId).orElseThrow();
+            assertThat(reloadFeed.getLikeCount()).isEqualTo(0);
+
+            assertThat(feedLikeRepository.existsByFeedIdAndUserId(feedId, liker1.getId())).isFalse();
+            assertThat(feedLikeRepository.existsByFeedIdAndUserId(feedId, liker2.getId())).isFalse();
+
+            executorService.shutdown();
+        }
     }
 }

@@ -12,6 +12,7 @@ import com.ootd.fitme.domain.feed.dto.response.FeedResponseDto;
 import com.ootd.fitme.domain.feed.entity.Feed;
 import com.ootd.fitme.domain.feed.exception.FeedAccessDeniedException;
 import com.ootd.fitme.domain.feed.exception.FeedLikeAlreadyExistsException;
+import com.ootd.fitme.domain.feed.exception.FeedLikeNotFoundException;
 import com.ootd.fitme.domain.feed.exception.FeedNotFoundException;
 import com.ootd.fitme.domain.feed.fixture.FeedFixtureBuilder;
 import com.ootd.fitme.domain.feed.fixture.FeedFixtureBuilder.FeedFixture;
@@ -348,6 +349,66 @@ class FeedServiceImplTest {
     @Nested
     @DisplayName("피드좋아요 취소")
     class UnLikeFeedTest {
+
+        @Test
+        @DisplayName("[Positive] 피드좋아요 취소 - 좋아요 취소 요청 시 FeedLike가 삭제되고 likeCount가 감소한다")
+        void unlikeFeed_success_when_valid_request() {
+            // given
+            FeedFixtureBuilder.FeedFixture feedFixture = feedFixtureBuilder.createFeedFixture();
+            Feed feed = feedFixture.feed();
+
+            User liker = userRepository.save(
+                    User.create("liker-" + UUID.randomUUID() + "@test.com", "password")
+            );
+
+            feedService.likeFeed(feed.getId(), liker.getId());
+
+            em.flush();
+            em.clear();
+
+            // when
+            feedService.unlikeFeed(feed.getId(), liker.getId());
+
+            // then
+            em.flush();
+            em.clear();
+
+            Feed reloadedFeed = feedRepository.findById(feed.getId()).orElseThrow();
+            assertThat(reloadedFeed.getLikeCount()).isEqualTo(0);
+
+            assertThat(feedLikeRepository.existsByFeedIdAndUserId(feed.getId(), liker.getId())).isFalse();
+        }
+
+        @Test
+        @DisplayName("[Negative] 피드좋아요 취소 - 존재하지 않는 피드 취소 요청 시 FeedNotFoundException이 발생한다")
+        void unlikeFeed_fail_when_feed_not_found() {
+            // given
+            User liker = userRepository.save(
+                    User.create("liker-" + UUID.randomUUID() + "@test.com", "password")
+            );
+
+            UUID notExistsFeedId = UUID.randomUUID();
+
+            // when & then
+            assertThatThrownBy(() -> feedService.unlikeFeed(notExistsFeedId, liker.getId()))
+                    .isInstanceOf(FeedNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("[Negative] 피드좋아요 취소 - 좋아요가 없는 상태에서 취소 요청 시 예외가 발생한다")
+        void unlikeFeed_fail_when_feed_like_not_found() {
+            // given
+            FeedFixtureBuilder.FeedFixture feedFixture = feedFixtureBuilder.createFeedFixture();
+            Feed feed = feedFixture.feed();
+
+            User liker = userRepository.save(
+                    User.create("liker-" + UUID.randomUUID() + "@test.com", "password")
+            );
+
+            // when & then
+            assertThatThrownBy(() -> feedService.unlikeFeed(feed.getId(), liker.getId()))
+                    .isInstanceOf(FeedLikeNotFoundException.class);
+        }
 
     }
 
