@@ -143,9 +143,6 @@ public class NotificationService {
                 "DESCENDING");
     }
 
-
-
-
     @Transactional
     public void delete(UUID notificationId) {
 

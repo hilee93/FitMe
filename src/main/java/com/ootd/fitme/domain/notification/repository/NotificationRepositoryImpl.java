@@ -33,7 +33,7 @@ public class NotificationRepositoryImpl implements NotificationRepositoryCustom 
                         notification.user.id.eq(request.userId()),
                         Cursor(request)
                 )
-                .orderBy(notification.createdAt.asc(),notification.id.asc())
+                .orderBy(notification.createdAt.desc(),notification.id.desc())
                 .limit(request.limit() + 1)
                 .fetch();
 
@@ -50,10 +50,10 @@ public class NotificationRepositoryImpl implements NotificationRepositoryCustom 
         Instant cursorTime = Instant.parse(request.cursor());
         UUID idAfter = UUID.fromString(request.idAfter());
 
-        return notification.createdAt.gt(cursorTime)
+        return notification.createdAt.lt(cursorTime)
                 .or(
                         notification.createdAt.eq(cursorTime)
-                                .and(notification.id.gt(idAfter))
+                                .and(notification.id.lt(idAfter))
                 );
     }
 
