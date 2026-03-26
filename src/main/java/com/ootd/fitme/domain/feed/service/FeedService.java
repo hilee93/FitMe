@@ -21,8 +21,8 @@ public interface FeedService {
 
     CommentCursorResponseDto getFeedComments(FeedCommentSearchCondition feedCommentSearchCondition);
 
-    void likeFeed(UUID feedId);
+    void likeFeed(UUID feedId, UUID userId);
 
-    void unlikeFeed(UUID feedId);
+    void unlikeFeed(UUID feedId, UUID userId);
 
 }

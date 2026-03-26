@@ -14,6 +14,8 @@ import com.ootd.fitme.domain.feed.exception.FeedNotFoundException;
 import com.ootd.fitme.domain.feed.repository.FeedRepository;
 import com.ootd.fitme.domain.feedclothes.entity.FeedClothes;
 import com.ootd.fitme.domain.feedclothes.repository.FeedClothesRepository;
+import com.ootd.fitme.domain.feedlike.entity.FeedLike;
+import com.ootd.fitme.domain.feedlike.repository.FeedLikeRepository;
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.repository.UserRepository;
 import com.ootd.fitme.domain.weatherforecast.entity.WeatherForecast;
@@ -36,6 +38,7 @@ public class FeedServiceImpl implements FeedService {
     private final ClothesRepository clothesRepository;
     private final FeedClothesRepository feedClothesRepository;
     private final FeedQueryService feedQueryService;
+    private final FeedLikeRepository feedLikeRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -86,7 +89,7 @@ public class FeedServiceImpl implements FeedService {
         Feed feed = feedRepository.findById(feedId)
                 .orElseThrow(() -> new FeedNotFoundException(ErrorCode.FEED_NOT_FOUND));
 
-        if(!feed.getUser().getId().equals(userId)){
+        if (!feed.getUser().getId().equals(userId)) {
             throw new FeedAccessDeniedException(ErrorCode.FEED_ACCESS_DENIED);
         }
 
@@ -111,14 +114,33 @@ public class FeedServiceImpl implements FeedService {
 
     @Override
     @Transactional
-    public void likeFeed(UUID feedId) {
+    public void likeFeed(UUID feedId, UUID userId) {
+        Feed feed = feedRepository.findById(feedId).orElseThrow(() -> new FeedNotFoundException(ErrorCode.FEED_NOT_FOUND));
+        if (feedLikeRepository.existsByFeedIdAndUserId(feedId, userId)) {
+            throw new IllegalStateException();
+//            throw new FeedLikeAlreadyExistsException(); // TODO: 이걸로 변경
+        }
+        User user = userRepository.findById(userId).orElseThrow();
 
+        FeedLike feedLike = FeedLike.create(feed, user);
+
+        feedLikeRepository.save(feedLike);
+
+        feedRepository.increaseLikeCount(feedId);// NOTE: 동시성이슈 해결을 위해 bulk update 처리
     }
 
     @Override
     @Transactional
-    public void unlikeFeed(UUID feedId) {
+    public void unlikeFeed(UUID feedId, UUID userId) {
+        Feed feed = feedRepository.findById(feedId).orElseThrow(() -> new FeedNotFoundException(ErrorCode.FEED_NOT_FOUND));
 
+        FeedLike feedLike = feedLikeRepository.findByFeedIdAndUserId(feedId, userId).orElseThrow();// TODO: 해당피드에 user의 좋아요가없다면 FeedLikeNotFound 예외
+
+        feedLikeRepository.delete(feedLike);
+        int updatedCount = feedRepository.decreaseLike(feedId);// NOTE: 동시성이슈 해결을 위해 bulk update 처리
+        if (updatedCount == 0) {
+            throw new IllegalStateException("더이상 감소 할 수 없습니다.");
+        }
     }
 
 
