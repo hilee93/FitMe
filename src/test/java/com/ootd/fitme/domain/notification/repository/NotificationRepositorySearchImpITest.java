@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataJpaTest
 @ActiveProfiles("local")
 @Import({JpaAuditingConfig.class,QuerydslConfig.class})
-class NotificationRepositorySearchUnitTest {
+class NotificationRepositorySearchImpITest {
 
     @Autowired
     private EntityManager em;
