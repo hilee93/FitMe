@@ -1,6 +1,7 @@
 package com.ootd.fitme.domain.notification.controller;
 
 
+import com.ootd.fitme.domain.notification.dto.request.NotificationDeleteRequest;
 import com.ootd.fitme.domain.notification.dto.request.NotificationPageQueryRequest;
 import com.ootd.fitme.domain.notification.dto.request.NotificationPageRequest;
 import com.ootd.fitme.domain.notification.dto.response.NotificationPageResponse;
@@ -27,7 +28,6 @@ public class NotificationController {
             @Valid @ModelAttribute NotificationPageQueryRequest query
     ) {
 
-
         NotificationPageRequest request = NotificationPageRequest.from(principal, query);
 
         NotificationPageResponse notifications = notificationService.getNotifications(request);
@@ -40,7 +40,10 @@ public class NotificationController {
             @AuthenticationPrincipal CustomUserPrincipal principal,
             @PathVariable UUID notificationId
     ) {
-        notificationService.delete(notificationId);
+
+        NotificationDeleteRequest request = NotificationDeleteRequest.from(principal, notificationId);
+
+        notificationService.delete(request);
 
         return ResponseEntity.noContent().build();
     }
