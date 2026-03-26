@@ -90,10 +90,13 @@ CREATE TABLE attributes
     updated_at TIMESTAMP WITH TIME ZONE NULL
 );
 
+CREATE INDEX idx_attributes_created_at ON attributes (created_at);
+
 CREATE TABLE selectable_values
 (
     id           UUID PRIMARY KEY,
     type         VARCHAR(100)             NOT NULL,
+    display_order INT NOT                 NULL,
     is_deleted   BOOLEAN                  NOT NULL DEFAULT false,
     created_at   TIMESTAMP WITH TIME ZONE NOT NULL,
     updated_at   TIMESTAMP WITH TIME ZONE NULL,
@@ -103,6 +106,8 @@ CREATE TABLE selectable_values
     CONSTRAINT uk_selectable_values_attribute_type
         UNIQUE (attribute_id, type)
 );
+
+CREATE INDEX idx_selectable_values_attribute_order ON selectable_values (attribute_id, display_order);
 
 CREATE TABLE weather_forecast
 (
@@ -331,3 +336,4 @@ CREATE TABLE direct_messages
     CONSTRAINT chk_direct_messages_self
         CHECK (sender_id <> receiver_id)
 );
+

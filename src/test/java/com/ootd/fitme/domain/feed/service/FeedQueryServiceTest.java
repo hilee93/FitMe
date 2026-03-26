@@ -119,10 +119,10 @@ class FeedQueryServiceTest {
                     Attribute.create("사이즈")
             );
 
-            SelectableValue s = selectableValueRepository.save(SelectableValue.create("S", sizeAttribute));
-            SelectableValue m = selectableValueRepository.save(SelectableValue.create("M", sizeAttribute));
-            SelectableValue l = selectableValueRepository.save(SelectableValue.create("L", sizeAttribute));
-            SelectableValue free = selectableValueRepository.save(SelectableValue.create("FREE", sizeAttribute));
+            SelectableValue s = selectableValueRepository.save(SelectableValue.create("S", 0, sizeAttribute));
+            SelectableValue m = selectableValueRepository.save(SelectableValue.create("M", 1, sizeAttribute));
+            SelectableValue l = selectableValueRepository.save(SelectableValue.create("L", 2, sizeAttribute));
+            SelectableValue free = selectableValueRepository.save(SelectableValue.create("FREE", 3, sizeAttribute));
 
             ClothesAttribute topSize = clothesAttributeRepository.save(
                     ClothesAttribute.create(top, sizeAttribute)
