@@ -57,8 +57,8 @@ class NotificationControllerTest {
     }
 
     @Test
-    @DisplayName("실패 - 인증 정보가 없으면 500을 반환한다")
-    void getNotifications_noAuthentication_return500() throws Exception {
+    @DisplayName("실패 - 인증 정보가 없으면 401을 반환한다")
+    void getNotifications_noAuthentication_return401() throws Exception {
 
         // when & then
         mockMvc.perform(get("/api/notifications")
