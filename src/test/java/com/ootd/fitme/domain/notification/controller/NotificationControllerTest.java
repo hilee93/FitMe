@@ -130,6 +130,7 @@ class NotificationControllerTest {
         then(notificationService).shouldHaveNoInteractions();
     }
 
+    @Test
     @DisplayName("실패 - limit가 1 미만이면 400을 반환한다")
     void getNotifications_limitLessThanOne_return400() throws Exception {
         UUID userId = UUID.randomUUID();
