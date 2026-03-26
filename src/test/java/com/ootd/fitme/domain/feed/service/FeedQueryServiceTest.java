@@ -13,6 +13,8 @@ import com.ootd.fitme.domain.clothesattributeselectablevalue.entity.ClothesAttri
 import com.ootd.fitme.domain.clothesattributeselectablevalue.repository.ClothesAttributeSelectableValueRepository;
 import com.ootd.fitme.domain.feed.dto.response.FeedResponseDto;
 import com.ootd.fitme.domain.feed.entity.Feed;
+import com.ootd.fitme.domain.feed.fixture.FeedFixtureBuilder;
+import com.ootd.fitme.domain.feed.fixture.FeedFixtureBuilder.FeedFixture;
 import com.ootd.fitme.domain.feed.repository.FeedRepository;
 import com.ootd.fitme.domain.feedclothes.entity.FeedClothes;
 import com.ootd.fitme.domain.feedclothes.repository.FeedClothesRepository;
@@ -87,6 +89,8 @@ class FeedQueryServiceTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+    @Autowired
+    private FeedFixtureBuilder feedFixtureBuilder;
 
     @Nested
     class GetFeedTest {
@@ -95,64 +99,20 @@ class FeedQueryServiceTest {
         @DisplayName("[Positive] 피드 조회 - 피드 단건 조회 시 연관된 작성자/날씨/의상/속성 정보가 올바르게 조합되어 반환된다 ")
         void getFeed_success() throws JsonProcessingException {
             // given
-            User user = userRepository.save(
-                    User.create("email@test.com", "password")
-            );
+            FeedFixture feedFixture = feedFixtureBuilder.createFeedFixture();
+            Feed feed = feedFixture.feed();
+            User user = feedFixture.user();
+            Clothes top = feedFixture.clothes();
 
-            Profile profile = profileRepository.save(
-                    Profile.create("name", null, null, null, null, null, null, null, null, null, null, user)
-            );
 
-            Region region = Region.create(
-                    "1234567810",
-                    "경기도 남양주시 테스트읍 테스트동",
-                    "경기도",
-                    "남양주시",
-                    "테스트읍 테스트동",
-                    "",
-                    0.0,
-                    0.0,
-                    0,
-                    0
-            );
-
-            regionRepository.save(region);
-
-            WeatherForecast weatherForecast = weatherForecastRepository.save(
-                    WeatherForecast.create(
-                            Instant.now(),
-                            Instant.now(),
-                            SkyStatus.CLEAR,
-                            PrecipitationType.NONE,
-                            0.0,
-                            0.0,
-                            9.34,
-                            -0.70,
-                            5.64,
-                            17.55,
-                            0.0,
-                            10.0,
-                            0.0,
-                            WindStrengthWord.WEAK,
-                            region
-                    )
-            );
-
-            Feed feed = feedRepository.save(
-                    Feed.create("테스트 피드 내용", 0, 0, weatherForecast, user)
-            );
+            // NOTE: 아래는 fixture 이후 더추가하고싶은 given 추가
 
             Clothes dress = clothesRepository.save(
                     Clothes.create("원피스", ClothesType.DRESS, user)
             );
 
-            Clothes top = clothesRepository.save(
-                    Clothes.create("상의", ClothesType.TOP, user)
-            );
-
             feedClothesRepository.saveAll(List.of(
-                    FeedClothes.create(feed, dress),
-                    FeedClothes.create(feed, top)
+                    FeedClothes.create(feed, dress)
             ));
 
             Attribute sizeAttribute = attributeRepository.save(
