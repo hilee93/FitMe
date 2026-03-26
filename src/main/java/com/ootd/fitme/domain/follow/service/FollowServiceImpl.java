@@ -11,11 +11,14 @@ import com.ootd.fitme.domain.follow.enums.SortDirection;
 import com.ootd.fitme.domain.follow.mapper.FollowMapper;
 import com.ootd.fitme.domain.follow.repository.FollowRepository;
 
+import com.ootd.fitme.domain.profile.entity.Profile;
+import com.ootd.fitme.domain.profile.repository.ProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 
@@ -26,6 +29,7 @@ public class FollowServiceImpl implements FollowService {
 
     private final FollowRepository followRepository;
     private final FollowCountService followCountService;
+    private final ProfileRepository profileRepository;
 
     @Override
     @Transactional
@@ -49,7 +53,12 @@ public class FollowServiceImpl implements FollowService {
         List<FollowCursorDto> followers = followRepository.findFollowers(
                 followeeId, cursor, idAfter, limit, nameLike);
 
-        return followList(followers, limit);
+        Profile profile = profileRepository.findByUserId(followeeId)
+                .orElseThrow(() -> new IllegalArgumentException("프로필을 찾을 수 없습니다."));
+
+        long totalCount = profile.getFollowerCount();
+
+        return followList(followers, limit, totalCount);
     }
 
     @Override
@@ -59,13 +68,40 @@ public class FollowServiceImpl implements FollowService {
         List<FollowCursorDto> followings = followRepository.findFollowings(
                 followerId, cursor, idAfter, limit, nameLike);
 
-        return followList(followings, limit);
+        Profile profile = profileRepository.findByUserId(followerId)
+                .orElseThrow(() -> new IllegalArgumentException("프로필을 찾을 수 없습니다."));
+
+        long totalCount = profile.getFolloweeCount();
+
+        return followList(followings, limit, totalCount);
     }
 
     @Override
-    public FollowSummaryDto getFollowSummary(UUID userId) {
-        // TODO : 팔로워 요약 조회 로직
-        return null;
+    public FollowSummaryDto getFollowSummary(UUID userId, UUID myId) {
+
+        Profile profile = profileRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("프로필을 찾을 수 없습니다."));
+
+        int followerCount = profile.getFollowerCount();
+        int followeeCount = profile.getFolloweeCount();
+
+        Optional<Follow> followedByMe = followRepository.findByFollowerIdAndFolloweeId(myId, userId);
+        boolean isFollowedByMe = followedByMe.isPresent();
+
+        UUID followedByMeId = followedByMe.map(f -> f.getId())
+                .orElse(null);
+
+        Optional<Follow> followingMe = followRepository.findByFollowerIdAndFolloweeId(userId, myId);
+        boolean isFollowingMe = followingMe.isPresent();
+
+        return new FollowSummaryDto(
+                userId,
+                followerCount,
+                followeeCount,
+                isFollowedByMe,
+                followedByMeId,
+                isFollowingMe
+        );
     }
 
     @Override
@@ -77,7 +113,7 @@ public class FollowServiceImpl implements FollowService {
         followRepository.deleteById(followId);
     }
 
-    private FollowListResponse followList(List<FollowCursorDto> result, int limit) {
+    private FollowListResponse followList(List<FollowCursorDto> result, int limit, long totalCount) {
         boolean hasNext = result.size() > limit;
         List<FollowCursorDto> followCursorDto = hasNext ? result.subList(0, limit) : result;
 
@@ -93,8 +129,7 @@ public class FollowServiceImpl implements FollowService {
                 .map(FollowMapper::toDto)
                 .toList();
 
-        // TODO : totalcount (count 기능) 구현하기
         return new FollowListResponse(
-                data, nextCursor, nextIdAfter, hasNext, 0L, SortBy.createdAt, SortDirection.DESCENDING);
+                data, nextCursor, nextIdAfter, hasNext, totalCount, SortBy.createdAt, SortDirection.DESCENDING);
     }
 }
