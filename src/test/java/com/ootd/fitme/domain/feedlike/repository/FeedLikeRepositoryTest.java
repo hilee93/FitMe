@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataJpaTest
 @Import({QuerydslConfig.class, FeedFixtureBuilder.class, JpaAuditingConfig.class})
 class FeedLikeRepositoryTest {
+
     @Autowired
     private FeedLikeRepository feedLikeRepository;
 
@@ -30,58 +31,31 @@ class FeedLikeRepositoryTest {
     @Autowired
     private TestEntityManager em;
 
-
     @Nested
-    @DisplayName("피드 좋아요 - 좋아요 존재여부")
-    class ExistsTest {
+    @DisplayName("피드 좋아요 생성")
+    class CreateFeedLikeTest {
 
         @Test
-        @DisplayName("[Positive] 피드 좋아요 - feed에 해당 유저의 좋아요가 존재하면 true 반환")
-        void exists_true() {
+        @DisplayName("[Positive] 피드 좋아요 생성 - 저장 후 존재 여부 조회 시 true 반환")
+        void create_success_exists_true() {
             // given
             FeedFixtureBuilder.FeedFixture feedFixture = feedFixtureBuilder.createFeedFixture();
             Feed feed = feedFixture.feed();
             User user = feedFixture.user();
 
+            // when
             feedLikeRepository.save(FeedLike.create(feed, user));
             em.flush();
             em.clear();
 
-            // when
-            boolean result = feedLikeRepository
-                    .existsByFeedIdAndUserId(feed.getId(), user.getId());
-
             // then
+            boolean result = feedLikeRepository.existsByFeedIdAndUserId(feed.getId(), user.getId());
             assertThat(result).isTrue();
         }
 
         @Test
-        @DisplayName("[Negative] 피드 좋아요 - 피드에 해당 유저의 좋아요가 없으면 false 반환")
-        void exists_false() {
-            // given
-            FeedFixtureBuilder.FeedFixture feedFixture = feedFixtureBuilder.createFeedFixture();
-            Feed feed = feedFixture.feed();
-            User user = feedFixture.user();
-
-            em.flush();
-            em.clear();
-
-            // when
-            boolean result = feedLikeRepository
-                    .existsByFeedIdAndUserId(feed.getId(), user.getId());
-
-            // then
-            assertThat(result).isFalse();
-        }
-    }
-
-    @Nested
-    @DisplayName("피드좋아요 - 좋아요 조회")
-    class FindTest {
-
-        @Test
-        @DisplayName("[Positive] 피드좋아요 - 해당 피드에 유저의 좋아요가 존재하면 Optional 반환")
-        void find_success() {
+        @DisplayName("[Positive] 피드 좋아요 생성 - 저장 후 조회 시 Optional 반환")
+        void create_success_find_present() {
             // given
             FeedFixtureBuilder.FeedFixture feedFixture = feedFixtureBuilder.createFeedFixture();
             Feed feed = feedFixture.feed();
@@ -99,9 +73,32 @@ class FeedLikeRepositoryTest {
             assertThat(result).isPresent();
             assertThat(result.get().getId()).isEqualTo(saved.getId());
         }
+    }
+
+    @Nested
+    @DisplayName("피드 좋아요 미존재")
+    class NotExistsFeedLikeTest {
 
         @Test
-        @DisplayName("[Negative] 피드좋아요 - 해당 피드에 유저의 좋아요가 없으면 empty 반환")
+        @DisplayName("[Negative] 피드 좋아요 - 존재하지 않으면 exists 조회 시 false 반환")
+        void exists_false() {
+            // given
+            FeedFixtureBuilder.FeedFixture feedFixture = feedFixtureBuilder.createFeedFixture();
+            Feed feed = feedFixture.feed();
+            User user = feedFixture.user();
+
+            em.flush();
+            em.clear();
+
+            // when
+            boolean result = feedLikeRepository.existsByFeedIdAndUserId(feed.getId(), user.getId());
+
+            // then
+            assertThat(result).isFalse();
+        }
+
+        @Test
+        @DisplayName("[Negative] 피드 좋아요 - 존재하지 않으면 find 조회 시 empty 반환")
         void find_empty() {
             // given
             FeedFixtureBuilder.FeedFixture feedFixture = feedFixtureBuilder.createFeedFixture();
@@ -121,11 +118,11 @@ class FeedLikeRepositoryTest {
     }
 
     @Nested
-    @DisplayName("피드좋아요 - 좋아요 취소")
-    class DeleteTest {
+    @DisplayName("피드 좋아요 취소")
+    class DeleteFeedLikeTest {
 
         @Test
-        @DisplayName("[Positive] 피드좋아요 - 삭제하면 DB에서 사라진다")
+        @DisplayName("[Positive] 피드 좋아요 취소 - 삭제 후 존재 여부 조회 시 false 반환")
         void delete_success() {
             // given
             FeedFixtureBuilder.FeedFixture feedFixture = feedFixtureBuilder.createFeedFixture();
@@ -142,9 +139,7 @@ class FeedLikeRepositoryTest {
             em.clear();
 
             // then
-            boolean exists = feedLikeRepository
-                    .existsByFeedIdAndUserId(feed.getId(), user.getId());
-
+            boolean exists = feedLikeRepository.existsByFeedIdAndUserId(feed.getId(), user.getId());
             assertThat(exists).isFalse();
         }
     }
