@@ -9,6 +9,7 @@ import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 
 import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -53,6 +54,31 @@ public class GlobalExceptionHandler {
                         LinkedHashMap::new
                 ));
         ErrorCode code = ErrorCode.INVALID_INPUT_VALUE;
+        return ResponseEntity.status(code.getStatus())
+                .body(new ErrorResponse(
+                        Instant.now(),
+                        code.getCode(),
+                        code.getMessage(),
+                        details,
+                        e.getClass().getSimpleName(),
+                        code.getStatus().value()
+                ));
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
+        log.error("[MethodArgumentNotValidException] = {}", e.getMessage());
+
+        Map<String, Object> details = e.getBindingResult().getFieldErrors().stream()
+                .collect(Collectors.toMap(
+                        FieldError::getField,
+                        fieldError -> fieldError.getDefaultMessage() != null ? fieldError.getDefaultMessage() : "Invalid input",
+                        (a, b) -> a,
+                        LinkedHashMap::new
+                ));
+
+        ErrorCode code = ErrorCode.INVALID_INPUT_VALUE;
+
         return ResponseEntity.status(code.getStatus())
                 .body(new ErrorResponse(
                         Instant.now(),
