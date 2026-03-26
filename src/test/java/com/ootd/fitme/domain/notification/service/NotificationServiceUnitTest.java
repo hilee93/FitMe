@@ -1,8 +1,12 @@
 package com.ootd.fitme.domain.notification.service;
 
 import com.ootd.fitme.domain.follow.repository.FollowRepository;
+import com.ootd.fitme.domain.notification.dto.request.NotificationPageRequest;
+import com.ootd.fitme.domain.notification.dto.response.NotificationPageResponse;
 import com.ootd.fitme.domain.notification.entity.Notification;
 import com.ootd.fitme.domain.notification.entity.NotificationFactory;
+import com.ootd.fitme.domain.notification.enums.NotificationLevel;
+import com.ootd.fitme.domain.notification.enums.NotificationType;
 import com.ootd.fitme.domain.notification.repository.NotificationRepository;
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.repository.UserRepository;
@@ -13,7 +17,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -182,4 +191,87 @@ class NotificationServiceUnitTest {
             verify(notificationRepository).saveAll(notifications);
         }
     }
+
+    @Nested
+    @DisplayName("알림 목록조회")
+    class SearchNotificationTest {
+
+        @Test
+        @DisplayName("다음 페이지가 있으면 마지막 알림 기준으로 nextCursor와 nextIdAfter를 반환한다")
+        void shouldReturnNextCursorAndNextIdAfterWhenHasNext() {
+            UUID userId = UUID.randomUUID();
+            NotificationPageRequest request = new NotificationPageRequest(userId, null, null, 10);
+
+            User user = User.create("user@test.com", "1234");
+
+            Notification first = Notification.create(
+                    NotificationLevel.INFO,
+                    "title 1",
+                    "content 1",
+                    NotificationType.DM,
+                    user
+            );
+
+            Notification last = Notification.create(
+                    NotificationLevel.INFO,
+                    "title 2",
+                    "content 2",
+                    NotificationType.DM,
+                    user
+            );
+
+            Instant firstCreatedAt = Instant.parse("2026-03-26T10:00:00Z");
+            Instant lastCreatedAt = Instant.parse("2026-03-26T09:00:00Z");
+            UUID lastId = UUID.randomUUID();
+
+            ReflectionTestUtils.setField(first, "createdAt", firstCreatedAt);
+            ReflectionTestUtils.setField(last, "createdAt", lastCreatedAt);
+            ReflectionTestUtils.setField(last, "id", lastId);
+
+            Slice<Notification> slice = new SliceImpl<>(List.of(first, last), PageRequest.of(0, 10), true);
+
+            given(notificationRepository.search(request)).willReturn(slice);
+            given(notificationRepository.countByUserId(userId)).willReturn(23L);
+
+            NotificationPageResponse result = notificationService.getNotifications(request);
+
+            assertThat(result.content()).hasSize(2);
+            assertThat(result.nextCursor()).isEqualTo(lastCreatedAt.toString());
+            assertThat(result.nextIdAfter()).isEqualTo(lastId.toString());
+            assertThat(result.hasNext()).isTrue();
+        }
+
+        @Test
+        @DisplayName("다음 페이지가 없으면 nextCursor와 nextIdAfter는 null이다")
+        void shouldReturnNullCursorWhenHasNoNext() {
+            UUID userId = UUID.randomUUID();
+            NotificationPageRequest request = new NotificationPageRequest(userId, null, null, 10);
+
+            User user = User.create("user@test.com", "1234");
+
+            Notification notification = Notification.create(
+                    NotificationLevel.INFO,
+                    "title 1",
+                    "content 1",
+                    NotificationType.DM,
+                    user
+            );
+
+            Instant createdAt = Instant.parse("2026-03-26T10:00:00Z");
+            ReflectionTestUtils.setField(notification, "createdAt", createdAt);
+
+            Slice<Notification> slice = new SliceImpl<>(List.of(notification), PageRequest.of(0, 10), false);
+
+            given(notificationRepository.search(request)).willReturn(slice);
+            given(notificationRepository.countByUserId(userId)).willReturn(1L);
+
+            NotificationPageResponse result = notificationService.getNotifications(request);
+
+            assertThat(result.content()).hasSize(1);
+            assertThat(result.nextCursor()).isNull();
+            assertThat(result.nextIdAfter()).isNull();
+            assertThat(result.hasNext()).isFalse();
+        }
+    }
 }
+
