@@ -1,5 +1,6 @@
 package com.ootd.fitme.domain.user.controller;
 
+import com.ootd.fitme.domain.user.dto.request.ChangePasswordRequest;
 import com.ootd.fitme.domain.user.dto.request.UserCreateRequest;
 import com.ootd.fitme.domain.user.dto.request.UserLockUpdateRequest;
 import com.ootd.fitme.domain.user.dto.request.UserRoleUpdateRequest;
@@ -42,5 +43,12 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
+    @PatchMapping("/{userId}/password")
+    @PreAuthorize("hasRole('ADMIN') or #userId == principal.userId")
+    public ResponseEntity<Void> changePassword(@PathVariable UUID userId,
+                                               @Valid @RequestBody ChangePasswordRequest changePasswordRequest) {
+        userService.changePassword(userId, changePasswordRequest);
+        return ResponseEntity.noContent().build();
+    }
 
 }

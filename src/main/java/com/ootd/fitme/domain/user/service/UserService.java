@@ -1,9 +1,6 @@
 package com.ootd.fitme.domain.user.service;
 
-import com.ootd.fitme.domain.user.dto.request.SignInRequest;
-import com.ootd.fitme.domain.user.dto.request.UserCreateRequest;
-import com.ootd.fitme.domain.user.dto.request.UserLockUpdateRequest;
-import com.ootd.fitme.domain.user.dto.request.UserRoleUpdateRequest;
+import com.ootd.fitme.domain.user.dto.request.*;
 import com.ootd.fitme.domain.user.dto.response.JwtDto;
 import com.ootd.fitme.domain.user.dto.response.SignInResult;
 import com.ootd.fitme.domain.user.dto.response.UserDto;
@@ -21,4 +18,6 @@ public interface UserService {
     void signOut(String accessToken, String refreshToken);
     UserDto updateRole(UUID userId, UserRoleUpdateRequest userRoleUpdateRequest);
     UserDto updateLock(UUID userId, UserLockUpdateRequest userLockUpdateRequest);
+    void resetPassword(ResetPasswordRequest resetPasswordRequest);
+    void changePassword(UUID userId, ChangePasswordRequest changePasswordRequest);
 }

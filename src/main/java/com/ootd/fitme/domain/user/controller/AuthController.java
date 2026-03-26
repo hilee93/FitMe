@@ -1,11 +1,11 @@
 package com.ootd.fitme.domain.user.controller;
 
+import com.ootd.fitme.domain.user.dto.request.ResetPasswordRequest;
 import com.ootd.fitme.domain.user.dto.request.SignInRequest;
 import com.ootd.fitme.domain.user.dto.response.JwtDto;
 import com.ootd.fitme.domain.user.dto.response.SignInResult;
 import com.ootd.fitme.domain.user.service.UserService;
 import com.ootd.fitme.global.security.jwt.JwtProperties;
-import com.ootd.fitme.global.security.jwt.JwtProvider;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -54,6 +54,12 @@ public class AuthController {
 
     @GetMapping("/csrf-token")
     public ResponseEntity<Void> csrfToken(CsrfToken csrfToken) {
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest resetPasswordRequest) {
+        userService.resetPassword(resetPasswordRequest);
         return ResponseEntity.noContent().build();
     }
 

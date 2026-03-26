@@ -55,4 +55,7 @@ public class User extends BaseUpdateEntity {
         this.locked = locked;
     }
 
+    public void updatePassword(String encodedPassword) {
+        this.password = encodedPassword;
+    }
 }
