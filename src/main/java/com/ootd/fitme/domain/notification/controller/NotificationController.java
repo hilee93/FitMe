@@ -1,6 +1,7 @@
 package com.ootd.fitme.domain.notification.controller;
 
 
+import com.ootd.fitme.domain.notification.controller.docs.NotificationDocs;
 import com.ootd.fitme.domain.notification.dto.request.NotificationDeleteRequest;
 import com.ootd.fitme.domain.notification.dto.request.NotificationPageQueryRequest;
 import com.ootd.fitme.domain.notification.dto.request.NotificationPageRequest;
@@ -18,7 +19,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
-public class NotificationController {
+public class NotificationController implements NotificationDocs {
 
     private final NotificationService notificationService;
 
