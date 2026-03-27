@@ -10,9 +10,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.security.Principal;
 import java.util.UUID;
 
 @Slf4j
@@ -35,7 +37,8 @@ public class ClothesController implements ClothesControllerDocs {
     @PostMapping(consumes = {"multipart/form-data"})
     public ResponseEntity<ClothesDto> createClothes(
             @RequestPart("request") ClothesDtoCreateRequest request,
-            @RequestPart(value = "image", required = false) MultipartFile image) {
+            @RequestPart(value = "image", required = false) MultipartFile image
+            ) {
 
         ClothesDto response = clothesService.createClothes(request, image);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);

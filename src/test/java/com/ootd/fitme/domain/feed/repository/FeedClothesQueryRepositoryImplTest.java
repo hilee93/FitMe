@@ -111,7 +111,7 @@ class FeedClothesQueryRepositoryImplTest {
         );
 
         SelectableValue free = em.persist(
-                SelectableValue.create("FREE", sizeAttribute)
+                SelectableValue.create("FREE", 0, sizeAttribute)
         );
 
         ClothesAttribute topSize = em.persist(
