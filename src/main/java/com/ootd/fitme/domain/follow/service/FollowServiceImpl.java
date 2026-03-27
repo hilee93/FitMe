@@ -5,10 +5,13 @@ import com.ootd.fitme.domain.follow.dto.response.*;
 import com.ootd.fitme.domain.follow.entity.Follow;
 import com.ootd.fitme.domain.follow.enums.SortBy;
 import com.ootd.fitme.domain.follow.enums.SortDirection;
+import com.ootd.fitme.domain.follow.exception.FollowAlreadyExistsException;
+import com.ootd.fitme.domain.follow.exception.FollowNotFoundException;
 import com.ootd.fitme.domain.follow.mapper.FollowMapper;
 import com.ootd.fitme.domain.follow.repository.FollowProfileQueryRepository;
 import com.ootd.fitme.domain.follow.repository.FollowRepository;
 
+import com.ootd.fitme.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +35,7 @@ public class FollowServiceImpl implements FollowService {
     public FollowDto createFollow(FollowCreateRequest request) {
         if(followRepository.findByFollowerIdAndFolloweeId(
                 request.followerId(), request.followeeId()).isPresent()) {
-            throw new IllegalArgumentException("이미 팔로우한 사용자입니다.");
+            throw new FollowAlreadyExistsException(ErrorCode.FOLLOW_ALREADY_EXISTS);
         }
 
         Follow follow = Follow.create(request.followerId(), request.followeeId());
@@ -102,7 +105,7 @@ public class FollowServiceImpl implements FollowService {
     @Transactional
     public void cancelFollow(UUID followId) {
         Follow follow = followRepository.findById(followId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 팔로우입니다."));
+                .orElseThrow(() -> new FollowNotFoundException(ErrorCode.FOLLOW_NOT_FOUND));
         followCountService.decreaseFollowCount(follow);
         followRepository.deleteById(followId);
     }
