@@ -99,21 +99,7 @@ public class FeedServiceImpl implements FeedService {
 
         return feedQueryService.getFeed(feed.getId(), userId);
     }
-
-    @Override
-    @Transactional
-    public CommentResponseDto addCommentToFeed(FeedCommentCreateRequest feedCommentCreateRequest) {
-
-        return null;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public CommentCursorResponseDto getFeedComments(FeedCommentSearchCondition feedCommentSearchCondition) {
-
-        return null;
-    }
-
+    
     @Override
     @Transactional
     public void likeFeed(UUID feedId, UUID userId) {
