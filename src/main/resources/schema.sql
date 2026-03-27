@@ -96,7 +96,7 @@ CREATE TABLE selectable_values
 (
     id           UUID PRIMARY KEY,
     type         VARCHAR(100)             NOT NULL,
-    display_order INT NOT                 NULL,
+    display_order INT                     NOT NULL,
     is_deleted   BOOLEAN                  NOT NULL DEFAULT false,
     created_at   TIMESTAMP WITH TIME ZONE NOT NULL,
     updated_at   TIMESTAMP WITH TIME ZONE NULL,
