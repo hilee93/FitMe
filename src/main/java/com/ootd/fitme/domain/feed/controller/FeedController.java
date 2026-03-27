@@ -57,14 +57,16 @@ public class FeedController implements FeedControllerDocs {
 
     @Override
     @PostMapping("/{feedId}/like")
-    public ResponseEntity<Void> addLike(@PathVariable UUID feedId) {
-        return null;
+    public ResponseEntity<Void> addLike(@PathVariable UUID feedId, @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        feedService.likeFeed(feedId, userPrincipal.getUserId());
+        return ResponseEntity.noContent().build();
     }
 
     @Override
     @DeleteMapping("/{feedId}/like")
-    public ResponseEntity<Void> removeLike(@PathVariable UUID feedId) {
-        return null;
+    public ResponseEntity<Void> removeLike(@PathVariable UUID feedId, @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        feedService.unlikeFeed(feedId, userPrincipal.getUserId());
+        return ResponseEntity.noContent().build();
     }
 
     @Override

@@ -24,9 +24,9 @@ public interface FeedControllerDocs {
 
     ResponseEntity<Void> deleteFeed(UUID feedId);
 
-    ResponseEntity<Void> addLike(UUID feedId);
+    ResponseEntity<Void> addLike(UUID feedId, CustomUserPrincipal userPrincipal);
 
-    ResponseEntity<Void> removeLike(UUID feedId);
+    ResponseEntity<Void> removeLike(UUID feedId, CustomUserPrincipal userPrincipal);
 
     ResponseEntity<CommentResponseDto> addComment(FeedCommentCreateRequest feedCommentCreateRequest);
 
