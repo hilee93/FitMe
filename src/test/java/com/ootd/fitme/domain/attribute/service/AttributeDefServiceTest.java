@@ -5,173 +5,104 @@ import com.ootd.fitme.domain.attribute.dto.request.ClothesAttributeDefUpdateRequ
 import com.ootd.fitme.domain.attribute.dto.response.ClothesAttributeDefDto;
 import com.ootd.fitme.domain.attribute.entity.Attribute;
 import com.ootd.fitme.domain.attribute.exception.AttributeException;
-import com.ootd.fitme.domain.attribute.mapper.AttributeMapper;
 import com.ootd.fitme.domain.attribute.repository.AttributeRepository;
 import com.ootd.fitme.global.exception.ErrorCode;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.never;
 
-@ExtendWith(MockitoExtension.class)
-@DisplayName("AttributeDefServiceImpl 단위 테스트")
+@SpringBootTest
+@Transactional
+@DisplayName("AttributeDefService 통합 테스트 (DB 연동)")
 class AttributeDefServiceTest {
 
-    @Mock
-    private AttributeRepository attributeRepository;
-
-    @Mock
-    private AttributeMapper attributeMapper;
-
-    @InjectMocks
+    @Autowired
     private AttributeDefServiceImpl service;
 
-    private UUID attributeId;
-    private Attribute testAttribute;
-    private ClothesAttributeDefDto mockDto;
+    @Autowired
+    private AttributeRepository repository;
 
-    @BeforeEach
-    void setUp() {
-        attributeId = UUID.randomUUID();
-        testAttribute = Attribute.create("사이즈");
-        ReflectionTestUtils.setField(testAttribute, "id", attributeId);
-
-        mockDto = new ClothesAttributeDefDto(attributeId, "사이즈", List.of("S", "M"), Instant.now());
-    }
-
-    @Nested
-    @DisplayName("getClothesAttributeDefs() 메서드는")
-    class Describe_getClothesAttributeDefs {
-        @Test
-        @DisplayName("[성공] 정렬 및 검색 조건에 맞는 속성 목록을 반환한다.")
-        void it_returns_attribute_list() {
-            // given
-            given(attributeRepository.findAttributesWithCondition("createdAt", "DESC", "사이즈"))
-                    .willReturn(List.of(testAttribute));
-            given(attributeMapper.toDto(testAttribute)).willReturn(mockDto);
-
-            // when
-            List<ClothesAttributeDefDto> result = service.getClothesAttributeDefs("createdAt", "DESC", "사이즈");
-
-            // then
-            assertThat(result).hasSize(1);
-            assertThat(result.get(0).name()).isEqualTo("사이즈");
-            verify(attributeRepository).findAttributesWithCondition("createdAt", "DESC", "사이즈");
-        }
-    }
+    @Autowired
+    private EntityManager em;
 
     @Nested
     @DisplayName("createClothesAttributeDef() 메서드는")
     class Describe_create {
         @Test
-        @DisplayName("[성공] 중복되지 않은 이름이면 속성을 생성하고 반환한다.")
-        void it_creates_attribute() {
+        @DisplayName("[성공] 실제 DB에 속성과 옵션을 순서대로 저장한다.")
+        void it_saves_to_db() {
             // given
-            ClothesAttributeDefCreateRequest request = new ClothesAttributeDefCreateRequest("핏", List.of("오버핏"));
-            given(attributeRepository.existsByName("핏")).willReturn(false);
-            given(attributeRepository.save(any(Attribute.class))).willReturn(testAttribute);
-            given(attributeMapper.toDto(any(Attribute.class))).willReturn(mockDto);
+            ClothesAttributeDefCreateRequest request = new ClothesAttributeDefCreateRequest("사이즈", List.of("S", "M", "L"));
 
             // when
             ClothesAttributeDefDto result = service.createClothesAttributeDef(request);
 
+            flushAndClear();
+
             // then
-            assertThat(result).isNotNull();
-            verify(attributeRepository).save(any(Attribute.class));
+            Attribute savedAttribute = repository.findById(result.id()).orElseThrow();
+            assertThat(savedAttribute.getName()).isEqualTo("사이즈");
+            assertThat(savedAttribute.getSelectableValues()).hasSize(3);
+            assertThat(savedAttribute.getSelectableValues().get(0).getType()).isEqualTo("S");
+            assertThat(savedAttribute.getSelectableValues().get(2).getType()).isEqualTo("L");
+            assertThat(savedAttribute.getSelectableValues().get(2).getDisplayOrder()).isEqualTo(2);
         }
 
         @Test
-        @DisplayName("[실패] 이미 존재하는 이름이면 ATTRIBUTE_NAME_DUPLICATED 예외를 던진다.")
-        void it_throws_exception_if_duplicated() {
+        @DisplayName("[실패] 이미 DB에 존재하는 이름으로 생성 시 예외를 던진다.")
+        void it_throws_if_duplicated_name() {
             // given
-            ClothesAttributeDefCreateRequest request = new ClothesAttributeDefCreateRequest("중복된이름", List.of());
-            given(attributeRepository.existsByName("중복된이름")).willReturn(true);
+            repository.save(Attribute.create("핏"));
+            flushAndClear();
+
+            ClothesAttributeDefCreateRequest request = new ClothesAttributeDefCreateRequest("핏", List.of("오버핏"));
 
             // when & then
             assertThatThrownBy(() -> service.createClothesAttributeDef(request))
                     .isInstanceOf(AttributeException.class)
                     .hasMessage(ErrorCode.ATTRIBUTE_NAME_DUPLICATED.getMessage());
-
-            verify(attributeRepository, never()).save(any());
         }
     }
 
     @Nested
     @DisplayName("updateClothesAttributeDef() 메서드는")
     class Describe_update {
+        private UUID attributeId;
+
+        @BeforeEach
+        void setUp() {
+            Attribute attribute = Attribute.create("색상");
+            attribute.addValues(List.of("빨강", "파랑"));
+            attributeId = repository.save(attribute).getId();
+            flushAndClear();
+        }
+
         @Test
-        @DisplayName("[성공] 존재하는 ID이고 중복되지 않은 이름이면 정보를 수정한다.")
-        void it_updates_attribute() {
+        @DisplayName("[성공] 실제 DB의 속성 이름과 옵션(Clear & Insert)을 업데이트한다.")
+        void it_updates_db_records() {
             // given
-            ClothesAttributeDefUpdateRequest request = new ClothesAttributeDefUpdateRequest("새로운사이즈", List.of("L"));
-            given(attributeRepository.findById(attributeId)).willReturn(Optional.of(testAttribute));
-            given(attributeRepository.existsByName("새로운사이즈")).willReturn(false); // 이름이 달라서 중복 검사 탐
-            given(attributeMapper.toDto(testAttribute)).willReturn(mockDto);
+            ClothesAttributeDefUpdateRequest request = new ClothesAttributeDefUpdateRequest("수정된색상", List.of("검정", "흰색", "회색"));
 
             // when
             service.updateClothesAttributeDef(attributeId, request);
+            flushAndClear(); // 쿼리 전송
 
             // then
-            assertThat(testAttribute.getName()).isEqualTo("새로운사이즈");
-            verify(attributeMapper).toDto(testAttribute);
-        }
-
-        @Test
-        @DisplayName("[성공] 이름이 기존과 동일하면 중복 검사를 패스하고 옵션만 수정한다.")
-        void it_updates_options_only_if_name_is_same() {
-            // given
-            ClothesAttributeDefUpdateRequest request = new ClothesAttributeDefUpdateRequest("사이즈", List.of("XL")); // 기존 이름과 동일
-            given(attributeRepository.findById(attributeId)).willReturn(Optional.of(testAttribute));
-            given(attributeMapper.toDto(testAttribute)).willReturn(mockDto);
-
-            // when
-            service.updateClothesAttributeDef(attributeId, request);
-
-            // then
-            verify(attributeRepository, never()).existsByName("사이즈"); // 중복 검사 호출 안 됨!
-        }
-
-        @Test
-        @DisplayName("[실패] 존재하지 않는 ID면 ATTRIBUTE_NOT_FOUND 예외를 던진다.")
-        void it_throws_not_found() {
-            // given
-            given(attributeRepository.findById(attributeId)).willReturn(Optional.empty());
-
-            // when & then
-            assertThatThrownBy(() -> service.updateClothesAttributeDef(attributeId, new ClothesAttributeDefUpdateRequest("이름", List.of())))
-                    .isInstanceOf(AttributeException.class)
-                    .hasMessage(ErrorCode.ATTRIBUTE_NOT_FOUND.getMessage());
-        }
-
-        @Test
-        @DisplayName("[실패] 변경하려는 이름이 이미 다른 곳에서 사용 중이면 ATTRIBUTE_NAME_DUPLICATED 예외를 던진다.")
-        void it_throws_duplicate_name() {
-            // given
-            ClothesAttributeDefUpdateRequest request = new ClothesAttributeDefUpdateRequest("중복사이즈", List.of());
-            given(attributeRepository.findById(attributeId)).willReturn(Optional.of(testAttribute));
-            given(attributeRepository.existsByName("중복사이즈")).willReturn(true);
-
-            // when & then
-            assertThatThrownBy(() -> service.updateClothesAttributeDef(attributeId, request))
-                    .isInstanceOf(AttributeException.class)
-                    .hasMessage(ErrorCode.ATTRIBUTE_NAME_DUPLICATED.getMessage());
+            Attribute updatedAttribute = repository.findById(attributeId).orElseThrow();
+            assertThat(updatedAttribute.getName()).isEqualTo("수정된색상");
+            assertThat(updatedAttribute.getSelectableValues()).hasSize(3);
+            assertThat(updatedAttribute.getSelectableValues().get(0).getType()).isEqualTo("검정");
         }
     }
 
@@ -179,30 +110,75 @@ class AttributeDefServiceTest {
     @DisplayName("deleteClothesAttributeDef() 메서드는")
     class Describe_delete {
         @Test
-        @DisplayName("[성공] 존재하는 ID가 주어지면 속성 삭제를 수행한다.")
-        void it_deletes_attribute() {
+        @DisplayName("[성공] 부모를 삭제하면 자식(옵션)까지 실제 DB에서 연쇄 삭제(Cascade) 된다.")
+        void it_deletes_from_db() {
             // given
-            given(attributeRepository.findById(attributeId)).willReturn(Optional.of(testAttribute));
+            Attribute attribute = Attribute.create("재질");
+            attribute.addValues(List.of("면", "폴리"));
+            UUID id = repository.save(attribute).getId();
+            flushAndClear();
 
             // when
-            service.deleteClothesAttributeDef(attributeId);
+            service.deleteClothesAttributeDef(id);
+            flushAndClear();
 
             // then
-            verify(attributeRepository).delete(testAttribute);
+            assertThat(repository.findById(id)).isEmpty();
+            Long optionCount = em.createQuery("SELECT COUNT(s) FROM SelectableValue s WHERE s.attribute.id = :id", Long.class)
+                    .setParameter("id", id)
+                    .getSingleResult();
+            assertThat(optionCount).isEqualTo(0L);
+        }
+    }
+
+    @Nested
+    @DisplayName("getClothesAttributeDefs() 메서드는")
+    class Describe_getClothesAttributeDefs {
+        @BeforeEach
+        void setUp() {
+            Attribute attr1 = Attribute.create("아우터핏");
+            attr1.addValues(List.of("오버핏"));
+            Attribute attr2 = Attribute.create("상의사이즈");
+            attr2.addValues(List.of("95", "100"));
+            Attribute attr3 = Attribute.create("하의사이즈");
+            attr3.addValues(List.of("28", "30"));
+
+            repository.saveAll(List.of(attr1, attr2, attr3));
+            flushAndClear();
         }
 
         @Test
-        @DisplayName("[실패] 존재하지 않는 ID면 삭제하지 않고 예외를 던진다.")
-        void it_throws_not_found() {
-            // given
-            given(attributeRepository.findById(attributeId)).willReturn(Optional.empty());
+        @DisplayName("[성공] QueryDSL을 통해 검색어(keyword)가 포함된 속성만 가져온다.")
+        void it_fetches_with_keyword() {
+            // when
+            List<ClothesAttributeDefDto> result = service.getClothesAttributeDefs("createdAt", "DESC", "사이즈");
 
-            // when & then
-            assertThatThrownBy(() -> service.deleteClothesAttributeDef(attributeId))
-                    .isInstanceOf(AttributeException.class)
-                    .hasMessage(ErrorCode.ATTRIBUTE_NOT_FOUND.getMessage());
+            // then
+            assertThat(result).hasSize(2);
+            assertThat(result).extracting("name").containsExactlyInAnyOrder("상의사이즈", "하의사이즈");
 
-            verify(attributeRepository, never()).delete(any());
+            // fetchJoin
+            assertThat(result.stream().filter(r -> r.name().equals("상의사이즈")).findFirst().get().selectableValues())
+                    .containsExactly("95", "100");
         }
+
+        @Test
+        @DisplayName("[성공] 정렬 조건(name, ASC)에 맞춰 데이터를 반환한다.")
+        void it_fetches_with_sorting() {
+            // when
+            List<ClothesAttributeDefDto> result = service.getClothesAttributeDefs("name", "ASC", null);
+
+            // then
+            assertThat(result).hasSize(3);
+            assertThat(result.get(0).name()).isEqualTo("상의사이즈"); // ㅅ
+            assertThat(result.get(1).name()).isEqualTo("아우터핏");   // ㅇ
+            assertThat(result.get(2).name()).isEqualTo("하의사이즈"); // ㅎ
+        }
+    }
+
+    // 영속성 컨텍스트 초기화 유틸 메서드
+    private void flushAndClear() {
+        em.flush();
+        em.clear();
     }
 }
