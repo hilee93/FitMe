@@ -156,13 +156,11 @@ public class NotificationService {
     @Transactional
     public void delete(NotificationDeleteRequest request) {
 
-        //알림 ID 판별
-        Notification notification = notificationRepository.findById(request.notificationId())
-                .orElseThrow(() -> new NotificationNotFoundException(request.notificationId()));
 
         // 해당유저의 알림ID 유무 판별
         boolean exists = notificationRepository
                 .existsByIdAndUserId(request.notificationId(), request.userId());
+
         if (!exists) {
             throw new NotificationBadRequestException(
                     request.notificationId(),
@@ -171,6 +169,6 @@ public class NotificationService {
         }
 
 
-        notificationRepository.deleteById(notification.getId());
+        notificationRepository.deleteById(request.notificationId());
     }
 }
