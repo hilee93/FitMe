@@ -3,6 +3,8 @@ package com.ootd.fitme.domain.follow.service;
 import com.ootd.fitme.domain.follow.dto.request.FollowCreateRequest;
 import com.ootd.fitme.domain.follow.dto.response.UserSummary;
 import com.ootd.fitme.domain.follow.entity.Follow;
+import com.ootd.fitme.domain.follow.exception.FollowAlreadyExistsException;
+import com.ootd.fitme.domain.follow.exception.FollowNotFoundException;
 import com.ootd.fitme.domain.follow.repository.FollowProfileQueryRepository;
 import com.ootd.fitme.domain.follow.repository.FollowRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -83,7 +85,7 @@ class FollowServiceUnitTest {
 
             // when & then
             assertThatThrownBy(() -> followServiceImpl.createFollow(request))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(FollowAlreadyExistsException.class)
                     .hasMessage("이미 팔로우한 사용자입니다.");
 
             then(followRepository).should(never()).save(any(Follow.class));
@@ -125,7 +127,7 @@ class FollowServiceUnitTest {
 
             //when & then
             assertThatThrownBy(() -> followServiceImpl.cancelFollow(followId))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(FollowNotFoundException.class)
                     .hasMessage("존재하지 않는 팔로우입니다.");
 
             then(followCountService).should(never()).decreaseFollowCount(any(Follow.class));

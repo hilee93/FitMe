@@ -8,9 +8,11 @@ import com.ootd.fitme.domain.follow.dto.response.FollowSummaryDto;
 import com.ootd.fitme.domain.follow.dto.response.UserSummary;
 import com.ootd.fitme.domain.follow.enums.SortBy;
 import com.ootd.fitme.domain.follow.enums.SortDirection;
+import com.ootd.fitme.domain.follow.exception.FollowNotFoundException;
 import com.ootd.fitme.domain.follow.service.FollowService;
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.enums.Role;
+import com.ootd.fitme.global.exception.ErrorCode;
 import com.ootd.fitme.global.security.auth.CustomUserPrincipal;
 import com.ootd.fitme.global.security.jwt.JwtAuthenticationFilter;
 import org.junit.jupiter.api.*;
@@ -142,7 +144,7 @@ class FollowControllerTest {
             //given
             UUID followId = UUID.randomUUID();
 
-            willThrow(new IllegalArgumentException("존재하지 않는 팔로우입니다."))
+            willThrow(new FollowNotFoundException(ErrorCode.FOLLOW_NOT_FOUND))
                     .given(followService).cancelFollow(any());
 
 

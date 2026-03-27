@@ -5,6 +5,8 @@ import com.ootd.fitme.domain.follow.dto.response.FollowDto;
 import com.ootd.fitme.domain.follow.dto.response.FollowListResponse;
 import com.ootd.fitme.domain.follow.dto.response.FollowSummaryDto;
 import com.ootd.fitme.domain.follow.entity.Follow;
+import com.ootd.fitme.domain.follow.exception.FollowAlreadyExistsException;
+import com.ootd.fitme.domain.follow.exception.FollowNotFoundException;
 import com.ootd.fitme.domain.follow.repository.FollowRepository;
 import com.ootd.fitme.domain.profile.entity.Profile;
 import com.ootd.fitme.domain.profile.repository.ProfileRepository;
@@ -95,7 +97,7 @@ class FollowServiceImplTest {
 
             //when & then
             assertThatThrownBy(() -> followServiceImpl.createFollow(request))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(FollowAlreadyExistsException.class)
                     .hasMessage("이미 팔로우한 사용자입니다.");
 
             Profile followerProfile = profileRepository.findByUserId(followerId).get();
@@ -165,7 +167,7 @@ class FollowServiceImplTest {
 
             //when & then
             assertThatThrownBy(() -> followServiceImpl.cancelFollow(randomId))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(FollowNotFoundException.class)
                     .hasMessage("존재하지 않는 팔로우입니다.");
 
             Profile followerProfile = profileRepository.findByUserId(followerId).get();
