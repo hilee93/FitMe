@@ -1,5 +1,6 @@
 package com.ootd.fitme.domain.follow.entity;
 
+import com.ootd.fitme.domain.follow.exception.FollowSelfNotAllowedException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -35,7 +36,7 @@ class FollowTest {
 
         //when & then
         assertThatThrownBy(() -> Follow.create(sameId, sameId))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(FollowSelfNotAllowedException.class)
                 .hasMessage("자신을 팔로우 할 수 없습니다.");
     }
 
