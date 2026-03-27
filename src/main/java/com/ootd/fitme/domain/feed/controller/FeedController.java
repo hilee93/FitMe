@@ -77,8 +77,8 @@ public class FeedController implements FeedControllerDocs {
             @RequestBody @Valid FeedCommentCreateRequest feedCommentCreateRequest,
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal
     ) {
-        commentService.createFeedComment(feedCommentCreateRequest, userPrincipal.getUserId());
-        return null;
+        CommentResponseDto feedComment = commentService.createFeedComment(feedCommentCreateRequest, userPrincipal.getUserId());
+        return ResponseEntity.ok(feedComment);
     }
 
     @Override
