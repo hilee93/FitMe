@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class FollowMapper {
 
-    public static FollowDto toDto(Follow follow, UserSummary follower, UserSummary followee) {
+    public static FollowDto toDto(Follow follow, UserSummary followee, UserSummary follower) {
         return new FollowDto(follow.getId(), followee, follower);
     }
 
