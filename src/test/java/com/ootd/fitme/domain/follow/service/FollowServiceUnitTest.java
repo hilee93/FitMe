@@ -141,10 +141,10 @@ class FollowServiceUnitTest {
         void getFollowings_call_findFollowings() {
 
             //given
-            int limit = 2;
+            Integer limit = 2;
             UUID followerId = UUID.randomUUID();
 
-            given(followRepository.findFollowings(any(), any(), any(), anyInt(), any())).willReturn(List.of());
+            given(followRepository.findFollowings(any(), any(), any(), any(), any())).willReturn(List.of());
             given(followProfileQueryRepository.findFolloweeCountByUserId(any())).willReturn(0);
 
             //when
@@ -164,10 +164,10 @@ class FollowServiceUnitTest {
         void getFollowers_call_findFollowers() {
 
             //given
-            int limit = 2;
+            Integer limit = 2;
             UUID followeeId = UUID.randomUUID();
 
-            given(followRepository.findFollowers(any(), any(), any(), anyInt(), any())).willReturn(List.of());
+            given(followRepository.findFollowers(any(), any(), any(), any(), any())).willReturn(List.of());
             given(followProfileQueryRepository.findFollowerCountByUserId(any())).willReturn(0);
 
             //when

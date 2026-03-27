@@ -26,7 +26,6 @@ public class FollowController implements FollowControllerDocs {
     @Override
     @PostMapping
     public ResponseEntity<FollowDto> createFollow(@Valid @RequestBody FollowCreateRequest request) {
-        // TODO: followerId는 인증된 사용자 ID로 교체 예정 (@AuthenticationPrincipal)
         FollowDto follow = followService.createFollow(request);
         return ResponseEntity.status(201).body(follow);
     }
@@ -36,9 +35,7 @@ public class FollowController implements FollowControllerDocs {
     public ResponseEntity<FollowSummaryDto> getFollowSummary(
             @RequestParam UUID userId,
             @AuthenticationPrincipal CustomUserPrincipal principal) {
-
         UUID myId = principal.getUserId();
-
         FollowSummaryDto result = followService.getFollowSummary(userId, myId);
         return ResponseEntity.status(200).body(result);
     }

@@ -13,17 +13,16 @@ import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.enums.Role;
 import com.ootd.fitme.global.security.auth.CustomUserPrincipal;
 import com.ootd.fitme.global.security.jwt.JwtAuthenticationFilter;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -32,7 +31,6 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
@@ -168,7 +166,7 @@ class FollowControllerTest {
                     List.of(), null, null, false, 0L,
                     SortBy.createdAt, SortDirection.DESCENDING);
 
-            given(followService.getFollowings(any(), any(), any(), anyInt(), any()))
+            given(followService.getFollowings(any(), any(), any(), any(), any()))
                     .willReturn(response);
 
             // when & then
@@ -219,7 +217,7 @@ class FollowControllerTest {
                     List.of(), null, null, false, 0L,
                     SortBy.createdAt, SortDirection.DESCENDING);
 
-            given(followService.getFollowers(any(), any(), any(), anyInt(), any()))
+            given(followService.getFollowers(any(), any(), any(), any(), any()))
                     .willReturn(response);
 
             // when & then
@@ -261,21 +259,22 @@ class FollowControllerTest {
     @DisplayName("팔로우 요약 조회")
     class GetFollowSummaryTest {
 
+        @AfterEach
+        void clearSecurityContext() {
+            SecurityContextHolder.clearContext();
+        }
+
         @Test
         @DisplayName("성공 - 팔로우 요약 조회 시 200을 반환한다")
         void getFollowSummary_request_return200() throws Exception {
 
             //given
             UUID userId = UUID.randomUUID();
+            UUID currentUserId = UUID.randomUUID();
             UUID followerByMeId = UUID.randomUUID();
 
-            User mockUser = mock(User.class);
-            given(mockUser.getId()).willReturn(userId);
-            given(mockUser.getEmail()).willReturn("test@test.com");
-            given(mockUser.isLocked()).willReturn(false);
-            given(mockUser.getRole()).willReturn(Role.USER);
-
-            CustomUserPrincipal principal = CustomUserPrincipal.from(mockUser);
+            SecurityContext context = createSecurityContext(currentUserId);
+            SecurityContextHolder.setContext(context);
 
             FollowSummaryDto response = new FollowSummaryDto(
                     userId, 1, 0,
@@ -285,8 +284,7 @@ class FollowControllerTest {
 
             //when & then
             mockMvc.perform(get("/api/follows/summary")
-                    .param("userId", userId.toString())
-                    .with(SecurityMockMvcRequestPostProcessors.user(principal)))
+                    .param("userId", userId.toString()))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.followeeId").value(userId.toString()))
                     .andExpect(jsonPath("$.followerCount").value(1))
@@ -295,6 +293,32 @@ class FollowControllerTest {
                     .andExpect(jsonPath("$.followedByMeId").value(followerByMeId.toString()))
                     .andExpect(jsonPath("$.followingMe").value(false));
         }
+        @Test
+        @DisplayName("실패 - userID가 없으면 400을 반환한다")
+        void getFollowSummary_notExistUserId_return400() throws Exception {
+
+            //when & then
+            mockMvc.perform(get("/api/follows/summary"))
+                    .andExpect(status().isBadRequest());
+        }
     }
 
+    // 테스트용 인증된 사용자 생성 헬퍼 메서드 (@AuthenticationPrincipal에 사용)
+    private SecurityContext createSecurityContext (UUID userId) {
+
+        User mockUser = mock(User.class);
+        given(mockUser.getId()).willReturn(userId);
+        given(mockUser.getEmail()).willReturn("test@test.com");
+        given(mockUser.isLocked()).willReturn(false);
+        given(mockUser.getRole()).willReturn(Role.USER);
+
+        CustomUserPrincipal principal = CustomUserPrincipal.from(mockUser);
+
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
+
+        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+        securityContext.setAuthentication(authentication);
+        return securityContext;
+    }
 }
