@@ -243,5 +243,18 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler({org.springframework.security.access.AccessDeniedException.class,
+            org.springframework.security.authorization.AuthorizationDeniedException.class})
+    public ResponseEntity<ErrorResponse> handleAccessDenied(Exception e) {
+        ErrorCode code = ErrorCode.AUTH_FORBIDDEN;
+        return ResponseEntity.status(code.getStatus())
+                .body(new ErrorResponse(Instant.now(),
+                        code.getCode(),
+                        code.getMessage(),
+                        Map.of(),
+                        e.getClass().getSimpleName(),
+                        code.getStatus().value()
+                ));
+    }
 }
 

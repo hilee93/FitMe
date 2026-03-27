@@ -21,7 +21,7 @@ import java.util.UUID;
 public class AttributeDefController implements AttributeDefControllerDocs {
     private final AttributeDefService service;
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @Override
     public ResponseEntity<List<ClothesAttributeDefDto>> getClothesAttributeDefs(String sortBy, String sortDirection, String keywordLike) {
         List<ClothesAttributeDefDto> response = service.getClothesAttributeDefs(sortBy, sortDirection, keywordLike);
