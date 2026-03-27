@@ -195,17 +195,17 @@ public class FeedFixtureBuilder {
         );
 
         SelectableValue s = selectableValueRepository.save(
-                SelectableValue.create("S", sizeAttribute)
+                SelectableValue.create("S", 0, sizeAttribute)
         );
         SelectableValue m = selectableValueRepository.save(
-                SelectableValue.create("M", sizeAttribute)
+                SelectableValue.create("M", 1, sizeAttribute)
         );
         SelectableValue l = selectableValueRepository.save(
-                SelectableValue.create("L", sizeAttribute)
+                SelectableValue.create("L", 2, sizeAttribute)
         );
 
         SelectableValue free = selectableValueRepository.save(
-                SelectableValue.create("FREE", sizeAttribute)
+                SelectableValue.create("FREE", 3, sizeAttribute)
         );
 
         ClothesAttribute clothesAttribute = clothesAttributeRepository.save(
