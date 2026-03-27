@@ -6,7 +6,7 @@ import java.time.Instant;
 import java.util.Map;
 
 @Getter
-public class FitmeException extends RuntimeException{
+public class FitmeException extends RuntimeException {
 
     private final Instant timestamp;
     private final ErrorCode errorCode;
