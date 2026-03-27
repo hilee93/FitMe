@@ -1,10 +1,7 @@
 package com.ootd.fitme.domain.follow.service;
 
 import com.ootd.fitme.domain.follow.dto.request.FollowCreateRequest;
-import com.ootd.fitme.domain.follow.dto.response.FollowCursorDto;
-import com.ootd.fitme.domain.follow.dto.response.FollowDto;
-import com.ootd.fitme.domain.follow.dto.response.FollowListResponse;
-import com.ootd.fitme.domain.follow.dto.response.FollowSummaryDto;
+import com.ootd.fitme.domain.follow.dto.response.*;
 import com.ootd.fitme.domain.follow.entity.Follow;
 import com.ootd.fitme.domain.follow.enums.SortBy;
 import com.ootd.fitme.domain.follow.enums.SortDirection;
@@ -42,7 +39,10 @@ public class FollowServiceImpl implements FollowService {
         Follow savedFollow = followRepository.save(follow);
         followCountService.increaseFollowCount(savedFollow);
 
-        return FollowMapper.toDto(savedFollow);
+        UserSummary follower = followProfileQueryRepository.findUserSummaryByUserId(request.followerId());
+        UserSummary followee = followProfileQueryRepository.findUserSummaryByUserId(request.followeeId());
+
+        return FollowMapper.toDto(savedFollow, followee, follower);
     }
 
     @Override

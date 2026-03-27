@@ -1,6 +1,8 @@
 package com.ootd.fitme.domain.follow.repository;
 
+import com.ootd.fitme.domain.follow.dto.response.UserSummary;
 import com.ootd.fitme.domain.profile.entity.QProfile;
+import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -62,5 +64,16 @@ public class FollowProfileQueryRepositoryImpl implements FollowProfileQueryRepos
                 .where(profile.user.id.eq(userId))
                 .fetchOne();
         return count != null ? count : 0;
+    }
+
+    @Override
+    public UserSummary findUserSummaryByUserId(UUID userId) {
+        return query.select(Projections.constructor(UserSummary.class,
+                profile.user.id,
+                profile.name,
+                profile.profileImageUrl))
+                .from(profile)
+                .where(profile.user.id.eq(userId))
+                .fetchOne();
     }
 }
