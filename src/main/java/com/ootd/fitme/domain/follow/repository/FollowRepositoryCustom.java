@@ -9,8 +9,11 @@ import java.util.UUID;
 public interface FollowRepositoryCustom {
 
     // 팔로워 나를 팔로우 하는 사람 목록
-    List<FollowCursorDto> findFollowers(UUID followeeId, String cursor, UUID idAfter, int limit, String nameLike);
+    List<FollowCursorDto> findFollowers(UUID followeeId, String cursor, UUID idAfter, Integer limit, String nameLike);
 
     // 팔로잉 내가 팔로우 하는 사람 목록
-    List<FollowCursorDto> findFollowings(UUID followerId, String cursor, UUID idAfter, int limit, String nameLike);
+    List<FollowCursorDto> findFollowings(UUID followerId, String cursor, UUID idAfter, Integer limit, String nameLike);
+
+    long countFollowers(UUID followeeId, String nameLike);
+    long countFollowings(UUID followerId, String nameLike);
 }
