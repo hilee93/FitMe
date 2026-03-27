@@ -10,6 +10,7 @@ import com.ootd.fitme.domain.profile.entity.Profile;
 import com.ootd.fitme.domain.profile.repository.ProfileRepository;
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.repository.UserRepository;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -19,7 +20,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,6 +42,9 @@ class FollowServiceImplTest {
     @Autowired
     private ProfileRepository profileRepository;
 
+    @Autowired
+    private EntityManager em;
+
     private UUID followerId;
     private UUID followeeId;
 
@@ -52,8 +55,8 @@ class FollowServiceImplTest {
         followerId = follower.getId();
         followeeId = followee.getId();
 
-        saveProfile(follower);
-        saveProfile(followee);
+        saveProfile(follower, "팔로워");
+        saveProfile(followee, "팔로잉");
     }
 
     @Nested
@@ -69,6 +72,8 @@ class FollowServiceImplTest {
 
             //when
             followServiceImpl.createFollow(request);
+            em.flush();
+            em.clear();
             Profile followerProfile = profileRepository.findByUserId(followerId).get();
             Profile followeeProfile = profileRepository.findByUserId(followeeId).get();
 
@@ -85,6 +90,8 @@ class FollowServiceImplTest {
             //given
             FollowCreateRequest request = new FollowCreateRequest(followerId, followeeId);
             followServiceImpl.createFollow(request);
+            em.flush();
+            em.clear();
 
             //when & then
             assertThatThrownBy(() -> followServiceImpl.createFollow(request))
@@ -99,6 +106,26 @@ class FollowServiceImplTest {
             assertThat(followerProfile.getFolloweeCount()).isEqualTo(1);
             assertThat(followeeProfile.getFollowerCount()).isEqualTo(1);
         }
+
+        @Test
+        @DisplayName("성공 - 팔로우 생성시 follower와 followee 정보를 반환한다")
+        void createFollow_returnFollowDto() {
+
+            //given
+            FollowCreateRequest request = new FollowCreateRequest(followerId, followeeId);
+
+            //when
+            FollowDto follow = followServiceImpl.createFollow(request);
+
+            //then
+            assertThat(follow.follower().userId()).isEqualTo(followerId);
+            assertThat(follow.follower().name()).isEqualTo("팔로워");
+            assertThat(follow.follower().profileImageUrl()).isNull();
+            assertThat(follow.followee().userId()).isEqualTo(followeeId);
+            assertThat(follow.followee().name()).isEqualTo("팔로잉");
+            assertThat(follow.follower().profileImageUrl()).isNull();
+
+        }
     }
 
     @Nested
@@ -112,9 +139,14 @@ class FollowServiceImplTest {
             //given
             FollowCreateRequest request = new FollowCreateRequest(followerId, followeeId);
             FollowDto follow = followServiceImpl.createFollow(request);
+            em.flush();
+            em.clear();
 
             //when
             followServiceImpl.cancelFollow(follow.id());
+            em.flush();
+            em.clear();
+
             Profile followerProfile = profileRepository.findByUserId(followerId).get();
             Profile followeeProfile = profileRepository.findByUserId(followeeId).get();
 
@@ -155,6 +187,7 @@ class FollowServiceImplTest {
         private UUID followee1Id;
         private UUID followee2Id;
         private UUID followee3Id;
+        private UUID followee4Id;
 
         @BeforeEach
         void setUp() {
@@ -163,18 +196,22 @@ class FollowServiceImplTest {
             User followee1 = userRepository.save(User.create("followee1@test.com", "123456"));
             User followee2 = userRepository.save(User.create("followee2@test.com", "123456"));
             User followee3 = userRepository.save(User.create("followee3@test.com", "123456"));
+            User followee4 = userRepository.save(User.create("followee4@test.com", "123456"));
 
-            saveProfile(follower1);
-            saveProfile(follower2);
-            saveProfile(followee1);
-            saveProfile(followee2);
-            saveProfile(followee3);
+            saveProfile(follower1, "이형일");
+            saveProfile(follower2, "최현석");
+            saveProfile(followee1, "조성연");
+            saveProfile(followee2, "김진우");
+            saveProfile(followee3, "신제원");
+            saveProfile(followee4, "김태언");
+
 
             follower1Id = follower1.getId();
             follower2Id = follower2.getId();
             followee1Id = followee1.getId();
             followee2Id = followee2.getId();
             followee3Id = followee3.getId();
+            followee4Id = followee4.getId();
         }
 
         @Test
@@ -276,6 +313,25 @@ class FollowServiceImplTest {
             assertThat(followers.data().size()).isEqualTo(2);
             assertThat(followers.hasNext()).isFalse();
         }
+
+        @Test
+        @DisplayName("성공 - nameLike가 있으면 필터링된 totalCount가 반환된다")
+        void getFollows_nameLike_returnFilteredCount() {
+
+            //given
+            followRepository.save(Follow.create(follower1Id, followee1Id));
+            followRepository.save(Follow.create(follower1Id, followee2Id));
+            followRepository.save(Follow.create(follower1Id, followee3Id));
+            followRepository.save(Follow.create(follower1Id, followee4Id));
+
+            //when
+            FollowListResponse result = followServiceImpl.getFollowings(
+                    follower1Id, null, null, 10, "김");
+
+            //then
+            assertThat(result.totalCount()).isEqualTo(2);
+
+        }
     }
 
     @Nested
@@ -351,9 +407,9 @@ class FollowServiceImplTest {
         }
     }
 
-    private void saveProfile(User user) {
+    private void saveProfile(User user, String name) {
         profileRepository.save(Profile.create(
-                "프로필", null, null, 0, 0,
+                name, null, null, 0, 0,
                 null, null, null,
                 null, null, null,
                 user));
