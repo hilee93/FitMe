@@ -7,6 +7,7 @@ import com.ootd.fitme.domain.comment.dto.response.CommentResponseDto;
 import com.ootd.fitme.domain.feed.dto.request.*;
 import com.ootd.fitme.domain.feed.dto.response.FeedCursorResponseDto;
 import com.ootd.fitme.domain.feed.dto.response.FeedResponseDto;
+import com.ootd.fitme.global.security.auth.CustomUserPrincipal;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 
@@ -19,13 +20,13 @@ public interface FeedControllerDocs {
 
     ResponseEntity<FeedResponseDto> createFeed(FeedCreateRequest feedCreateRequest);
 
-    ResponseEntity<FeedResponseDto> updateFeed(UUID feedId, FeedUpdateRequestDto feedUpdateRequestDto);
+    ResponseEntity<FeedResponseDto> updateFeed(UUID feedId, FeedUpdateRequestDto feedUpdateRequestDto, CustomUserPrincipal userPrincipal);
 
     ResponseEntity<Void> deleteFeed(UUID feedId);
 
-    ResponseEntity<Void> addLike(UUID feedId);
+    ResponseEntity<Void> addLike(UUID feedId, CustomUserPrincipal userPrincipal);
 
-    ResponseEntity<Void> removeLike(UUID feedId);
+    ResponseEntity<Void> removeLike(UUID feedId, CustomUserPrincipal userPrincipal);
 
     ResponseEntity<CommentResponseDto> addComment(FeedCommentCreateRequest feedCommentCreateRequest);
 

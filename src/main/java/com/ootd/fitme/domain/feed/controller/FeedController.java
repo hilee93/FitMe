@@ -1,7 +1,5 @@
 package com.ootd.fitme.domain.feed.controller;
 
-import com.ootd.fitme.domain.feed.dto.request.FeedCommentCreateRequest;
-import com.ootd.fitme.domain.feed.dto.request.FeedCommentSearchCondition;
 import com.ootd.fitme.domain.comment.dto.response.CommentCursorResponseDto;
 import com.ootd.fitme.domain.comment.dto.response.CommentResponseDto;
 import com.ootd.fitme.domain.feed.controller.docs.FeedControllerDocs;
@@ -9,10 +7,12 @@ import com.ootd.fitme.domain.feed.dto.request.*;
 import com.ootd.fitme.domain.feed.dto.response.FeedCursorResponseDto;
 import com.ootd.fitme.domain.feed.dto.response.FeedResponseDto;
 import com.ootd.fitme.domain.feed.service.FeedService;
+import com.ootd.fitme.global.security.auth.CustomUserPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -41,27 +41,32 @@ public class FeedController implements FeedControllerDocs {
     @PatchMapping("/{feedId}")
     public ResponseEntity<FeedResponseDto> updateFeed(
             @PathVariable UUID feedId,
-            @RequestBody @Valid FeedUpdateRequestDto feedUpdateRequestDto // TODO: MethodArgumentNotValidException 추가 처리
+            @RequestBody @Valid FeedUpdateRequestDto feedUpdateRequestDto,
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal
     ) {
-        return null;
+        FeedResponseDto feedResponseDto = feedService.updateFeed(feedId, userPrincipal.getUserId(), feedUpdateRequestDto);
+        return ResponseEntity.ok(feedResponseDto);
     }
 
     @Override
     @DeleteMapping("/{feedId}")
     public ResponseEntity<Void> deleteFeed(@PathVariable UUID feedId) {
-        return null;
+        feedService.deleteFeed(feedId);
+        return ResponseEntity.noContent().build();
     }
 
     @Override
     @PostMapping("/{feedId}/like")
-    public ResponseEntity<Void> addLike(@PathVariable UUID feedId) {
-        return null;
+    public ResponseEntity<Void> addLike(@PathVariable UUID feedId, @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        feedService.likeFeed(feedId, userPrincipal.getUserId());
+        return ResponseEntity.noContent().build();
     }
 
     @Override
     @DeleteMapping("/{feedId}/like")
-    public ResponseEntity<Void> removeLike(@PathVariable UUID feedId) {
-        return null;
+    public ResponseEntity<Void> removeLike(@PathVariable UUID feedId, @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        feedService.unlikeFeed(feedId, userPrincipal.getUserId());
+        return ResponseEntity.noContent().build();
     }
 
     @Override
