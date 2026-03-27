@@ -2,6 +2,7 @@ package com.ootd.fitme.domain.follow.controller;
 
 import com.ootd.fitme.domain.follow.controller.docs.FollowControllerDocs;
 import com.ootd.fitme.domain.follow.dto.request.FollowCreateRequest;
+import com.ootd.fitme.domain.follow.dto.request.FollowSearchCondition;
 import com.ootd.fitme.domain.follow.dto.response.FollowDto;
 import com.ootd.fitme.domain.follow.dto.response.FollowListResponse;
 import com.ootd.fitme.domain.follow.dto.response.FollowSummaryDto;
@@ -45,24 +46,18 @@ public class FollowController implements FollowControllerDocs {
     @Override
     @GetMapping("/followings")
     public ResponseEntity<FollowListResponse> getFollowings(
-            @RequestParam UUID followerId,
-            @RequestParam(required = false) String cursor,
-            @RequestParam(required = false) UUID idAfter,
-            @RequestParam int limit,
-            @RequestParam(required = false) String nameLike) {
-        FollowListResponse followings = followService.getFollowings(followerId, cursor, idAfter, limit, nameLike);
+            @RequestParam UUID followerId, @Valid FollowSearchCondition condition) {
+        FollowListResponse followings = followService.getFollowings(
+                followerId, condition.cursor(), condition.idAfter(), condition.limit(), condition.nameLike());
         return ResponseEntity.status(200).body(followings);
     }
 
     @Override
     @GetMapping("/followers")
     public ResponseEntity<FollowListResponse> getFollowers(
-            @RequestParam UUID followeeId,
-            @RequestParam(required = false) String cursor,
-            @RequestParam(required = false) UUID idAfter,
-            @RequestParam int limit,
-            @RequestParam(required = false) String nameLike) {
-        FollowListResponse followers = followService.getFollowers(followeeId, cursor, idAfter, limit, nameLike);
+            @RequestParam UUID followeeId, @Valid FollowSearchCondition condition) {
+        FollowListResponse followers = followService.getFollowers(
+                followeeId, condition.cursor(), condition.idAfter(), condition.limit(), condition.nameLike());
         return ResponseEntity.status(200).body(followers);
     }
 

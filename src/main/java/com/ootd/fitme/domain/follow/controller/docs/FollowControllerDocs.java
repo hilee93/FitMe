@@ -1,6 +1,7 @@
 package com.ootd.fitme.domain.follow.controller.docs;
 
 import com.ootd.fitme.domain.follow.dto.request.FollowCreateRequest;
+import com.ootd.fitme.domain.follow.dto.request.FollowSearchCondition;
 import com.ootd.fitme.domain.follow.dto.response.FollowDto;
 import com.ootd.fitme.domain.follow.dto.response.FollowListResponse;
 import com.ootd.fitme.domain.follow.dto.response.FollowSummaryDto;
@@ -17,11 +18,9 @@ public interface FollowControllerDocs {
 
     ResponseEntity<FollowSummaryDto> getFollowSummary(UUID userId, CustomUserPrincipal principal);
 
-    ResponseEntity<FollowListResponse> getFollowings(
-            UUID followerId, String cursor, UUID idAfter, int limit, String nameLike);
+    ResponseEntity<FollowListResponse> getFollowings(UUID followerId, FollowSearchCondition condition);
 
-    ResponseEntity<FollowListResponse> getFollowers(
-            UUID followeeId, String cursor, UUID idAfter, int limit, String nameLike);
+    ResponseEntity<FollowListResponse> getFollowers(UUID followeeId, FollowSearchCondition condition);
 
     ResponseEntity<Void> cancelFollow(UUID followId);
 
