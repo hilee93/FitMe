@@ -1,15 +1,19 @@
 package com.ootd.fitme.domain.notification.service;
 
 import com.ootd.fitme.domain.follow.repository.FollowRepository;
+import com.ootd.fitme.domain.notification.dto.request.NotificationDeleteRequest;
 import com.ootd.fitme.domain.notification.dto.request.NotificationPageRequest;
 import com.ootd.fitme.domain.notification.dto.response.NotificationPageResponse;
 import com.ootd.fitme.domain.notification.entity.Notification;
 import com.ootd.fitme.domain.notification.entity.NotificationFactory;
 import com.ootd.fitme.domain.notification.enums.NotificationLevel;
 import com.ootd.fitme.domain.notification.enums.NotificationType;
+import com.ootd.fitme.domain.notification.exception.NotificationBadRequestException;
+import com.ootd.fitme.domain.notification.exception.NotificationException;
 import com.ootd.fitme.domain.notification.repository.NotificationRepository;
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.repository.UserRepository;
+import com.ootd.fitme.global.exception.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -28,9 +32,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class NotificationServiceUnitTest {
@@ -272,6 +277,51 @@ class NotificationServiceUnitTest {
             assertThat(result.nextIdAfter()).isNull();
             assertThat(result.hasNext()).isFalse();
         }
+    }
+
+    @Nested
+    @DisplayName("알림 삭제")
+    class DeleteNotificationTest{
+
+        @Test
+        @DisplayName("성공 - 본인 알림이면 삭제한다")
+        void delete_success() {
+            // given
+            UUID userId = UUID.randomUUID();
+            UUID notificationId = UUID.randomUUID();
+            NotificationDeleteRequest request = new NotificationDeleteRequest(userId, notificationId);
+
+            given(notificationRepository.existsByIdAndUserId(notificationId, userId))
+                    .willReturn(true);
+
+            // when
+            notificationService.delete(request);
+
+            // then
+            then(notificationRepository).should().existsByIdAndUserId(notificationId, userId);
+            then(notificationRepository).should().deleteById(notificationId);
+        }
+
+        @Test
+        @DisplayName("실패 - 본인 알림이 아니거나 알림이 없으면 예외를 던진다")
+        void delete_fail_when_notification_not_owned_or_not_found() {
+            // given
+            UUID userId = UUID.randomUUID();
+            UUID notificationId = UUID.randomUUID();
+            NotificationDeleteRequest request = new NotificationDeleteRequest(userId, notificationId);
+
+            given(notificationRepository.existsByIdAndUserId(notificationId, userId))
+                    .willReturn(false);
+
+            // when & then
+            assertThatThrownBy(() -> notificationService.delete(request))
+                    .isInstanceOf(NotificationBadRequestException.class);
+
+            then(notificationRepository).should().existsByIdAndUserId(notificationId, userId);
+            then(notificationRepository).should(never()).deleteById(any(UUID.class));
+        }
+
+
     }
 }
 
