@@ -21,7 +21,7 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
     private final JPAQueryFactory jpaQueryFactory;
 
     @Override
-    public List<FollowCursorDto> findFollowers(UUID followeeId, String cursor, UUID idAfter, int limit, String nameLike) {
+    public List<FollowCursorDto> findFollowers(UUID followeeId, String cursor, UUID idAfter, Integer limit, String nameLike) {
 
         QProfile followerProfile = new QProfile("followerProfile");
 
@@ -33,7 +33,7 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
     }
 
     @Override
-    public List<FollowCursorDto> findFollowings(UUID followerId, String cursor, UUID idAfter, int limit, String nameLike) {
+    public List<FollowCursorDto> findFollowings(UUID followerId, String cursor, UUID idAfter, Integer limit, String nameLike) {
 
         QProfile followeeProfile = new QProfile("followeeProfile");
 
@@ -45,7 +45,7 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
     }
 
     private List<FollowCursorDto> findFollowList(
-            BooleanExpression condition, QProfile nameSearchProfile, String cursor, UUID idAfter, int limit, String nameLike) {
+            BooleanExpression condition, QProfile nameSearchProfile, String cursor, UUID idAfter, Integer limit, String nameLike) {
         QFollow follow = QFollow.follow;
         QProfile followeeProfile = new QProfile("followeeProfile");
         QProfile followerProfile = new QProfile("followerProfile");

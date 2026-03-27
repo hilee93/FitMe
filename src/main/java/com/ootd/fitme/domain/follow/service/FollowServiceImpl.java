@@ -47,7 +47,7 @@ public class FollowServiceImpl implements FollowService {
 
     @Override
     public FollowListResponse getFollowers(
-            UUID followeeId, String cursor, UUID idAfter, int limit, String nameLike) {
+            UUID followeeId, String cursor, UUID idAfter, Integer limit, String nameLike) {
 
         List<FollowCursorDto> followers = followRepository.findFollowers(
                 followeeId, cursor, idAfter, limit, nameLike);
@@ -61,7 +61,7 @@ public class FollowServiceImpl implements FollowService {
 
     @Override
     public FollowListResponse getFollowings(
-            UUID followerId, String cursor, UUID idAfter, int limit, String nameLike) {
+            UUID followerId, String cursor, UUID idAfter, Integer limit, String nameLike) {
 
         List<FollowCursorDto> followings = followRepository.findFollowings(
                 followerId, cursor, idAfter, limit, nameLike);
@@ -107,7 +107,7 @@ public class FollowServiceImpl implements FollowService {
         followRepository.deleteById(followId);
     }
 
-    private FollowListResponse followList(List<FollowCursorDto> result, int limit, long totalCount) {
+    private FollowListResponse followList(List<FollowCursorDto> result, Integer limit, long totalCount) {
         boolean hasNext = result.size() > limit;
         List<FollowCursorDto> followCursorDto = hasNext ? result.subList(0, limit) : result;
 
