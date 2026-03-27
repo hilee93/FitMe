@@ -15,6 +15,10 @@ public enum ErrorCode {
     USER_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "유저가 이미 존재합니다.", "U-007"),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다.", "U-008"),
 
+    //notification
+    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND,"알림을 찾을 수 없습니다","NC-001"),
+    NOTIFICATION_BAD_REQUEST(HttpStatus.BAD_REQUEST, "요청한 알림이 사용자와 일치하지 않습니다","NC-002"),
+
     // feed
     FEED_NOT_FOUND(HttpStatus.NOT_FOUND, "피드를 찾을 수 없습니다.", "F-001"),
     FEED_ACCESS_DENIED(HttpStatus.FORBIDDEN, "해당 피드에 대한 권한이 없습니다" , "F-002"),
