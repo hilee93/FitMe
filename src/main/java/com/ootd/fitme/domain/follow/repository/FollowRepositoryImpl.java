@@ -80,6 +80,38 @@ public class FollowRepositoryImpl implements FollowRepositoryCustom {
                 .fetch();
     }
 
+    @Override
+    public long countFollowers(UUID followeeId, String nameLike) {
+        QFollow follow = QFollow.follow;
+        QProfile followerProfile = new QProfile("followerProfile");
+
+        Long count = jpaQueryFactory
+                .select(follow.count())
+                .from(follow)
+                .join(followerProfile).on(followerProfile.user.id.eq(follow.followerId))
+                .where(
+                        follow.followeeId.eq(followeeId),
+                        nameLikeCondition(followerProfile, nameLike))
+                .fetchOne();
+        return count != null ? count : 0;
+    }
+
+    @Override
+    public long countFollowings(UUID followerId, String nameLike) {
+        QFollow follow = QFollow.follow;
+        QProfile followeeProfile = new QProfile("followeeProfile");
+
+        Long count = jpaQueryFactory
+                .select(follow.count())
+                .from(follow)
+                .join(followeeProfile).on(followeeProfile.user.id.eq(follow.followeeId))
+                .where(
+                        follow.followerId.eq(followerId),
+                        nameLikeCondition(followeeProfile, nameLike))
+                .fetchOne();
+        return count != null ? count : 0;
+    }
+
     private BooleanExpression nameLikeCondition(QProfile profile, String nameLike) {
         if (nameLike == null || nameLike.isBlank()) return null;
         return profile.name.containsIgnoreCase(nameLike);
