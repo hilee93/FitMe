@@ -36,7 +36,7 @@ class CommentRepositoryTest {
 
         @Test
         @DisplayName("[Positive] 피드 댓글 생성 - 댓글을 저장한 후 ID로 조회할 수 있다")
-        void createFeedComment_save_and_findById() {
+        void createFeedComment_success() {
             // given
             FeedFixture feedFixture = feedFixtureBuilder.createFeedFixture();
             Feed feed = feedFixture.feed();
