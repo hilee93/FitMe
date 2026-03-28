@@ -44,7 +44,6 @@ class CommentRepositoryTest {
 
             Comment comment = Comment.create("댓글", feed, user);
 
-            // FeedFixtureBuilder가 persist 안 해주는 구조라면 유지
             em.persist(user);
             em.persist(feed);
 
