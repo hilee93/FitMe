@@ -113,7 +113,7 @@ public class FeedServiceImpl implements FeedService {
 
         feedLikeRepository.save(feedLike);
 
-        feedRepository.increaseLikeCount(feedId);// NOTE: 동시성이슈 해결을 위해 bulk update 처리
+        feedRepository.increaseLikeCount(feedId);// NOTE: 동시성이슈 해결을 위해 원자적 update 처리
     }
 
     @Override
@@ -124,7 +124,7 @@ public class FeedServiceImpl implements FeedService {
         FeedLike feedLike = feedLikeRepository.findByFeedIdAndUserId(feedId, userId).orElseThrow(() -> new FeedLikeNotFoundException(ErrorCode.FEED_LIKE_NOT_FOUND));
 
         feedLikeRepository.delete(feedLike);
-        int updatedCount = feedRepository.decreaseLike(feedId);// NOTE: 동시성이슈 해결을 위해 bulk update 처리
+        int updatedCount = feedRepository.decreaseLike(feedId);// NOTE: 동시성이슈 해결을 위해 원자적 update 처리
         if (updatedCount == 0) {
             throw new IllegalStateException("더이상 감소 할 수 없습니다.");
         }
