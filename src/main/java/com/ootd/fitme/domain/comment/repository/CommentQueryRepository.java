@@ -12,7 +12,6 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -47,9 +46,10 @@ public class CommentQueryRepository {
                 .where(comment.id.eq(commentId))
                 .fetchOne();
 
-        return Optional.ofNullable(result)
-                .map(CommentResponseDto::from)
-                .orElseThrow(() -> new CommentNotFoundException(ErrorCode.COMMENT_NOT_FOUND));
+        if (result == null) {
+            throw new CommentNotFoundException(ErrorCode.COMMENT_NOT_FOUND);
+        }
+        return CommentResponseDto.from(result);
 
     }
 
