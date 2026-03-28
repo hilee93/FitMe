@@ -80,7 +80,7 @@ public class FeedFixtureBuilder {
                 User.create("email-" + UUID.randomUUID() + "@test.com", "password")
         );
 
-        profileRepository.save(
+        Profile profile = profileRepository.save(
                 Profile.create("name", null, null, null, null, null, null, null, null, null, null, user)
         );
 
@@ -131,7 +131,7 @@ public class FeedFixtureBuilder {
                 FeedClothes.create(feed, clothes)
         );
 
-        return new FeedFixture(user, region, weather, feed, clothes, feedClothes);
+        return new FeedFixture(user, region, weather, feed, clothes, feedClothes, profile);
     }
 
     public FeedFixtureWithClothesDetails createFeedFixtureWithClothesDetails() {
@@ -139,9 +139,10 @@ public class FeedFixtureBuilder {
                 User.create("email2@test.com", "password")
         );
 
-        profileRepository.save(
+        Profile profile = profileRepository.save(
                 Profile.create("name", null, null, null, null, null, null, null, null, null, null, user)
         );
+
 
         Region region = regionRepository.save(
                 Region.create(
@@ -236,7 +237,8 @@ public class FeedFixtureBuilder {
             WeatherForecast weather,
             Feed feed,
             Clothes clothes,
-            FeedClothes feedClothes
+            FeedClothes feedClothes,
+            Profile profile
     ) {
     }
 
