@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 // TODO: 인증 관련 로직(signIn/토큰 발급)은 AuthService로 분리 검토
@@ -93,8 +94,7 @@ public class UserServiceImpl implements UserService {
         User user = validateSignIn(signInRequest);
 
         // 기존 로그인 강제 무효화
-        Instant cutoff = Instant.now();
-        tokenBlacklistService.setRevokeAllBefore(user.getId(), cutoff);
+        tokenBlacklistService.setRevokeAllBefore(user.getId(), nowSeconds());
 
         String accessToken = jwtProvider.generateAccessToken(user.getId(), user.getRole().name());
         String refreshToken = jwtProvider.generateRefreshToken(user.getId(), user.getRole().name());
@@ -120,7 +120,7 @@ public class UserServiceImpl implements UserService {
         }
 
         Instant cutoff = tokenBlacklistService.getRevokeAllBefore(userId);
-        if (cutoff != null && iat.isBefore(cutoff)) {
+        if (cutoff != null && iat.isBefore(cutoff.truncatedTo(ChronoUnit.SECONDS))) {
             throw new AuthException(ErrorCode.AUTH_INVALID_TOKEN);
         }
 
@@ -150,7 +150,7 @@ public class UserServiceImpl implements UserService {
 
         user.updateRole(userRoleUpdateRequest.role());
 
-        tokenBlacklistService.setRevokeAllBefore(userId, Instant.now());
+        tokenBlacklistService.setRevokeAllBefore(userId, nowSeconds());
 
         return userMapper.toDto(user);
     }
@@ -163,7 +163,7 @@ public class UserServiceImpl implements UserService {
 
         user.updateLocked(userLockUpdateRequest.locked());
 
-        tokenBlacklistService.setRevokeAllBefore(userId, Instant.now());
+        tokenBlacklistService.setRevokeAllBefore(userId, nowSeconds());
 
         return userMapper.toDto(user);
     }
@@ -182,7 +182,7 @@ public class UserServiceImpl implements UserService {
                 Instant.now().plus(TEMP_PASSWORD_TTL)
         );
 
-        tokenBlacklistService.setRevokeAllBefore(user.getId(), Instant.now());
+        tokenBlacklistService.setRevokeAllBefore(user.getId(), nowSeconds());
 
         // TODO: 메일 발송 연동
         log.info("[TEMP PASSWORD] userEmail={}", user.getEmail());
@@ -199,7 +199,7 @@ public class UserServiceImpl implements UserService {
 
         temporaryPasswordStore.delete(userId);
 
-        tokenBlacklistService.setRevokeAllBefore(userId, Instant.now());
+        tokenBlacklistService.setRevokeAllBefore(userId, nowSeconds());
     }
 
     private void blacklistIfValid(String token) {
@@ -220,5 +220,9 @@ public class UserServiceImpl implements UserService {
             sb.append(TEMP_PASSWORD_CHARS.charAt(idx));
         }
         return sb.toString();
+    }
+
+    private Instant nowSeconds() {
+        return Instant.now().truncatedTo(ChronoUnit.SECONDS);
     }
 }
