@@ -44,12 +44,13 @@ public class NotificationSseService {
 
         emitterRepository.save(userId, emitterId, emitter);
 
-        sendToClient(emitter, userId, emitterId, "connect", null);
+        // TODO : SSE 연결확인 유무로 필요하면 넣기로
+        // sendToClient(emitter, userId, emitterId, null);
 
         return emitter;
     }
 
-    public void send(UUID userId, String eventName, NotificationDto data) {
+    public void send(UUID userId, NotificationDto data) {
         Map<String, SseEmitter> emitters = emitterRepository.findAllByUserId(userId);
 
         for (Map.Entry<String, SseEmitter> entry : emitters.entrySet()) {
@@ -59,6 +60,24 @@ public class NotificationSseService {
             sendToClient(emitter, userId, emitterId, data);
         }
     }
+
+    public void sendAll(NotificationDto data) {
+        Map<UUID, Map<String, SseEmitter>> allEmitters = emitterRepository.findAll();
+
+        for (Map.Entry<UUID, Map<String, SseEmitter>> userEntry : allEmitters.entrySet()) {
+            UUID userId = userEntry.getKey();
+            Map<String, SseEmitter> userEmitters = userEntry.getValue();
+
+            for (Map.Entry<String, SseEmitter> emitterEntry : userEmitters.entrySet()) {
+                String emitterId = emitterEntry.getKey();
+                SseEmitter emitter = emitterEntry.getValue();
+
+                sendToClient(emitter, userId, emitterId, data);
+            }
+        }
+    }
+
+
 
     private void sendToClient(
             SseEmitter emitter,
@@ -73,6 +92,7 @@ public class NotificationSseService {
                             .data(data)
             );
         } catch (IOException | IllegalStateException e) {
+            log.warn("SSE send failed userId={}, emitterId={}", userId, emitterId, e);
             emitterRepository.deleteByUserIdAndEmitterId(userId, emitterId);
         }
     }

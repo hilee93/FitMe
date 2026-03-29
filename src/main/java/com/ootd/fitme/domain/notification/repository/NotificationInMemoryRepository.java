@@ -37,6 +37,11 @@ public class NotificationInMemoryRepository implements EmitterRepository {
     }
 
     @Override
+    public Map<UUID, Map<String, SseEmitter>> findAll() {
+        return emitters;
+    }
+
+    @Override
     public void deleteByUserId(UUID userId) {
         emitters.remove(userId);
     }
