@@ -12,6 +12,8 @@ public interface EmitterRepository {
 
     Map<String, SseEmitter> findAllByUserId(UUID userId);
 
+    Map<UUID, Map<String, SseEmitter>> findAll();
+
     void deleteByUserId(UUID userId);
 
     void deleteByUserIdAndEmitterId(UUID userId, String emitterId);
