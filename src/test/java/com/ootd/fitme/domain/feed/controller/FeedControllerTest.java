@@ -1,6 +1,10 @@
 package com.ootd.fitme.domain.feed.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ootd.fitme.domain.comment.dto.response.CommentFlatRow;
+import com.ootd.fitme.domain.comment.dto.response.CommentResponseDto;
+import com.ootd.fitme.domain.comment.service.CommentService;
+import com.ootd.fitme.domain.feed.dto.request.FeedCommentCreateRequest;
 import com.ootd.fitme.domain.feed.dto.request.FeedCreateRequest;
 import com.ootd.fitme.domain.feed.dto.request.FeedUpdateRequestDto;
 import com.ootd.fitme.domain.feed.dto.response.FeedResponseDto;
@@ -58,6 +62,9 @@ class FeedControllerTest {
 
     @MockitoBean
     private FeedService feedService;
+
+    @MockitoBean
+    private CommentService commentService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -379,6 +386,103 @@ class FeedControllerTest {
         }
     }
 
+    @Nested
+    @DisplayName("POST /api/feeds/{feedId}/comments (댓글 등록)")
+    class CreateCommentTest {
+
+        @Test
+        @DisplayName("[200] 정상 요청 시 댓글 생성 후 200 Created 반환")
+        void createComment_success() throws Exception {
+            // given
+            UUID feedId = UUID.randomUUID();
+            UUID userId = UUID.randomUUID();
+            UUID commentId = UUID.randomUUID();
+
+            FeedCommentCreateRequest request = new FeedCommentCreateRequest(
+                    feedId,
+                    userId,
+                    "댓글 내용"
+            );
+
+            CommentResponseDto response = CommentResponseDto.from(
+                    new CommentFlatRow(
+                            commentId,
+                            Instant.now(),
+                            feedId,
+                            userId,
+                            "name",
+                            null,
+                            "댓글 내용"
+                    )
+            );
+
+            given(commentService.createFeedComment(any(FeedCommentCreateRequest.class), eq(userId)))
+                    .willReturn(response);
+
+            // when & then
+            mockMvc.perform(post("/api/feeds/{feedId}/comments", feedId)
+                            .with(userPrincipal(userId))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").value(commentId.toString()))
+                    .andExpect(jsonPath("$.content").value("댓글 내용"));
+
+            then(commentService).should(times(1))
+                    .createFeedComment(any(FeedCommentCreateRequest.class), eq(userId));
+        }
+
+        @Test
+        @DisplayName("[400] content가 비어있으면 400 Bad Request")
+        void createComment_fail_when_empty_content() throws Exception {
+            // given
+            UUID feedId = UUID.randomUUID();
+            UUID userId = UUID.randomUUID();
+
+            FeedCommentCreateRequest request = new FeedCommentCreateRequest(
+                    feedId,
+                    userId,
+                    ""
+            );
+
+            // when & then
+            mockMvc.perform(post("/api/feeds/{feedId}/comments", feedId)
+                            .with(userPrincipal(userId))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(result ->
+                            assertThat(result.getResolvedException())
+                                    .isInstanceOf(MethodArgumentNotValidException.class));
+        }
+
+        @Test
+        @DisplayName("[404] 존재하지 않는 피드에 댓글 작성 시 404 Not Found 반환")
+        void createComment_fail_when_feed_not_found() throws Exception {
+            // given
+            UUID feedId = UUID.randomUUID();
+            UUID userId = UUID.randomUUID();
+
+            FeedCommentCreateRequest request = new FeedCommentCreateRequest(
+                    feedId,
+                    userId,
+                    "댓글 내용"
+            );
+
+            given(commentService.createFeedComment(any(FeedCommentCreateRequest.class), eq(userId)))
+                    .willThrow(new FeedNotFoundException(ErrorCode.FEED_NOT_FOUND));
+
+            // when & then
+            mockMvc.perform(post("/api/feeds/{feedId}/comments", feedId)
+                            .with(userPrincipal(userId))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isNotFound());
+
+            then(commentService).should(times(1))
+                    .createFeedComment(any(FeedCommentCreateRequest.class), eq(userId));
+        }
+    }
 
 
 }
