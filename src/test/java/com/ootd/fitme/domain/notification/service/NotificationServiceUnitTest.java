@@ -3,6 +3,7 @@ package com.ootd.fitme.domain.notification.service;
 import com.ootd.fitme.domain.follow.repository.FollowRepository;
 import com.ootd.fitme.domain.notification.dto.request.NotificationDeleteRequest;
 import com.ootd.fitme.domain.notification.dto.request.NotificationPageRequest;
+import com.ootd.fitme.domain.notification.dto.response.NotificationDto;
 import com.ootd.fitme.domain.notification.dto.response.NotificationPageResponse;
 import com.ootd.fitme.domain.notification.entity.Notification;
 import com.ootd.fitme.domain.notification.entity.NotificationFactory;
@@ -54,6 +55,9 @@ class NotificationServiceUnitTest {
 
     @InjectMocks
     private NotificationService notificationService;
+
+    @Mock
+    private NotificationSseService notificationSseService;
 
     @Nested
     @DisplayName("알림 생성")
@@ -122,6 +126,10 @@ class NotificationServiceUnitTest {
         @Test
         @DisplayName("속성 추가 알림이 정상적으로 생성된다")
         void shouldCreateNotification_whenAttributeAdded() {
+            UUID userId1 = UUID.randomUUID();
+            UUID notificationId1 = UUID.randomUUID();
+            Instant now = Instant.now();
+
             User user1 = mock(User.class);
             User user2 = mock(User.class);
 
@@ -130,6 +138,17 @@ class NotificationServiceUnitTest {
 
             List<User> users = List.of(user1, user2);
             List<Notification> notifications = List.of(notification1, notification2);
+
+
+            given(user1.getId()).willReturn(userId1);
+
+            given(notification1.getId()).willReturn(notificationId1);
+            given(notification1.getCreatedAt()).willReturn(now);
+            given(notification1.getUser()).willReturn(user1);
+            given(notification1.getTitle()).willReturn("title1");
+            given(notification1.getContent()).willReturn("content1");
+            given(notification1.getLevel()).willReturn(NotificationLevel.INFO);
+
 
             given(userRepository.findAll()).willReturn(users);
             given(notificationFactory.attributeAdded(user1, "color")).willReturn(notification1);
@@ -144,6 +163,7 @@ class NotificationServiceUnitTest {
             verify(notificationFactory).attributeAdded(user1, "color");
             verify(notificationFactory).attributeAdded(user2, "color");
             verify(notificationRepository).saveAll(notifications);
+            verify(notificationSseService).sendAll(any(NotificationDto.class));
         }
 
         @Test
@@ -160,6 +180,8 @@ class NotificationServiceUnitTest {
             List<Notification> notifications = List.of(notification);
 
             given(followRepository.findFollowerIdsByFolloweeId(followeeId)).willReturn(followerIds);
+            given(follower.getId()).willReturn(followerId);
+            given(notification.getUser()).willReturn(follower);
             given(userRepository.findAllById(followerIds)).willReturn(followers);
             given(notificationFactory.followerNewFeed(follower, "writer", "feed")).willReturn(notification);
             given(notificationRepository.saveAll(notifications)).willReturn(notifications);
