@@ -1,10 +1,16 @@
 package com.ootd.fitme.domain.feed.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ootd.fitme.domain.comment.dto.response.CommentFlatRow;
+import com.ootd.fitme.domain.comment.dto.response.CommentResponseDto;
+import com.ootd.fitme.domain.comment.service.CommentService;
+import com.ootd.fitme.domain.feed.dto.request.FeedCommentCreateRequest;
 import com.ootd.fitme.domain.feed.dto.request.FeedCreateRequest;
 import com.ootd.fitme.domain.feed.dto.request.FeedUpdateRequestDto;
 import com.ootd.fitme.domain.feed.dto.response.FeedResponseDto;
 import com.ootd.fitme.domain.feed.exception.FeedAccessDeniedException;
+import com.ootd.fitme.domain.feed.exception.FeedLikeAlreadyExistsException;
+import com.ootd.fitme.domain.feed.exception.FeedLikeNotFoundException;
 import com.ootd.fitme.domain.feed.exception.FeedNotFoundException;
 import com.ootd.fitme.domain.feed.service.FeedService;
 import com.ootd.fitme.global.exception.ErrorCode;
@@ -57,8 +63,32 @@ class FeedControllerTest {
     @MockitoBean
     private FeedService feedService;
 
+    @MockitoBean
+    private CommentService commentService;
+
     @Autowired
     private ObjectMapper objectMapper;
+
+
+    // NOTE: MockMvc 테스트에서 인증된 사용자 요청을 만들기 위해 SecurityContext에 Authentication(principal)을 설정한다.
+    private RequestPostProcessor userPrincipal(UUID userId) {
+        return request -> {
+            CustomUserPrincipal principal = mock(CustomUserPrincipal.class);
+            given(principal.getUserId()).willReturn(userId);
+            given(principal.getAuthorities()).willReturn(List.of());
+
+            Authentication auth = new UsernamePasswordAuthenticationToken(
+                    principal,
+                    null,
+                    principal.getAuthorities()
+            );
+
+            SecurityContext context = SecurityContextHolder.createEmptyContext();
+            context.setAuthentication(auth);
+            SecurityContextHolder.setContext(context);
+            return request;
+        };
+    }
 
     @Nested
     @DisplayName("POST /api/feeds (피드생성)")
@@ -239,24 +269,220 @@ class FeedControllerTest {
         }
     }
 
-    // NOTE: MockMvc 테스트에서 인증된 사용자 요청을 만들기 위해 SecurityContext에 Authentication(principal)을 설정한다.
-    private RequestPostProcessor userPrincipal(UUID userId) {
-        return request -> {
-            CustomUserPrincipal principal = mock(CustomUserPrincipal.class);
-            given(principal.getUserId()).willReturn(userId);
-            given(principal.getAuthorities()).willReturn(List.of());
+    @Nested
+    @DisplayName("POST /api/feeds/{feedId}/like (피드 좋아요 생성)")
+    class LikeFeedTest {
 
-            Authentication auth = new UsernamePasswordAuthenticationToken(
-                    principal,
-                    null,
-                    principal.getAuthorities()
+        @Test
+        @DisplayName("[204] 좋아요 요청 시 204 OK를 반환한다")
+        void likeFeed_success() throws Exception {
+            // given
+            UUID feedId = UUID.randomUUID();
+            UUID userId = UUID.randomUUID();
+
+            willDoNothing().given(feedService).likeFeed(feedId, userId);
+
+            // when & then
+            mockMvc.perform(post("/api/feeds/{feedId}/like", feedId)
+                            .with(userPrincipal(userId)))
+                    .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("[404] 존재하지 않는 피드 좋아요 요청 시 FeedNotFoundException이 발생하고 404를 반환한다")
+        void likeFeed_fail_when_feed_not_found() throws Exception {
+            // given
+            UUID feedId = UUID.randomUUID();
+            UUID userId = UUID.randomUUID();
+
+            willThrow(new FeedNotFoundException(ErrorCode.FEED_NOT_FOUND))
+                    .given(feedService).likeFeed(feedId, userId);
+
+            // when & then
+            mockMvc.perform(post("/api/feeds/{feedId}/like", feedId)
+                            .with(userPrincipal(userId)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(result ->
+                            assertThat(result.getResolvedException())
+                                    .isInstanceOf(FeedNotFoundException.class));
+        }
+
+        @Test
+        @DisplayName("[409] 이미 좋아요한 피드에 다시 요청 시 FeedLikeAlreadyExistsException이 발생하고 409를 반환한다")
+        void likeFeed_fail_when_feed_like_already_exists() throws Exception {
+            // given
+            UUID feedId = UUID.randomUUID();
+            UUID userId = UUID.randomUUID();
+
+            willThrow(new FeedLikeAlreadyExistsException(ErrorCode.FEED_LIKE_ALREADY_EXISTS))
+                    .given(feedService).likeFeed(feedId, userId);
+
+            // when & then
+            mockMvc.perform(post("/api/feeds/{feedId}/like", feedId)
+                            .with(userPrincipal(userId)))
+                    .andExpect(status().isConflict())
+                    .andExpect(result ->
+                            assertThat(result.getResolvedException())
+                                    .isInstanceOf(FeedLikeAlreadyExistsException.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("DELETE /api/feeds/{feedId}/like (피드 좋아요 취소)")
+    class UnlikeFeedTest {
+
+        @Test
+        @DisplayName("[204] 좋아요 취소 요청 시 204 NoContent를 반환한다")
+        void unlikeFeed_success() throws Exception {
+            // given
+            UUID feedId = UUID.randomUUID();
+            UUID userId = UUID.randomUUID();
+
+            willDoNothing().given(feedService).unlikeFeed(feedId, userId);
+
+            // when & then
+            mockMvc.perform(delete("/api/feeds/{feedId}/like", feedId)
+                            .with(userPrincipal(userId)))
+                    .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("[404] 존재하지 않는 피드 좋아요 취소 요청 시 FeedNotFoundException이 발생하고 404를 반환한다")
+        void unlikeFeed_fail_when_feed_not_found() throws Exception {
+            // given
+            UUID feedId = UUID.randomUUID();
+            UUID userId = UUID.randomUUID();
+
+
+            willThrow(new FeedNotFoundException(ErrorCode.FEED_NOT_FOUND))
+                    .given(feedService).unlikeFeed(feedId, userId);
+
+            // when & then
+            mockMvc.perform(delete("/api/feeds/{feedId}/like", feedId)
+                            .with(userPrincipal(userId)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(result ->
+                            assertThat(result.getResolvedException())
+                                    .isInstanceOf(FeedNotFoundException.class));
+        }
+
+        @Test
+        @DisplayName("[404] 좋아요가 없는 상태에서 취소 요청 시 FeedLikeNotFoundException이 발생하고 404를 반환한다")
+        void unlikeFeed_fail_when_feed_like_not_found() throws Exception {
+            // given
+            UUID feedId = UUID.randomUUID();
+            UUID userId = UUID.randomUUID();
+
+            willThrow(new FeedLikeNotFoundException(ErrorCode.FEED_LIKE_NOT_FOUND))
+                    .given(feedService).unlikeFeed(feedId, userId);
+
+            // when & then
+            mockMvc.perform(delete("/api/feeds/{feedId}/like", feedId)
+                            .with(userPrincipal(userId)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(result ->
+                            assertThat(result.getResolvedException())
+                                    .isInstanceOf(FeedLikeNotFoundException.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /api/feeds/{feedId}/comments (댓글 등록)")
+    class CreateCommentTest {
+
+        @Test
+        @DisplayName("[200] 정상 요청 시 댓글 생성 후 200 Created 반환")
+        void createComment_success() throws Exception {
+            // given
+            UUID feedId = UUID.randomUUID();
+            UUID userId = UUID.randomUUID();
+            UUID commentId = UUID.randomUUID();
+
+            FeedCommentCreateRequest request = new FeedCommentCreateRequest(
+                    feedId,
+                    userId,
+                    "댓글 내용"
             );
 
-            SecurityContext context = SecurityContextHolder.createEmptyContext();
-            context.setAuthentication(auth);
-            SecurityContextHolder.setContext(context);
-            return request;
-        };
+            CommentResponseDto response = CommentResponseDto.from(
+                    new CommentFlatRow(
+                            commentId,
+                            Instant.now(),
+                            feedId,
+                            userId,
+                            "name",
+                            null,
+                            "댓글 내용"
+                    )
+            );
+
+            given(commentService.createFeedComment(any(FeedCommentCreateRequest.class), eq(userId)))
+                    .willReturn(response);
+
+            // when & then
+            mockMvc.perform(post("/api/feeds/{feedId}/comments", feedId)
+                            .with(userPrincipal(userId))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").value(commentId.toString()))
+                    .andExpect(jsonPath("$.content").value("댓글 내용"));
+
+            then(commentService).should(times(1))
+                    .createFeedComment(any(FeedCommentCreateRequest.class), eq(userId));
+        }
+
+        @Test
+        @DisplayName("[400] content가 비어있으면 400 Bad Request")
+        void createComment_fail_when_empty_content() throws Exception {
+            // given
+            UUID feedId = UUID.randomUUID();
+            UUID userId = UUID.randomUUID();
+
+            FeedCommentCreateRequest request = new FeedCommentCreateRequest(
+                    feedId,
+                    userId,
+                    ""
+            );
+
+            // when & then
+            mockMvc.perform(post("/api/feeds/{feedId}/comments", feedId)
+                            .with(userPrincipal(userId))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(result ->
+                            assertThat(result.getResolvedException())
+                                    .isInstanceOf(MethodArgumentNotValidException.class));
+        }
+
+        @Test
+        @DisplayName("[404] 존재하지 않는 피드에 댓글 작성 시 404 Not Found 반환")
+        void createComment_fail_when_feed_not_found() throws Exception {
+            // given
+            UUID feedId = UUID.randomUUID();
+            UUID userId = UUID.randomUUID();
+
+            FeedCommentCreateRequest request = new FeedCommentCreateRequest(
+                    feedId,
+                    userId,
+                    "댓글 내용"
+            );
+
+            given(commentService.createFeedComment(any(FeedCommentCreateRequest.class), eq(userId)))
+                    .willThrow(new FeedNotFoundException(ErrorCode.FEED_NOT_FOUND));
+
+            // when & then
+            mockMvc.perform(post("/api/feeds/{feedId}/comments", feedId)
+                            .with(userPrincipal(userId))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isNotFound());
+
+            then(commentService).should(times(1))
+                    .createFeedComment(any(FeedCommentCreateRequest.class), eq(userId));
+        }
     }
+
 
 }

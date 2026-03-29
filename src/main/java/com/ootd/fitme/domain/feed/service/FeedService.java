@@ -17,12 +17,8 @@ public interface FeedService {
 
     FeedResponseDto updateFeed(UUID feedId, UUID userId, FeedUpdateRequestDto feedUpdateRequestDto);
 
-    CommentResponseDto addCommentToFeed(FeedCommentCreateRequest feedCommentCreateRequest);
+    void likeFeed(UUID feedId, UUID userId);
 
-    CommentCursorResponseDto getFeedComments(FeedCommentSearchCondition feedCommentSearchCondition);
-
-    void likeFeed(UUID feedId);
-
-    void unlikeFeed(UUID feedId);
+    void unlikeFeed(UUID feedId, UUID userId);
 
 }

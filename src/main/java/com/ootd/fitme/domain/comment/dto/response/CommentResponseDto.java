@@ -8,6 +8,20 @@ public record CommentResponseDto(
         Instant createdAt,
         UUID feedId,
         CommentAuthorSummaryDto author,
-        String Content
+        String content
 ) {
+    
+    public static CommentResponseDto from(CommentFlatRow row) {
+        return new CommentResponseDto(
+                row.id(),
+                row.createdAt(),
+                row.feedId(),
+                new CommentAuthorSummaryDto(
+                        row.userId(),
+                        row.name(),
+                        row.profileImageUrl()
+                ),
+                row.content()
+        );
+    }
 }

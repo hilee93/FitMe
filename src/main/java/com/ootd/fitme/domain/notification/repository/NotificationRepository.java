@@ -9,4 +9,6 @@ import java.util.UUID;
 public interface NotificationRepository extends JpaRepository<Notification, UUID> , NotificationRepositoryCustom{
 
     Long countByUserId(UUID userId);
+
+    boolean existsByIdAndUserId(UUID notificationId, UUID userId);
 }

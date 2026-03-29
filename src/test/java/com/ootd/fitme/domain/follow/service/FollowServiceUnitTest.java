@@ -1,7 +1,11 @@
 package com.ootd.fitme.domain.follow.service;
 
 import com.ootd.fitme.domain.follow.dto.request.FollowCreateRequest;
+import com.ootd.fitme.domain.follow.dto.response.UserSummary;
 import com.ootd.fitme.domain.follow.entity.Follow;
+import com.ootd.fitme.domain.follow.exception.FollowAlreadyExistsException;
+import com.ootd.fitme.domain.follow.exception.FollowNotFoundException;
+import com.ootd.fitme.domain.follow.repository.FollowProfileQueryRepository;
 import com.ootd.fitme.domain.follow.repository.FollowRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -31,6 +35,9 @@ class FollowServiceUnitTest {
     @Mock
     private FollowCountService followCountService;
 
+    @Mock
+    private FollowProfileQueryRepository followProfileQueryRepository;
+
     @InjectMocks
     private FollowServiceImpl followServiceImpl;
 
@@ -52,6 +59,9 @@ class FollowServiceUnitTest {
 
             given(followRepository.save(any(Follow.class)))
                     .willReturn(Follow.create(followerId, followeeId));
+
+            given(followProfileQueryRepository.findUserSummaryByUserId(any()))
+                    .willReturn(new UserSummary(UUID.randomUUID(), "진우", null));
 
             //when
             followServiceImpl.createFollow(request);
@@ -75,7 +85,7 @@ class FollowServiceUnitTest {
 
             // when & then
             assertThatThrownBy(() -> followServiceImpl.createFollow(request))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(FollowAlreadyExistsException.class)
                     .hasMessage("이미 팔로우한 사용자입니다.");
 
             then(followRepository).should(never()).save(any(Follow.class));
@@ -117,7 +127,7 @@ class FollowServiceUnitTest {
 
             //when & then
             assertThatThrownBy(() -> followServiceImpl.cancelFollow(followId))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(FollowNotFoundException.class)
                     .hasMessage("존재하지 않는 팔로우입니다.");
 
             then(followCountService).should(never()).decreaseFollowCount(any(Follow.class));
@@ -133,10 +143,11 @@ class FollowServiceUnitTest {
         void getFollowings_call_findFollowings() {
 
             //given
-            int limit = 2;
+            Integer limit = 2;
             UUID followerId = UUID.randomUUID();
 
-            given(followRepository.findFollowings(any(), any(), any(), anyInt(), any())).willReturn(List.of());
+            given(followRepository.findFollowings(any(), any(), any(), any(), any())).willReturn(List.of());
+            given(followProfileQueryRepository.findFolloweeCountByUserId(any())).willReturn(0);
 
             //when
             followServiceImpl.getFollowings(followerId, null, null, limit, null);
@@ -155,10 +166,11 @@ class FollowServiceUnitTest {
         void getFollowers_call_findFollowers() {
 
             //given
-            int limit = 2;
+            Integer limit = 2;
             UUID followeeId = UUID.randomUUID();
 
-            given(followRepository.findFollowers(any(), any(), any(), anyInt(), any())).willReturn(List.of());
+            given(followRepository.findFollowers(any(), any(), any(), any(), any())).willReturn(List.of());
+            given(followProfileQueryRepository.findFollowerCountByUserId(any())).willReturn(0);
 
             //when
             followServiceImpl.getFollowers(followeeId, null, null, limit, null);
@@ -166,6 +178,34 @@ class FollowServiceUnitTest {
             //then
             then(followRepository).should().findFollowers(eq(followeeId), any(), any(), eq(limit), any());
 
+        }
+    }
+
+    @Nested
+    @DisplayName("팔로우 요약 조회")
+    class GetFollowSummaryTest{
+
+        @Test
+        @DisplayName("성공 - followSummary 호출 시 profile과 follow 조회가 호출된다")
+        void getFollowSummary_called_profileAndFollow() {
+
+            //given
+            UUID userId = UUID.randomUUID();
+            UUID myId = UUID.randomUUID();
+
+            given(followRepository.findByFollowerIdAndFolloweeId(myId, userId)).willReturn(Optional.empty());
+            given(followRepository.findByFollowerIdAndFolloweeId(userId, myId)).willReturn(Optional.empty());
+            given(followProfileQueryRepository.findFollowerCountByUserId(userId)).willReturn(0);
+            given(followProfileQueryRepository.findFolloweeCountByUserId(userId)).willReturn(0);
+
+            //when
+            followServiceImpl.getFollowSummary(userId, myId);
+
+            //then
+            then(followRepository).should().findByFollowerIdAndFolloweeId(myId, userId);
+            then(followRepository).should().findByFollowerIdAndFolloweeId(userId, myId);
+            then(followProfileQueryRepository).should().findFollowerCountByUserId(userId);
+            then(followProfileQueryRepository).should().findFolloweeCountByUserId(userId);
         }
     }
 }

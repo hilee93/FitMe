@@ -11,11 +11,15 @@ import com.ootd.fitme.domain.feed.dto.request.FeedUpdateRequestDto;
 import com.ootd.fitme.domain.feed.dto.response.FeedResponseDto;
 import com.ootd.fitme.domain.feed.entity.Feed;
 import com.ootd.fitme.domain.feed.exception.FeedAccessDeniedException;
+import com.ootd.fitme.domain.feed.exception.FeedLikeAlreadyExistsException;
+import com.ootd.fitme.domain.feed.exception.FeedLikeNotFoundException;
 import com.ootd.fitme.domain.feed.exception.FeedNotFoundException;
 import com.ootd.fitme.domain.feed.fixture.FeedFixtureBuilder;
 import com.ootd.fitme.domain.feed.fixture.FeedFixtureBuilder.FeedFixture;
 import com.ootd.fitme.domain.feed.repository.FeedRepository;
 import com.ootd.fitme.domain.feedclothes.repository.FeedClothesRepository;
+import com.ootd.fitme.domain.feedlike.entity.FeedLike;
+import com.ootd.fitme.domain.feedlike.repository.FeedLikeRepository;
 import com.ootd.fitme.domain.profile.repository.ProfileRepository;
 import com.ootd.fitme.domain.region.repository.RegionRepository;
 import com.ootd.fitme.domain.selectablevalue.repository.SelectableValueRepository;
@@ -35,6 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.UUID;
+import java.util.concurrent.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -84,6 +89,8 @@ class FeedServiceImplTest {
 
     @Autowired
     private EntityManager em;
+    @Autowired
+    private FeedLikeRepository feedLikeRepository;
 
     @Nested
     @DisplayName("피드관리 - 피드생성")
@@ -264,6 +271,143 @@ class FeedServiceImplTest {
 
             Feed reloadedFeed = feedRepository.findById(feedId).orElseThrow();
             assertThat(reloadedFeed.getContent()).isNotEqualTo("수정된 내용");
+        }
+
+    }
+
+    @Nested
+    @DisplayName("피드좋아요 생성")
+    class LikeFeedTest {
+
+        @Test
+        @DisplayName("[Positive] 피드좋아요 - 피드 좋아요 요청시 FeedLike가 저장되고 likeCount가 증가한다")
+        void likeFeed_success_when_valid_request() {
+
+            // given
+            FeedFixture feedFixture = feedFixtureBuilder.createFeedFixture();
+            Feed feed = feedFixture.feed();
+
+            User liker = userRepository.save(
+                    User.create("liker-" + UUID.randomUUID() + "@test.com", "password")
+            );
+
+            UUID feedId = feed.getId();
+            UUID likerId = liker.getId();
+
+            // when
+            feedService.likeFeed(feedId, likerId);
+
+            // then
+            em.flush();
+            em.clear();
+
+            assertThat(feedLikeRepository.existsByFeedIdAndUserId(feedId, likerId)).isTrue();
+
+            Feed reloadedFeed = feedRepository.findById(feedId).orElseThrow();
+            assertThat(reloadedFeed.getLikeCount()).isEqualTo(1);
+
+        }
+
+        @Test
+        @DisplayName("[Negative] 존재하지 않는 피드 좋아요 요청 시 FeedNotFoundException이 발생한다")
+        void likeFeed_fail_when_feed_not_found() {
+            // given
+            User liker = userRepository.save(
+                    User.create("liker-" + UUID.randomUUID() + "@test.com", "password")
+            );
+
+            UUID notExistsFeedId = UUID.randomUUID();
+
+            // when & then
+            assertThatThrownBy(() -> feedService.likeFeed(notExistsFeedId, liker.getId()))
+                    .isInstanceOf(FeedNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("[Negative] 이미 좋아요한 피드에 다시 좋아요 요청 시 FeedLikeAlreadyExistsException이 발생한다")
+        void likeFeed_fail_when_feed_like_already_exists() {
+            // given
+            FeedFixture feedFixture = feedFixtureBuilder.createFeedFixture();
+            Feed feed = feedFixture.feed();
+            User author = feed.getUser();
+
+            User liker = userRepository.save(
+                    User.create("liker-" + UUID.randomUUID() + "@test.com", "password")
+            );
+
+            feedLikeRepository.save(
+                    FeedLike.create(feed, liker)
+            );
+
+            // when & then
+            assertThatThrownBy(() -> feedService.likeFeed(feed.getId(), liker.getId()))
+                    .isInstanceOf(FeedLikeAlreadyExistsException.class);
+        }
+
+    }
+
+    @Nested
+    @DisplayName("피드좋아요 취소")
+    class UnLikeFeedTest {
+
+        @Test
+        @DisplayName("[Positive] 피드좋아요 취소 - 좋아요 취소 요청 시 FeedLike가 삭제되고 likeCount가 감소한다")
+        void unlikeFeed_success_when_valid_request() {
+            // given
+            FeedFixtureBuilder.FeedFixture feedFixture = feedFixtureBuilder.createFeedFixture();
+            Feed feed = feedFixture.feed();
+
+            User liker = userRepository.save(
+                    User.create("liker-" + UUID.randomUUID() + "@test.com", "password")
+            );
+
+            feedService.likeFeed(feed.getId(), liker.getId());
+
+            em.flush();
+            em.clear();
+
+            // when
+            feedService.unlikeFeed(feed.getId(), liker.getId());
+
+            // then
+            em.flush();
+            em.clear();
+
+            Feed reloadedFeed = feedRepository.findById(feed.getId()).orElseThrow();
+            assertThat(reloadedFeed.getLikeCount()).isEqualTo(0);
+
+            assertThat(feedLikeRepository.existsByFeedIdAndUserId(feed.getId(), liker.getId())).isFalse();
+        }
+
+        @Test
+        @DisplayName("[Negative] 피드좋아요 취소 - 존재하지 않는 피드 취소 요청 시 FeedNotFoundException이 발생한다")
+        void unlikeFeed_fail_when_feed_not_found() {
+            // given
+            User liker = userRepository.save(
+                    User.create("liker-" + UUID.randomUUID() + "@test.com", "password")
+            );
+
+            UUID notExistsFeedId = UUID.randomUUID();
+
+            // when & then
+            assertThatThrownBy(() -> feedService.unlikeFeed(notExistsFeedId, liker.getId()))
+                    .isInstanceOf(FeedNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("[Negative] 피드좋아요 취소 - 좋아요가 없는 상태에서 취소 요청 시 예외가 발생한다")
+        void unlikeFeed_fail_when_feed_like_not_found() {
+            // given
+            FeedFixtureBuilder.FeedFixture feedFixture = feedFixtureBuilder.createFeedFixture();
+            Feed feed = feedFixture.feed();
+
+            User liker = userRepository.save(
+                    User.create("liker-" + UUID.randomUUID() + "@test.com", "password")
+            );
+
+            // when & then
+            assertThatThrownBy(() -> feedService.unlikeFeed(feed.getId(), liker.getId()))
+                    .isInstanceOf(FeedLikeNotFoundException.class);
         }
 
     }

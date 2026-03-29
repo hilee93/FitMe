@@ -1,17 +1,24 @@
 package com.ootd.fitme.domain.notification.service;
 
 import com.ootd.fitme.domain.follow.repository.FollowRepository;
+import com.ootd.fitme.domain.notification.dto.request.NotificationDeleteRequest;
 import com.ootd.fitme.domain.notification.dto.request.NotificationPageRequest;
 import com.ootd.fitme.domain.notification.dto.response.NotificationPageResponse;
 import com.ootd.fitme.domain.notification.dto.response.NotificationDto;
 import com.ootd.fitme.domain.notification.entity.Notification;
 import com.ootd.fitme.domain.notification.entity.NotificationFactory;
+import com.ootd.fitme.domain.notification.exception.NotificationBadRequestException;
+import com.ootd.fitme.domain.notification.exception.NotificationException;
+import com.ootd.fitme.domain.notification.exception.NotificationNotFoundException;
 import com.ootd.fitme.domain.notification.mapper.NotificationMapper;
 import com.ootd.fitme.domain.notification.repository.NotificationRepository;
 import com.ootd.fitme.domain.user.entity.User;
+import com.ootd.fitme.domain.user.exception.user.UserException;
 import com.ootd.fitme.domain.user.repository.UserRepository;
+import com.ootd.fitme.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Slice;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,7 +41,7 @@ public class NotificationService {
     public Notification notifyDirectMessage(UUID receiverId, String senderName,String message) {
 
         User receiver = userRepository.findById(receiverId)
-                .orElseThrow(() -> new IllegalArgumentException("user not found"));
+                .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
 
         Notification notification = notificationFactory.dm(receiver, senderName,message);
         return notificationRepository.save(notification);
@@ -44,7 +51,8 @@ public class NotificationService {
     public Notification notifyFollowed(UUID followeeId, String followerName) {
 
         User user = userRepository.findById(followeeId)
-                .orElseThrow(() -> new IllegalArgumentException("user not found"));
+                .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
+
 
         Notification notification = notificationFactory.followed(user, followerName);
         return notificationRepository.save(notification);
@@ -66,7 +74,8 @@ public class NotificationService {
     public Notification notifyFeedLiked(UUID likedId, String likerName) {
 
         User user = userRepository.findById(likedId)
-                .orElseThrow(() -> new IllegalArgumentException("user not found"));
+                .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
+
 
         Notification notification = notificationFactory.feedLiked(user, likerName);
         return notificationRepository.save(notification);
@@ -76,7 +85,8 @@ public class NotificationService {
     public Notification notifyFeedCommented(UUID feedOwnerId, String commenterName, String comment) {
 
         User user = userRepository.findById(feedOwnerId)
-                .orElseThrow(() -> new IllegalArgumentException("user not found"));
+                .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
+
 
         Notification notification = notificationFactory.feedCommented(user, commenterName,comment);
         return notificationRepository.save(notification);
@@ -144,8 +154,21 @@ public class NotificationService {
     }
 
     @Transactional
-    public void delete(UUID notificationId) {
+    public void delete(NotificationDeleteRequest request) {
 
-        notificationRepository.deleteById(notificationId);
+
+        // 해당유저의 알림ID 유무 판별
+        boolean exists = notificationRepository
+                .existsByIdAndUserId(request.notificationId(), request.userId());
+
+        if (!exists) {
+            throw new NotificationBadRequestException(
+                    request.notificationId(),
+                    request.userId()
+            );
+        }
+
+
+        notificationRepository.deleteById(request.notificationId());
     }
 }

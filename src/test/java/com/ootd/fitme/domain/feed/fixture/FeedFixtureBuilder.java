@@ -30,6 +30,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 @Component
 public class FeedFixtureBuilder {
@@ -76,10 +77,10 @@ public class FeedFixtureBuilder {
 
     public FeedFixture createFeedFixture() {
         User user = userRepository.save(
-                User.create("email@test.com", "password")
+                User.create("email-" + UUID.randomUUID() + "@test.com", "password")
         );
 
-        profileRepository.save(
+        Profile profile = profileRepository.save(
                 Profile.create("name", null, null, null, null, null, null, null, null, null, null, user)
         );
 
@@ -130,7 +131,7 @@ public class FeedFixtureBuilder {
                 FeedClothes.create(feed, clothes)
         );
 
-        return new FeedFixture(user, region, weather, feed, clothes, feedClothes);
+        return new FeedFixture(user, region, weather, feed, clothes, feedClothes, profile);
     }
 
     public FeedFixtureWithClothesDetails createFeedFixtureWithClothesDetails() {
@@ -138,9 +139,10 @@ public class FeedFixtureBuilder {
                 User.create("email2@test.com", "password")
         );
 
-        profileRepository.save(
+        Profile profile = profileRepository.save(
                 Profile.create("name", null, null, null, null, null, null, null, null, null, null, user)
         );
+
 
         Region region = regionRepository.save(
                 Region.create(
@@ -194,17 +196,17 @@ public class FeedFixtureBuilder {
         );
 
         SelectableValue s = selectableValueRepository.save(
-                SelectableValue.create("S", sizeAttribute)
+                SelectableValue.create("S", 0, sizeAttribute)
         );
         SelectableValue m = selectableValueRepository.save(
-                SelectableValue.create("M", sizeAttribute)
+                SelectableValue.create("M", 1, sizeAttribute)
         );
         SelectableValue l = selectableValueRepository.save(
-                SelectableValue.create("L", sizeAttribute)
+                SelectableValue.create("L", 2, sizeAttribute)
         );
 
         SelectableValue free = selectableValueRepository.save(
-                SelectableValue.create("FREE", sizeAttribute)
+                SelectableValue.create("FREE", 3, sizeAttribute)
         );
 
         ClothesAttribute clothesAttribute = clothesAttributeRepository.save(
@@ -235,7 +237,8 @@ public class FeedFixtureBuilder {
             WeatherForecast weather,
             Feed feed,
             Clothes clothes,
-            FeedClothes feedClothes
+            FeedClothes feedClothes,
+            Profile profile
     ) {
     }
 

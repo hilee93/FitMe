@@ -29,10 +29,10 @@ class FeedSelectableValueQueryRepositoryImplTest {
     void findFeedSelectableValuesByAttributeIds_returns_all_values_of_attribute() {
         // given
         Attribute size = em.persist(Attribute.create("사이즈"));
-        em.persist(SelectableValue.create("S", size));
-        em.persist(SelectableValue.create("M", size));
-        em.persist(SelectableValue.create("L", size));
-        em.persist(SelectableValue.create("FREE", size));
+        em.persist(SelectableValue.create("S", 0, size));
+        em.persist(SelectableValue.create("M", 1, size));
+        em.persist(SelectableValue.create("L", 2, size));
+        em.persist(SelectableValue.create("FREE", 3, size));
 
         em.flush();
         em.clear();

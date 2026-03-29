@@ -2,6 +2,8 @@ package com.ootd.fitme.domain.follow.entity;
 
 
 import com.ootd.fitme.domain.base.BaseEntity;
+import com.ootd.fitme.domain.follow.exception.FollowSelfNotAllowedException;
+import com.ootd.fitme.global.exception.ErrorCode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -31,7 +33,7 @@ public class Follow extends BaseEntity {
 
     public static Follow create(UUID followerId, UUID followeeId) {
         if (followerId.equals(followeeId)) {
-            throw new IllegalArgumentException("자신을 팔로우 할 수 없습니다.");
+            throw new FollowSelfNotAllowedException(ErrorCode.FOLLOW_SELF_NOT_ALLOWED);
         }
         return new Follow(followerId, followeeId);
     }
