@@ -44,7 +44,7 @@ public class UserController {
     }
 
     @PatchMapping("/{userId}/password")
-    @PreAuthorize("hasRole('ADMIN') or #userId == principal.userId")
+    @PreAuthorize("#userId == principal.userId")
     public ResponseEntity<Void> changePassword(@PathVariable UUID userId,
                                                @Valid @RequestBody ChangePasswordRequest changePasswordRequest) {
         userService.changePassword(userId, changePasswordRequest);
