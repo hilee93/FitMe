@@ -43,8 +43,6 @@ public class NotificationSseService {
 
         emitterRepository.save(userId, emitterId, emitter);
 
-        // TODO : SSE 연결확인 유무로 필요하면 넣기로
-        // sendToClient(emitter, userId, emitterId, null);
 
         return emitter;
     }
