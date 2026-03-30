@@ -522,6 +522,70 @@ class FeedControllerTest {
                     .andExpect(status().isOk());
 
         }
+
+        @Test
+        @DisplayName("[200] cursor와 idAfter가 있으면 다음 페이지 댓글 목록을 조회한다")
+        void getFeedComments_next_page_success_when_valid_request() throws Exception {
+            // given
+            UUID feedId = UUID.randomUUID();
+            UUID idAfter = UUID.randomUUID();
+            String cursor = "2026-03-31T00:00:00Z";
+
+            CommentCursorResponseDto response = new CommentCursorResponseDto(
+                    List.of(),
+                    null,
+                    null,
+                    false,
+                    30L,
+                    CommentSortCriteria.CREATED_AT,
+                    SortDirection.DESCENDING
+            );
+
+            given(commentService.getFeedComments(any(CommentSearchCondition.class)))
+                    .willReturn(response);
+
+            // when & then
+            mockMvc.perform(get("/api/feeds/{feedId}/comments", feedId)
+                            .with(userPrincipal(UUID.randomUUID()))
+                            .param("feedId", feedId.toString())
+                            .param("limit", "20")
+                            .param("cursor", cursor)
+                            .param("idAfter", idAfter.toString()))
+                    .andExpect(status().isOk());
+
+            verify(commentService).getFeedComments(argThat(condition ->
+                    condition.feedId().equals(feedId) &&
+                            condition.limit().equals(20) &&
+                            cursor.equals(condition.cursor()) &&
+                            idAfter.equals(condition.idAfter())
+            ));
+        }
+
+        @Test
+        @DisplayName("[400] limit가 없으면 검증에 실패한다")
+        void getFeedComments_fail_when_limit_is_null() throws Exception {
+            UUID feedId = UUID.randomUUID();
+
+            mockMvc.perform(get("/api/feeds/{feedId}/comments", feedId)
+                            .with(userPrincipal(UUID.randomUUID()))
+                            .param("feedId", feedId.toString()))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("[400] idAfter가 UUID 형식이 아니면 실패한다")
+        void getFeedComments_fail_when_idAfter_invalid() throws Exception {
+            UUID feedId = UUID.randomUUID();
+
+            mockMvc.perform(get("/api/feeds/{feedId}/comments", feedId)
+                            .with(userPrincipal(UUID.randomUUID()))
+                            .param("feedId", feedId.toString())
+                            .param("limit", "20")
+                            .param("idAfter", "invalid-uuid"))
+                    .andExpect(status().isBadRequest());
+        }
+
+
     }
 
 
