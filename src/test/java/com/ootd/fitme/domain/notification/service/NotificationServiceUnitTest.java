@@ -10,6 +10,7 @@ import com.ootd.fitme.domain.notification.entity.NotificationFactory;
 import com.ootd.fitme.domain.notification.enums.NotificationLevel;
 import com.ootd.fitme.domain.notification.enums.NotificationType;
 import com.ootd.fitme.domain.notification.exception.NotificationBadRequestException;
+import com.ootd.fitme.domain.notification.repository.NotificationProfileRepository;
 import com.ootd.fitme.domain.notification.repository.NotificationRepository;
 import com.ootd.fitme.domain.profile.repository.ProfileRepository;
 import com.ootd.fitme.domain.user.entity.User;
@@ -60,6 +61,9 @@ class NotificationServiceUnitTest {
 
     @Mock
     private NotificationSseService notificationSseService;
+
+    @Mock
+    private NotificationProfileRepository notificationProfileRepository;
 
     @Nested
     @DisplayName("알림 생성")
@@ -215,7 +219,7 @@ class NotificationServiceUnitTest {
             List<User> users = List.of(user);
             List<Notification> notifications = List.of(notification);
 
-            given(profileRepository.findUsersByRegion1AndRegion2(region1, region2))
+            given(notificationProfileRepository.findUsersByRegion1AndRegion2(region1, region2))
                     .willReturn(users);
 
             given(notificationFactory.weatherAlert(user,region1, region2, weatherAlert))
@@ -239,7 +243,7 @@ class NotificationServiceUnitTest {
             // then
             assertThat(result).containsExactly(notification);
 
-            verify(profileRepository).findUsersByRegion1AndRegion2(region1, region2);
+            verify(notificationProfileRepository).findUsersByRegion1AndRegion2(region1, region2);
             verify(notificationFactory).weatherAlert(user,region1,region2, weatherAlert);
             verify(notificationRepository).saveAll(notifications);
             verify(notificationSseService).send(eq(userId), any(NotificationDto.class));

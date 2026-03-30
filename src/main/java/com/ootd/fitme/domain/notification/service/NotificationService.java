@@ -11,6 +11,7 @@ import com.ootd.fitme.domain.notification.exception.NotificationBadRequestExcept
 import com.ootd.fitme.domain.notification.exception.NotificationException;
 import com.ootd.fitme.domain.notification.exception.NotificationNotFoundException;
 import com.ootd.fitme.domain.notification.mapper.NotificationMapper;
+import com.ootd.fitme.domain.notification.repository.NotificationProfileRepository;
 import com.ootd.fitme.domain.notification.repository.NotificationRepository;
 import com.ootd.fitme.domain.profile.repository.ProfileRepository;
 import com.ootd.fitme.domain.user.entity.User;
@@ -37,7 +38,8 @@ public class NotificationService {
     private final UserRepository userRepository;
     private final FollowRepository followRepository;
     private final NotificationSseService notificationSseService;
-    private final ProfileRepository profileRepository;
+    //private final ProfileRepository profileRepository; TODO : 나중에 추가하신다고 일단 내 레포로 대체
+    private final NotificationProfileRepository notificationProfileRepository;
 
 
 
@@ -79,7 +81,7 @@ public class NotificationService {
     @Transactional
     public List<Notification> notifyWeatherAlert(String region1, String region2 , String weatherAlert) {
 
-        List<User> users = profileRepository.findUsersByRegion1AndRegion2(region1, region2);
+        List<User> users = notificationProfileRepository.findUsersByRegion1AndRegion2(region1, region2);
 
         List<Notification> notifications = users.stream()
                 .map(user -> notificationFactory.weatherAlert(user,region1,region2, weatherAlert))

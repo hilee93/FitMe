@@ -6,6 +6,7 @@ import com.ootd.fitme.domain.notification.dto.response.NotificationDto;
 import com.ootd.fitme.domain.notification.entity.Notification;
 import com.ootd.fitme.domain.notification.enums.NotificationLevel;
 import com.ootd.fitme.domain.notification.entity.NotificationFactory;
+import com.ootd.fitme.domain.notification.repository.NotificationProfileRepository;
 import com.ootd.fitme.domain.notification.repository.NotificationRepository;
 
 import com.ootd.fitme.domain.profile.repository.ProfileRepository;
@@ -46,6 +47,8 @@ class NotificationServiceSseUnitTest {
     private ProfileRepository profileRepository;
     @Mock
     private FollowRepository followRepository;
+    @Mock
+    private NotificationProfileRepository notificationProfileRepository;
 
     @InjectMocks
     private NotificationService notificationService;
@@ -113,7 +116,7 @@ class NotificationServiceSseUnitTest {
             List<User> users = List.of(user1, user2);
             List<Notification> notifications = List.of(notification1, notification2);
 
-            given(profileRepository.findUsersByRegion1AndRegion2(region1, region2)).willReturn(users);
+            given(notificationProfileRepository.findUsersByRegion1AndRegion2(region1, region2)).willReturn(users);
 
             given(notificationFactory.weatherAlert(user1, region1, region2, weatherAlert))
                     .willReturn(notification1);
@@ -144,7 +147,7 @@ class NotificationServiceSseUnitTest {
             // then
             assertThat(result).containsExactly(notification1, notification2);
 
-            verify(profileRepository).findUsersByRegion1AndRegion2(region1, region2);
+            verify(notificationProfileRepository).findUsersByRegion1AndRegion2(region1, region2);
             verify(notificationFactory).weatherAlert(user1, region1, region2, weatherAlert);
             verify(notificationFactory).weatherAlert(user2, region1, region2, weatherAlert);
             verify(notificationRepository).saveAll(notifications);
