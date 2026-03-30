@@ -1,9 +1,11 @@
 package com.ootd.fitme.domain.comment.repository;
 
+import com.ootd.fitme.domain.comment.dto.request.CommentSearchCondition;
 import com.ootd.fitme.domain.comment.dto.response.CommentFlatRow;
 import com.ootd.fitme.domain.comment.dto.response.CommentResponseDto;
 import com.ootd.fitme.domain.comment.entity.QComment;
 import com.ootd.fitme.domain.comment.exception.CommentNotFoundException;
+import com.ootd.fitme.domain.feed.dto.response.CursorResult;
 import com.ootd.fitme.domain.profile.entity.QProfile;
 import com.ootd.fitme.domain.user.entity.QUser;
 import com.ootd.fitme.global.exception.ErrorCode;
@@ -21,7 +23,7 @@ public class CommentQueryRepository {
     private final JPAQueryFactory queryFactory;
 
 
-    public CommentResponseDto getFeedComment(UUID commentId) {
+    public CommentResponseDto findFeedCommentById(UUID commentId) {
 
         QComment comment = QComment.comment;
         QProfile profile = QProfile.profile;
@@ -51,6 +53,11 @@ public class CommentQueryRepository {
         }
         return CommentResponseDto.from(result);
 
+    }
+
+    public CursorResult<CommentResponseDto> findCommentsByFeedId(CommentSearchCondition condition) {
+        // TODO: 쿼리문 작성
+        return null;
     }
 
 

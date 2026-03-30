@@ -36,7 +36,7 @@ class CommentQueryRepositoryTest {
 
     @Test
     @DisplayName("댓글이 존재하면 댓글 상세 정보를 조회한다")
-    void getFeedComment_success_when_comment_exists() {
+    void findfeedComment_success_when_comment_ById_exists() {
         // given
         FeedFixture feedFixture = feedFixtureBuilder.createFeedFixture();
         User user = feedFixture.user();
@@ -50,7 +50,7 @@ class CommentQueryRepositoryTest {
         em.clear();
 
         // when
-        CommentResponseDto result = commentQueryRepository.getFeedComment(comment.getId());
+        CommentResponseDto result = commentQueryRepository.findFeedCommentById(comment.getId());
 
         // then
         assertThat(result.id()).isEqualTo(comment.getId());
@@ -63,12 +63,12 @@ class CommentQueryRepositoryTest {
 
     @Test
     @DisplayName("댓글이 없으면 CommentNotFoundException이 발생한다")
-    void getFeedComment_fail_when_comment_not_found() {
+    void findfeedComment_fail_when_comment_ById_not_found() {
         // given
         UUID notExistingCommentId = UUID.randomUUID();
 
         // when & then
-        assertThatThrownBy(() -> commentQueryRepository.getFeedComment(notExistingCommentId))
+        assertThatThrownBy(() -> commentQueryRepository.findFeedCommentById(notExistingCommentId))
                 .isInstanceOf(CommentNotFoundException.class);
     }
 }

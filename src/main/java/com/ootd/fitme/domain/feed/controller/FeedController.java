@@ -1,5 +1,6 @@
 package com.ootd.fitme.domain.feed.controller;
 
+import com.ootd.fitme.domain.comment.dto.request.CommentSearchCondition;
 import com.ootd.fitme.domain.comment.dto.response.CommentCursorResponseDto;
 import com.ootd.fitme.domain.comment.dto.response.CommentResponseDto;
 import com.ootd.fitme.domain.comment.service.CommentService;
@@ -84,10 +85,10 @@ public class FeedController implements FeedControllerDocs {
     @Override
     @GetMapping("/{feedId}/comments")
     public ResponseEntity<CommentCursorResponseDto> getAllFeedComments(
-            @Valid FeedCommentSearchCondition feedCommentSearchCondition,
+            @Valid CommentSearchCondition commentSearchCondition,
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal
     ) {
-        commentService.getFeedComments(feedCommentSearchCondition, userPrincipal.getUserId());
+        commentService.getFeedComments(commentSearchCondition);
         return null;
     }
 }

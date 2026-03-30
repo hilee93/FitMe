@@ -1,11 +1,11 @@
 package com.ootd.fitme.domain.comment.service;
 
+import com.ootd.fitme.domain.comment.dto.request.CommentSearchCondition;
 import com.ootd.fitme.domain.comment.dto.response.CommentCursorResponseDto;
 import com.ootd.fitme.domain.comment.dto.response.CommentResponseDto;
 import com.ootd.fitme.domain.comment.entity.Comment;
 import com.ootd.fitme.domain.comment.repository.CommentRepository;
 import com.ootd.fitme.domain.feed.dto.request.FeedCommentCreateRequest;
-import com.ootd.fitme.domain.feed.dto.request.FeedCommentSearchCondition;
 import com.ootd.fitme.domain.feed.entity.Feed;
 import com.ootd.fitme.domain.feed.exception.FeedNotFoundException;
 import com.ootd.fitme.domain.feed.repository.FeedRepository;
@@ -41,7 +41,8 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional(readOnly = true)
-    public CommentCursorResponseDto getFeedComments(FeedCommentSearchCondition feedCommentSearchCondition, UUID userId) {
-        return null;
+    public CommentCursorResponseDto getFeedComments(CommentSearchCondition feedCommentSearchCondition) {
+
+        return commentQueryService.getComments(feedCommentSearchCondition);
     }
 }
