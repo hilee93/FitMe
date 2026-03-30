@@ -83,7 +83,7 @@ class CommentQueryRepositoryTest {
 
         @Test
         @DisplayName("댓글조회 - 피드 댓글 목록조회시limit 만큼 조회 및 hasNext true")
-        void findFeedComments_success_when_valid_request() throws JsonProcessingException {
+        void findFeedComments_success_when_valid_request() {
             // given
             FeedFixture feedFixture = feedFixtureBuilder.createFeedFixture();
             User user = feedFixture.user();
@@ -136,5 +136,57 @@ class CommentQueryRepositoryTest {
             assertThat(result.content()).hasSize(10);
             assertThat(result.total()).isEqualTo(10);
         }
+
+        @Test
+        @DisplayName("댓글조회 - 첫 페이지의 next cursor로 다음 페이지를 조회하면 남은 댓글이 조회된다")
+        void findFeedComments_next_page_success_when_valid_cursor() {
+            // given
+            FeedFixture feedFixture = feedFixtureBuilder.createFeedFixture();
+            User user = feedFixture.user();
+            Feed feed = feedFixture.feed();
+
+            for (int i = 0; i < 30; i++) {
+                Comment comment = Comment.create("댓글 내용" + i, feed, user);
+                em.persist(comment);
+            }
+
+            em.flush();
+            em.clear();
+
+            CommentSearchCondition firstCondition =
+                    new CommentSearchCondition(null, null, 20, feed.getId());
+
+            // when - 첫 페이지 조회
+            CursorResult<CommentResponseDto> firstPage =
+                    commentQueryRepository.findCommentsByFeedId(firstCondition);
+
+            CommentResponseDto lastOfFirstPage =
+                    firstPage.content().get(firstPage.content().size() - 1);
+
+            CommentSearchCondition secondCondition =
+                    new CommentSearchCondition(
+                            lastOfFirstPage.createdAt().toString(),
+                            lastOfFirstPage.id(),
+                            20,
+                            feed.getId()
+                    );
+
+            CursorResult<CommentResponseDto> secondPage =
+                    commentQueryRepository.findCommentsByFeedId(secondCondition);
+
+            // then
+            assertThat(firstPage.hasNext()).isTrue();
+            assertThat(firstPage.content()).hasSize(20);
+            assertThat(firstPage.total()).isEqualTo(30);
+
+            assertThat(secondPage.hasNext()).isFalse();
+            assertThat(secondPage.content()).hasSize(10);
+            assertThat(secondPage.total()).isEqualTo(30);
+
+            // 첫 페이지 마지막 댓글 다음부터 나와야 함
+            assertThat(secondPage.content().get(0).content()).isEqualTo("댓글 내용9");
+            assertThat(secondPage.content().get(9).content()).isEqualTo("댓글 내용0");
+        }
+
     }
 }
