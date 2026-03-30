@@ -119,4 +119,56 @@ public class Profile extends BaseUpdateEntity {
         );
     }
 
+    public static Profile createDefault(String name, User user) {
+        return new Profile(
+                name,
+                null, null, null, null, null,
+                null, null, null, null, null,
+                user
+        );
+    }
+
+    public void updateName(String name) {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("name must not be empty or blank");
+        }
+        this.name = name.trim();
+    }
+
+    public void updateGender(Gender gender) {
+        this.gender = gender;
+    }
+
+    public void updateBirthDate(LocalDate birthDate) {
+        this.birthDate = birthDate;
+    }
+
+    public void updateTemperatureSensitivity(int temperatureSensitivity) {
+        if (temperatureSensitivity < 1 || temperatureSensitivity > 5) {
+            throw new IllegalArgumentException("temperatureSensitivity must be between 1 and 5");
+        }
+        this.temperatureSensitivity = temperatureSensitivity;
+    }
+
+    public void updateLocation(
+            Double longitude,
+            Double latitude,
+            Integer x,
+            Integer y,
+            String regionOneDepthName,
+            String regionTwoDepthName,
+            String regionThreeDepthName
+    ) {
+        this.longitude = longitude;
+        this.latitude = latitude;
+        this.x = x;
+        this.y = y;
+        this.regionOneDepthName = regionOneDepthName;
+        this.regionTwoDepthName = regionTwoDepthName;
+        this.regionThreeDepthName = regionThreeDepthName;
+    }
+
+    public void updateProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
+    }
 }
