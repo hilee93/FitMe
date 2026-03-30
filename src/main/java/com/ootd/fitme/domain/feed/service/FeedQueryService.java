@@ -29,7 +29,7 @@ public class FeedQueryService {
 
         FeedDetailFlatRow feedDetailFlatRow = feedQueryRepository.findFeedDetail(feedId).orElseThrow(); // 해당 피드의 대략적인 필드들
 
-        Profile profile = profileRepository.findByUserId(feedDetailFlatRow.authorId()).orElseThrow();
+        Profile profile = profileRepository.findByUserId(feedDetailFlatRow.authorId()).orElseThrow(); // TODO:
 
         List<FeedClothesFlatRow> clothesFlatRow = feedClothesQueryRepository.findFeedClothes(feedId);
 
@@ -39,37 +39,11 @@ public class FeedQueryService {
                 .distinct()
                 .toList();
 
-        Map<UUID, List<String>> feedSelectableValuesByAttributeIds = feedSelectableValueQueryRepository.findFeedSelectableValuesByAttributeIds(attributeDefinitionIds);
+        Map<UUID, List<String>> selectableValuesByAttributeId = feedSelectableValueQueryRepository.findFeedSelectableValuesByAttributeIds(attributeDefinitionIds);
 
-        Map<UUID, List<FeedAttributeSummaryDto>> attributesByClothesId = clothesFlatRow.stream()
-                .filter(row -> row.attributeDefinitionId() != null)
-                .collect(Collectors.groupingBy(
-                        FeedClothesFlatRow::clothesId,
-                        LinkedHashMap::new,
-                        Collectors.mapping(
-                                row -> new FeedAttributeSummaryDto(
-                                        row.attributeDefinitionId(),
-                                        row.attributeDefinitionName(),
-                                        feedSelectableValuesByAttributeIds.getOrDefault(row.attributeDefinitionId(), List.of()),
-                                        row.attributeValue()
-                                ),
-                                Collectors.toList()
-                        )
-                ));
+        Map<UUID, List<FeedAttributeSummaryDto>> attributesByClothesId = groupAttributesByClothesId(clothesFlatRow, selectableValuesByAttributeId);
 
-        Map<UUID, FeedClothesSummaryDto> clothesMap = new LinkedHashMap<>();
-        for (FeedClothesFlatRow row : clothesFlatRow) {
-            clothesMap.putIfAbsent(
-                    row.clothesId(),
-                    new FeedClothesSummaryDto(
-                            row.clothesId(),
-                            row.clothesName(),
-                            row.imageUrl(),
-                            row.clothesType(),
-                            attributesByClothesId.getOrDefault(row.clothesId(), List.of())
-                    )
-            );
-        }
+        List<FeedClothesSummaryDto> clothesSummaryDtoList = buildClothesSummaryDtoList(clothesFlatRow, attributesByClothesId);
 
         boolean likedByMe = feedLikeQueryRepository.existsLike(feedId, userId);
 
@@ -97,12 +71,56 @@ public class FeedQueryService {
                                 feedDetailFlatRow.temperatureMax()
                         )
                 ),
-                new ArrayList<>(clothesMap.values()),
+                clothesSummaryDtoList,
                 feedDetailFlatRow.content(),
                 feedDetailFlatRow.likeCount(),
                 feedDetailFlatRow.commentCount(),
                 likedByMe
         );
+    }
+
+    private Map<UUID, List<FeedAttributeSummaryDto>> groupAttributesByClothesId(List<FeedClothesFlatRow> clothesFlatRow, Map<UUID, List<String>> selectableValuesByAttributeId) {
+        return clothesFlatRow.stream()
+                .filter(row -> row.attributeDefinitionId() != null)
+                .collect(Collectors.groupingBy(
+                        FeedClothesFlatRow::clothesId,
+                        LinkedHashMap::new,
+                        Collectors.mapping(
+                                row -> new FeedAttributeSummaryDto(
+                                        row.attributeDefinitionId(),
+                                        row.attributeDefinitionName(),
+                                        selectableValuesByAttributeId.getOrDefault(
+                                                row.attributeDefinitionId(), List.of()
+                                        ),
+                                        row.attributeValue()
+                                ),
+                                Collectors.toList()
+                        )
+                ));
+    }
+
+    private List<FeedClothesSummaryDto> buildClothesSummaryDtoList(
+            List<FeedClothesFlatRow> clothesFlatRow,
+            Map<UUID, List<FeedAttributeSummaryDto>> attributesByClothesId
+    ) {
+        Map<UUID, FeedClothesSummaryDto> clothesById = new LinkedHashMap<>();
+
+        for (FeedClothesFlatRow row : clothesFlatRow) {
+            clothesById.putIfAbsent(
+                    row.clothesId(),
+                    new FeedClothesSummaryDto(
+                            row.clothesId(),
+                            row.clothesName(),
+                            row.imageUrl(),
+                            row.clothesType(),
+                            attributesByClothesId.getOrDefault(
+                                    row.clothesId(), List.of()
+                            )
+                    )
+            );
+        }
+
+        return new ArrayList<>(clothesById.values());
     }
 
 }

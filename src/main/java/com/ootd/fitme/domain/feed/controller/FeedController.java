@@ -2,6 +2,7 @@ package com.ootd.fitme.domain.feed.controller;
 
 import com.ootd.fitme.domain.comment.dto.response.CommentCursorResponseDto;
 import com.ootd.fitme.domain.comment.dto.response.CommentResponseDto;
+import com.ootd.fitme.domain.comment.service.CommentService;
 import com.ootd.fitme.domain.feed.controller.docs.FeedControllerDocs;
 import com.ootd.fitme.domain.feed.dto.request.*;
 import com.ootd.fitme.domain.feed.dto.response.FeedCursorResponseDto;
@@ -23,6 +24,7 @@ import java.util.UUID;
 public class FeedController implements FeedControllerDocs {
 
     private final FeedService feedService;
+    private final CommentService commentService;
 
     @Override
     @GetMapping
@@ -71,13 +73,21 @@ public class FeedController implements FeedControllerDocs {
 
     @Override
     @PostMapping("/{feedId}/comments")
-    public ResponseEntity<CommentResponseDto> addComment(@RequestBody @Valid FeedCommentCreateRequest feedCommentCreateRequest) {
-        return null;
+    public ResponseEntity<CommentResponseDto> addComment(
+            @RequestBody @Valid FeedCommentCreateRequest feedCommentCreateRequest,
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal
+    ) {
+        CommentResponseDto feedComment = commentService.createFeedComment(feedCommentCreateRequest, userPrincipal.getUserId());
+        return ResponseEntity.ok(feedComment);
     }
 
     @Override
     @GetMapping("/{feedId}/comments")
-    public ResponseEntity<CommentCursorResponseDto> getAllFeedComments(@Valid FeedCommentSearchCondition feedCommentSearchCondition) {
+    public ResponseEntity<CommentCursorResponseDto> getAllFeedComments(
+            @Valid FeedCommentSearchCondition feedCommentSearchCondition,
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal
+    ) {
+        commentService.getFeedComments(feedCommentSearchCondition, userPrincipal.getUserId());
         return null;
     }
 }
