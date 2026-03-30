@@ -1,5 +1,7 @@
 package com.ootd.fitme.domain.user.service;
 
+import com.ootd.fitme.domain.profile.entity.Profile;
+import com.ootd.fitme.domain.profile.repository.ProfileRepository;
 import com.ootd.fitme.domain.user.dto.request.*;
 import com.ootd.fitme.domain.user.dto.response.JwtDto;
 import com.ootd.fitme.domain.user.dto.response.SignInResult;
@@ -53,6 +55,9 @@ public class UserServiceUnitTest {
 
     @Mock
     private TemporaryPasswordStore temporaryPasswordStore;
+
+    @Mock
+    private ProfileRepository profileRepository;
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -114,6 +119,24 @@ public class UserServiceUnitTest {
                     .isEqualTo(ErrorCode.USER_ALREADY_EXISTS);
 
             verify(userRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("성공 - 회원가입 시 user/profile 저장 후 UserDto 반환")
+        void signUp_success_withProfile() {
+            UserCreateRequest request = new UserCreateRequest("tester", email, rawPassword);
+            User savedUser = mock(User.class);
+
+            given(userRepository.findByEmail(email)).willReturn(Optional.empty());
+            given(passwordEncoder.encode(rawPassword)).willReturn(encodedPassword);
+            given(userRepository.save(any(User.class))).willReturn(savedUser);
+            given(profileRepository.save(any(Profile.class))).willAnswer(inv -> inv.getArgument(0));
+            given(userMapper.toDto(savedUser)).willReturn(userDto);
+
+            UserDto result = userService.signUp(request);
+
+            assertThat(result).isEqualTo(userDto);
+            verify(profileRepository).save(any(Profile.class));
         }
     }
 

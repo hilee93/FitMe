@@ -1,5 +1,7 @@
 package com.ootd.fitme.domain.user.service;
 
+import com.ootd.fitme.domain.profile.entity.Profile;
+import com.ootd.fitme.domain.profile.repository.ProfileRepository;
 import com.ootd.fitme.domain.user.dto.request.*;
 import com.ootd.fitme.domain.user.dto.response.JwtDto;
 import com.ootd.fitme.domain.user.dto.response.SignInResult;
@@ -39,6 +41,7 @@ public class UserServiceImpl implements UserService {
     private final JwtProvider jwtProvider;
     private final TokenBlacklistService tokenBlacklistService;
     private final TemporaryPasswordStore temporaryPasswordStore;
+    private final ProfileRepository profileRepository;
 
     @Override
     public String encodePassword(String password) {
@@ -60,6 +63,23 @@ public class UserServiceImpl implements UserService {
         String encodedPassword = passwordEncoder.encode(userCreateRequest.password());
         User user = User.create(userCreateRequest.email(), encodedPassword);
         User saved = userRepository.save(user);
+
+        Profile profile = Profile.create(
+                userCreateRequest.name(),
+                null, // longitude
+                null, // latitude
+                null, // x
+                null, // y
+                null, // region1
+                null, // region2
+                null, // region3
+                null, // gender
+                null, // birthDate
+                null, // profileImageUrl
+                saved
+        );
+
+        profileRepository.save(profile);
 
         return userMapper.toDto(saved);
     }
