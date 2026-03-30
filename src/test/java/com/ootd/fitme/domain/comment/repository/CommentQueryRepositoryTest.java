@@ -21,7 +21,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -188,5 +190,67 @@ class CommentQueryRepositoryTest {
             assertThat(secondPage.content().get(9).content()).isEqualTo("댓글 내용0");
         }
 
+
+        @Test
+        @DisplayName("createdAt이 동일한 경우에도 cursor pagination이 정상 동작한다")
+        void findFeedComments_success_when_same_createdAt() {
+            // given
+            FeedFixture feedFixture = feedFixtureBuilder.createFeedFixture();
+            User user = feedFixture.user();
+            Feed feed = feedFixture.feed();
+
+            Instant sameTime = Instant.parse("2024-01-01T00:00:00Z");
+
+            for (int i = 0; i < 30; i++) {
+                Comment comment = Comment.create("댓글 내용" + i, feed, user);
+
+                ReflectionTestUtils.setField(comment, "createdAt", sameTime);
+
+                em.persist(comment);
+            }
+
+            em.flush();
+            em.clear();
+
+            // 첫 페이지
+            CommentSearchCondition firstCondition =
+                    new CommentSearchCondition(null, null, 20, feed.getId());
+
+            CursorResult<CommentResponseDto> firstPage =
+                    commentQueryRepository.findCommentsByFeedId(firstCondition);
+
+            // then (첫 페이지)
+            assertThat(firstPage.hasNext()).isTrue();
+            assertThat(firstPage.content()).hasSize(20);
+            assertThat(firstPage.total()).isEqualTo(30);
+
+            // 다음 페이지 cursor 추출
+            CommentResponseDto last = firstPage.content().get(19);
+
+            CommentSearchCondition secondCondition =
+                    new CommentSearchCondition(
+                            last.createdAt().toString(),
+                            last.id(),
+                            20,
+                            feed.getId()
+                    );
+
+            CursorResult<CommentResponseDto> secondPage =
+                    commentQueryRepository.findCommentsByFeedId(secondCondition);
+
+            // then (두 번째 페이지)
+            assertThat(secondPage.hasNext()).isFalse();
+            assertThat(secondPage.content()).hasSize(10);
+            assertThat(secondPage.total()).isEqualTo(30);
+
+            // 핵심 검증: 중복 없음
+            assertThat(secondPage.content())
+                    .extracting(CommentResponseDto::id)
+                    .doesNotContain(
+                            firstPage.content().stream()
+                                    .map(CommentResponseDto::id)
+                                    .toArray(UUID[]::new)
+                    );
+        }
     }
 }
