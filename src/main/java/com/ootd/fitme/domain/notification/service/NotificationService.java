@@ -12,6 +12,7 @@ import com.ootd.fitme.domain.notification.exception.NotificationException;
 import com.ootd.fitme.domain.notification.exception.NotificationNotFoundException;
 import com.ootd.fitme.domain.notification.mapper.NotificationMapper;
 import com.ootd.fitme.domain.notification.repository.NotificationRepository;
+import com.ootd.fitme.domain.profile.repository.ProfileRepository;
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.exception.user.UserException;
 import com.ootd.fitme.domain.user.repository.UserRepository;
@@ -36,6 +37,8 @@ public class NotificationService {
     private final UserRepository userRepository;
     private final FollowRepository followRepository;
     private final NotificationSseService notificationSseService;
+    private final ProfileRepository profileRepository;
+
 
 
     @Transactional
@@ -74,15 +77,22 @@ public class NotificationService {
     }
 
     @Transactional
-    public List<Notification> notifyWeatherAlert(String region_1, String region_2 , String weatherAlert) {
-        List<User> users = userRepository.findAll();
+    public List<Notification> notifyWeatherAlert(String region1, String region2 , String weatherAlert) {
+
+        List<User> users = profileRepository.findUsersByRegion1AndRegion2(region1, region2);
 
         List<Notification> notifications = users.stream()
-                .map(user -> notificationFactory.weatherAlert(user,region_1 ,region_2,weatherAlert))
+                .map(user -> notificationFactory.weatherAlert(user,region1,region2, weatherAlert))
                 .toList();
 
-        return notificationRepository.saveAll(notifications);
+        List<Notification> saveds = notificationRepository.saveAll(notifications);
 
+        for (Notification saved : saveds) {
+            NotificationDto dto = NotificationMapper.toDto(saved);
+            notificationSseService.send(saved.getUser().getId(), dto);
+        }
+
+        return saveds;
     }
 
     @Transactional
