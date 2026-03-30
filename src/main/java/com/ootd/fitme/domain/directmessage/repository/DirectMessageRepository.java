@@ -7,4 +7,5 @@ import java.util.UUID;
 
 public interface DirectMessageRepository extends JpaRepository<DirectMessage, UUID>, DirectMessageRepositoryCustom {
 
+    long countBySenderIdOrReceiverId(UUID senderId, UUID receiverId);
 }
