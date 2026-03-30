@@ -1,4 +1,4 @@
-package com.ootd.fitme.domain.notification.sse;
+package com.ootd.fitme.domain.notification.repository;
 
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
