@@ -1,7 +1,11 @@
 package com.ootd.fitme.domain.comment.service;
 
+import com.ootd.fitme.domain.comment.dto.request.CommentSearchCondition;
+import com.ootd.fitme.domain.comment.dto.response.CommentCursorResponseDto;
 import com.ootd.fitme.domain.comment.dto.response.CommentResponseDto;
 import com.ootd.fitme.domain.comment.entity.Comment;
+import com.ootd.fitme.domain.comment.enums.CommentSortCriteria;
+import com.ootd.fitme.domain.comment.enums.SortDirection;
 import com.ootd.fitme.domain.comment.exception.CommentNotFoundException;
 import com.ootd.fitme.domain.comment.repository.CommentQueryRepository;
 import com.ootd.fitme.domain.comment.repository.CommentRepository;
@@ -69,7 +73,110 @@ class CommentServiceImplTest {
             assertThat(comment.getFeed().getId()).isEqualTo(feed.getId());
             assertThat(comment.getUser().getId()).isEqualTo(user.getId());
 
+        }
+    }
 
+    @Nested
+    @DisplayName("피드 댓글 목록 조회")
+    class GetFeedComments {
+
+        @Test
+        @DisplayName("댓글이 30개 있으면 limit 20 조회 시 20개와 hasNext=true를 반환한다")
+        void getFeedComments_success_when_has_next() {
+            // given
+            FeedFixtureBuilder.FeedFixture feedFixture = feedFixtureBuilder.createFeedFixture();
+            User user = feedFixture.user();
+            Feed feed = feedFixture.feed();
+
+            for (int i = 0; i < 30; i++) {
+                Comment comment = Comment.create("댓글 내용" + i, feed, user);
+                em.persist(comment);
+            }
+
+            em.flush();
+            em.clear();
+
+            CommentSearchCondition condition =
+                    new CommentSearchCondition(null, null, 20, feed.getId());
+
+            // when
+            CommentCursorResponseDto result = commentService.getFeedComments(condition);
+
+            // then
+            assertThat(result.comments()).hasSize(20);
+            assertThat(result.hasNext()).isTrue();
+            assertThat(result.totalCount()).isEqualTo(30L);
+            assertThat(result.sortBy()).isEqualTo(CommentSortCriteria.CREATED_AT);
+            assertThat(result.sortDirection()).isEqualTo(SortDirection.DESCENDING);
+        }
+
+        @Test
+        @DisplayName("댓글이 10개 있으면 limit 20 조회 시 10개와 hasNext=false를 반환한다")
+        void getFeedComments_success_when_no_next() {
+            // given
+            FeedFixtureBuilder.FeedFixture feedFixture = feedFixtureBuilder.createFeedFixture();
+            User user = feedFixture.user();
+            Feed feed = feedFixture.feed();
+
+            for (int i = 0; i < 10; i++) {
+                Comment comment = Comment.create("댓글 내용" + i, feed, user);
+                em.persist(comment);
+            }
+
+            em.flush();
+            em.clear();
+
+            CommentSearchCondition condition =
+                    new CommentSearchCondition(null, null, 20, feed.getId());
+
+            // when
+            CommentCursorResponseDto result = commentService.getFeedComments(condition);
+
+            // then
+            assertThat(result.comments()).hasSize(10);
+            assertThat(result.hasNext()).isFalse();
+            assertThat(result.totalCount()).isEqualTo(10L);
+        }
+
+        @Test
+        @DisplayName("첫 페이지의 nextCursor와 nextIdAfter로 다음 페이지를 조회할 수 있다")
+        void getFeedComments_success_next_page() {
+            // given
+            FeedFixtureBuilder.FeedFixture feedFixture = feedFixtureBuilder.createFeedFixture();
+            User user = feedFixture.user();
+            Feed feed = feedFixture.feed();
+
+            for (int i = 0; i < 30; i++) {
+                Comment comment = Comment.create("댓글 내용" + i, feed, user);
+                em.persist(comment);
+            }
+
+            em.flush();
+            em.clear();
+
+            CommentSearchCondition firstCondition =
+                    new CommentSearchCondition(null, null, 20, feed.getId());
+
+            // when
+            CommentCursorResponseDto firstPage = commentService.getFeedComments(firstCondition);
+
+            CommentSearchCondition secondCondition =
+                    new CommentSearchCondition(
+                            firstPage.nextCursor(),
+                            firstPage.nextIdAfter(),
+                            20,
+                            feed.getId()
+                    );
+
+            CommentCursorResponseDto secondPage = commentService.getFeedComments(secondCondition);
+
+            // then
+            assertThat(firstPage.comments()).hasSize(20);
+            assertThat(firstPage.hasNext()).isTrue();
+
+            assertThat(secondPage.comments()).hasSize(10);
+            assertThat(secondPage.hasNext()).isFalse();
+            assertThat(secondPage.totalCount()).isEqualTo(30L);
         }
     }
 
