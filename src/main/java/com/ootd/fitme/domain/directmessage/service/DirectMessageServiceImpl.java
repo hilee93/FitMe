@@ -45,8 +45,10 @@ public class DirectMessageServiceImpl implements DirectMessageService {
             nextCursor = lastItem.createdAt().toString();
             nextIdAfter = lastItem.id();
         }
-        // TODO : count 다시 구현하기
+
+        long totalCount = directMessageRepository.countBySenderIdOrReceiverId(userId, userId);
+
         return new DirectMessageDtoCursorResponse(
-                messages, nextCursor, nextIdAfter, hasNext, 0, SortBy.createdAt, SortDirection.DESCENDING);
+                messages, nextCursor, nextIdAfter, hasNext, totalCount, SortBy.createdAt, SortDirection.DESCENDING);
     }
 }
