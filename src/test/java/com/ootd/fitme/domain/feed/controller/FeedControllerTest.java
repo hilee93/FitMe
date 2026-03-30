@@ -1,8 +1,12 @@
 package com.ootd.fitme.domain.feed.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ootd.fitme.domain.comment.dto.request.CommentSearchCondition;
+import com.ootd.fitme.domain.comment.dto.response.CommentCursorResponseDto;
 import com.ootd.fitme.domain.comment.dto.response.CommentFlatRow;
 import com.ootd.fitme.domain.comment.dto.response.CommentResponseDto;
+import com.ootd.fitme.domain.comment.enums.CommentSortCriteria;
+import com.ootd.fitme.domain.comment.enums.SortDirection;
 import com.ootd.fitme.domain.comment.service.CommentService;
 import com.ootd.fitme.domain.feed.dto.request.FeedCommentCreateRequest;
 import com.ootd.fitme.domain.feed.dto.request.FeedCreateRequest;
@@ -481,6 +485,42 @@ class FeedControllerTest {
 
             then(commentService).should(times(1))
                     .createFeedComment(any(FeedCommentCreateRequest.class), eq(userId));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/feeds/${feedId}/comments (피드 댓글목록 조회)")
+    class getFeedCommentsTest {
+
+        @Test
+        @DisplayName("[200] feedId와 limit가 유효하면 피드 댓글 목록 조회에 성공한다")
+        void getFeedComments_success_when_valid_request() throws Exception {
+
+            // given
+            UUID feedId = UUID.randomUUID();
+
+            CommentCursorResponseDto response = new CommentCursorResponseDto(
+                    List.of(),
+                    null,
+                    null,
+                    false,
+                    0L,
+                    CommentSortCriteria.CREATED_AT,
+                    SortDirection.DESCENDING
+            );
+
+            given(commentService.getFeedComments(any(CommentSearchCondition.class)))
+                    .willReturn(response);
+
+            // when & then
+            mockMvc.perform(get("/api/feeds/{feedId}/comments", feedId)
+                            .with(userPrincipal(UUID.randomUUID()))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .param("limit", "20")
+                            .param("feedId", feedId.toString())
+                    )
+                    .andExpect(status().isOk());
+
         }
     }
 
