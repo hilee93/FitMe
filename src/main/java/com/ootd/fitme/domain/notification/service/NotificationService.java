@@ -74,11 +74,11 @@ public class NotificationService {
     }
 
     @Transactional
-    public List<Notification> notifyWeatherAlert(String weatherAlert) {
+    public List<Notification> notifyWeatherAlert(String region_1, String region_2 , String weatherAlert) {
         List<User> users = userRepository.findAll();
 
         List<Notification> notifications = users.stream()
-                .map(user -> notificationFactory.weatherAlert(user, weatherAlert))
+                .map(user -> notificationFactory.weatherAlert(user,region_1 ,region_2,weatherAlert))
                 .toList();
 
         return notificationRepository.saveAll(notifications);

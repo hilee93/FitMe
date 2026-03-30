@@ -206,15 +206,15 @@ class NotificationServiceUnitTest {
             List<Notification> notifications = List.of(notification);
 
             given(userRepository.findAll()).willReturn(users);
-            given(notificationFactory.weatherAlert(user, "비 온다")).willReturn(notification);
+            given(notificationFactory.weatherAlert(user,"지역1","지역2", "비 온다")).willReturn(notification);
             given(notificationRepository.saveAll(notifications)).willReturn(notifications);
 
-            List<Notification> result = notificationService.notifyWeatherAlert("비 온다");
+            List<Notification> result = notificationService.notifyWeatherAlert("지역1","지역2","비 온다");
 
             assertThat(result).containsExactly(notification);
 
             verify(userRepository).findAll();
-            verify(notificationFactory).weatherAlert(user, "비 온다");
+            verify(notificationFactory).weatherAlert(user,"지역1","지역2", "비 온다");
             verify(notificationRepository).saveAll(notifications);
         }
     }
