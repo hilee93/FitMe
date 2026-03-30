@@ -47,7 +47,7 @@ class DirectMessageRepositoryTest {
         @BeforeEach
         void setup() {
             User sender = userRepository.save(User.create("sender@a.com", "123456"));
-            User receiver = userRepository.save(User.create("receiver.com", "123456"));
+            User receiver = userRepository.save(User.create("receiver@a.com", "123456"));
             senderId = sender.getId();
             receiverId = receiver.getId();
             saveProfile(sender, "sender");

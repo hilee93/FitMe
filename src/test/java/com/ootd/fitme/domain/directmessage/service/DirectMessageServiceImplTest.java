@@ -172,6 +172,22 @@ class DirectMessageServiceImplTest {
             assertThat(directMessages.nextIdAfter()).isNull();
         }
 
+        @Test
+        @DisplayName("성공 - totalCount는 전체 DM 개수를 반환한다")
+        void getDirectMessages_totalCount_returnTotalCount() {
+
+            //given
+            directMessageRepository.save(DirectMessage.create(senderId, receiverId, "DM 테스트1"));
+            directMessageRepository.save(DirectMessage.create(senderId, receiverId, "DM 테스트2"));
+            directMessageRepository.save(DirectMessage.create(senderId, receiverId, "DM 테스트3"));
+
+            //when
+            DirectMessageDtoCursorResponse directMessages = directMessageServiceImpl.getDirectMessages(
+                    senderId, null, null, 2);
+
+            //then
+            assertThat(directMessages.totalCount()).isEqualTo(3);
+        }
     }
 
     private void saveProfile(User user, String name) {
