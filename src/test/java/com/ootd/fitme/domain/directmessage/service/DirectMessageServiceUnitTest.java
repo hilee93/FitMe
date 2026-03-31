@@ -128,7 +128,11 @@ class DirectMessageServiceUnitTest {
         void sendDirectMessage_receiverProfileNotExist_throwException() {
 
             //given
-            given(profileRepository.findByUserId(senderId)).willReturn(Optional.of(mock(Profile.class)));
+            Profile senderProfile = mock(Profile.class);
+            User senderUser = mock(User.class);
+            given(senderProfile.getUser()).willReturn(senderUser);
+            given(senderUser.getId()).willReturn(senderId);
+            given(profileRepository.findByUserId(senderId)).willReturn(Optional.of(senderProfile));
             given(profileRepository.findByUserId(receiverId)).willReturn(Optional.empty());
 
             //when & then
