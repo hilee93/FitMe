@@ -88,7 +88,7 @@ public class FeedController implements FeedControllerDocs {
             @Valid CommentSearchCondition commentSearchCondition,
             @AuthenticationPrincipal CustomUserPrincipal userPrincipal
     ) {
-        commentService.getFeedComments(commentSearchCondition);
-        return null;
+        CommentCursorResponseDto responseDto = commentService.getFeedComments(commentSearchCondition);
+        return ResponseEntity.ok(responseDto);
     }
 }
