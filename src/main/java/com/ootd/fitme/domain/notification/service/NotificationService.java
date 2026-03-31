@@ -11,7 +11,9 @@ import com.ootd.fitme.domain.notification.exception.NotificationBadRequestExcept
 import com.ootd.fitme.domain.notification.exception.NotificationException;
 import com.ootd.fitme.domain.notification.exception.NotificationNotFoundException;
 import com.ootd.fitme.domain.notification.mapper.NotificationMapper;
+import com.ootd.fitme.domain.notification.repository.NotificationProfileRepository;
 import com.ootd.fitme.domain.notification.repository.NotificationRepository;
+import com.ootd.fitme.domain.profile.repository.ProfileRepository;
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.exception.user.UserException;
 import com.ootd.fitme.domain.user.repository.UserRepository;
@@ -35,16 +37,27 @@ public class NotificationService {
     private final NotificationFactory notificationFactory;
     private final UserRepository userRepository;
     private final FollowRepository followRepository;
+    private final NotificationSseService notificationSseService;
+    //private final ProfileRepository profileRepository; TODO : 나중에 추가하신다고 일단 내 레포로 대체
+    private final NotificationProfileRepository notificationProfileRepository;
+
 
 
     @Transactional
-    public Notification notifyDirectMessage(UUID receiverId, String senderName,String message) {
+    public Notification  notifyDirectMessage(UUID receiverId, String senderName,String message) {
 
         User receiver = userRepository.findById(receiverId)
                 .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
 
-        Notification notification = notificationFactory.dm(receiver, senderName,message);
-        return notificationRepository.save(notification);
+        Notification notification = notificationFactory.dm(receiver, senderName, message);
+
+        Notification saved = notificationRepository.save(notification);
+
+        NotificationDto notificationDto = NotificationMapper.toDto(saved);
+
+        notificationSseService.send(receiverId, notificationDto);
+
+        return saved;
     }
 
     @Transactional
@@ -55,19 +68,33 @@ public class NotificationService {
 
 
         Notification notification = notificationFactory.followed(user, followerName);
-        return notificationRepository.save(notification);
+
+        Notification saved = notificationRepository.save(notification);
+
+        NotificationDto notificationDto = NotificationMapper.toDto(saved);
+
+        notificationSseService.send(followeeId, notificationDto);
+
+        return saved;
     }
 
     @Transactional
-    public List<Notification> notifyWeatherAlert(String weatherAlert) {
-        List<User> users = userRepository.findAll();
+    public List<Notification> notifyWeatherAlert(String region1, String region2 , String weatherAlert) {
+
+        List<User> users = notificationProfileRepository.findUsersByRegion1AndRegion2(region1, region2);
 
         List<Notification> notifications = users.stream()
-                .map(user -> notificationFactory.weatherAlert(user, weatherAlert))
+                .map(user -> notificationFactory.weatherAlert(user,region1,region2, weatherAlert))
                 .toList();
 
-        return notificationRepository.saveAll(notifications);
+        List<Notification> saveds = notificationRepository.saveAll(notifications);
 
+        for (Notification saved : saveds) {
+            NotificationDto dto = NotificationMapper.toDto(saved);
+            notificationSseService.send(saved.getUser().getId(), dto);
+        }
+
+        return saveds;
     }
 
     @Transactional
@@ -78,7 +105,14 @@ public class NotificationService {
 
 
         Notification notification = notificationFactory.feedLiked(user, likerName);
-        return notificationRepository.save(notification);
+
+        Notification saved = notificationRepository.save(notification);
+
+        NotificationDto notificationDto = NotificationMapper.toDto(saved);
+
+        notificationSseService.send(likedId, notificationDto);
+
+        return saved;
     }
 
     @Transactional
@@ -89,12 +123,19 @@ public class NotificationService {
 
 
         Notification notification = notificationFactory.feedCommented(user, commenterName,comment);
-        return notificationRepository.save(notification);
+
+        Notification saved = notificationRepository.save(notification);
+
+        NotificationDto notificationDto = NotificationMapper.toDto(saved);
+
+        notificationSseService.send(feedOwnerId, notificationDto);
+
+        return saved;
     }
 
     @Transactional
-    public List<Notification> notifyFollowerNewFeed(UUID followeeId, String writerName, String feedName) {
-
+    public List<Notification> notifyFollowerNewFeed(UUID followeeId, String writerName, String feedName
+    ) {
 
         List<UUID> followerIds = followRepository.findFollowerIdsByFolloweeId(followeeId);
 
@@ -104,7 +145,16 @@ public class NotificationService {
                 .map(user -> notificationFactory.followerNewFeed(user, writerName, feedName))
                 .toList();
 
-        return notificationRepository.saveAll(notifications);
+        List<Notification> saved = notificationRepository.saveAll(notifications);
+
+        saved.forEach(notification ->
+                notificationSseService.send(
+                        notification.getUser().getId(),
+                        NotificationMapper.toDto(notification)
+                )
+        );
+
+        return saved;
     }
 
 
@@ -114,10 +164,17 @@ public class NotificationService {
         List<User> users = userRepository.findAll();
 
         List<Notification> notifications = users.stream()
-                .map(user -> notificationFactory.attributeAdded(user,attributeName))
+                .map(user -> notificationFactory.attributeAdded(user, attributeName))
                 .toList();
 
-        return notificationRepository.saveAll(notifications);
+        List<Notification> saved = notificationRepository.saveAll(notifications);
+
+
+        NotificationDto notificationDto = NotificationMapper.toDto(saved.get(0));
+
+        notificationSseService.sendAll(notificationDto);
+
+        return saved;
     }
 
 
