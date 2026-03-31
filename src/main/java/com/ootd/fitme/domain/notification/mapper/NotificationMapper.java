@@ -19,7 +19,7 @@ public class NotificationMapper {
                 notification.getUser().getId(),
                 notification.getTitle(),
                 notification.getContent(),
-                notification.getLevel().toString()
+                notification.getLevel()
         );
     }
 }

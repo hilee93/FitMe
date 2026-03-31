@@ -144,12 +144,12 @@ class NotificationEventListenerUnitTest {
 
 
             WeatherAlertEvent event =
-                    new WeatherAlertEvent("비 온다",Instant.now());
+                    new WeatherAlertEvent("지역1","지역2","비 온다",Instant.now());
 
             listener.weatherAlert(event);
 
             verify(notificationService)
-                    .notifyWeatherAlert("비 온다");
+                    .notifyWeatherAlert("지역1","지역2","비 온다");
         }
     }
 }

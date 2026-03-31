@@ -1,5 +1,8 @@
 package com.ootd.fitme.domain.user.service;
 
+import com.ootd.fitme.domain.profile.entity.Profile;
+import com.ootd.fitme.domain.profile.exception.ProfileException;
+import com.ootd.fitme.domain.profile.repository.ProfileRepository;
 import com.ootd.fitme.domain.user.dto.request.*;
 import com.ootd.fitme.domain.user.dto.response.JwtDto;
 import com.ootd.fitme.domain.user.dto.response.SignInResult;
@@ -21,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 // TODO: 인증 관련 로직(signIn/토큰 발급)은 AuthService로 분리 검토
@@ -38,6 +42,7 @@ public class UserServiceImpl implements UserService {
     private final JwtProvider jwtProvider;
     private final TokenBlacklistService tokenBlacklistService;
     private final TemporaryPasswordStore temporaryPasswordStore;
+    private final ProfileRepository profileRepository;
 
     @Override
     public String encodePassword(String password) {
@@ -60,7 +65,24 @@ public class UserServiceImpl implements UserService {
         User user = User.create(userCreateRequest.email(), encodedPassword);
         User saved = userRepository.save(user);
 
-        return userMapper.toDto(saved);
+        Profile profile = Profile.create(
+                userCreateRequest.name(),
+                null, // longitude
+                null, // latitude
+                null, // x
+                null, // y
+                null, // region1
+                null, // region2
+                null, // region3
+                null, // gender
+                null, // birthDate
+                null, // profileImageUrl
+                saved
+        );
+
+        profileRepository.save(profile);
+
+        return mapToUserDto(saved);
     }
 
     @Transactional(readOnly = true)
@@ -93,13 +115,12 @@ public class UserServiceImpl implements UserService {
         User user = validateSignIn(signInRequest);
 
         // 기존 로그인 강제 무효화
-        Instant cutoff = Instant.now();
-        tokenBlacklistService.setRevokeAllBefore(user.getId(), cutoff);
+        tokenBlacklistService.setRevokeAllBefore(user.getId(), nowSeconds());
 
         String accessToken = jwtProvider.generateAccessToken(user.getId(), user.getRole().name());
         String refreshToken = jwtProvider.generateRefreshToken(user.getId(), user.getRole().name());
 
-        JwtDto jwtDto = new JwtDto(userMapper.toDto(user), accessToken);
+        JwtDto jwtDto = new JwtDto(mapToUserDto(user), accessToken);
 
         return new SignInResult(jwtDto, refreshToken);
     }
@@ -120,7 +141,7 @@ public class UserServiceImpl implements UserService {
         }
 
         Instant cutoff = tokenBlacklistService.getRevokeAllBefore(userId);
-        if (cutoff != null && iat.isBefore(cutoff)) {
+        if (cutoff != null && iat.isBefore(cutoff.truncatedTo(ChronoUnit.SECONDS))) {
             throw new AuthException(ErrorCode.AUTH_INVALID_TOKEN);
         }
 
@@ -132,7 +153,7 @@ public class UserServiceImpl implements UserService {
         }
 
         String newAccessToken = jwtProvider.generateAccessToken(userId, user.getRole().name());
-        return new JwtDto(userMapper.toDto(user), newAccessToken);
+        return new JwtDto(mapToUserDto(user), newAccessToken);
     }
 
     @Transactional(readOnly = true)
@@ -150,9 +171,9 @@ public class UserServiceImpl implements UserService {
 
         user.updateRole(userRoleUpdateRequest.role());
 
-        tokenBlacklistService.setRevokeAllBefore(userId, Instant.now());
+        tokenBlacklistService.setRevokeAllBefore(userId, nowSeconds());
 
-        return userMapper.toDto(user);
+        return mapToUserDto(user);
     }
 
     @Transactional
@@ -163,9 +184,9 @@ public class UserServiceImpl implements UserService {
 
         user.updateLocked(userLockUpdateRequest.locked());
 
-        tokenBlacklistService.setRevokeAllBefore(userId, Instant.now());
+        tokenBlacklistService.setRevokeAllBefore(userId, nowSeconds());
 
-        return userMapper.toDto(user);
+        return mapToUserDto(user);
     }
 
     @Override
@@ -182,7 +203,7 @@ public class UserServiceImpl implements UserService {
                 Instant.now().plus(TEMP_PASSWORD_TTL)
         );
 
-        tokenBlacklistService.setRevokeAllBefore(user.getId(), Instant.now());
+        tokenBlacklistService.setRevokeAllBefore(user.getId(), nowSeconds());
 
         // TODO: 메일 발송 연동
         log.info("[TEMP PASSWORD] userEmail={}", user.getEmail());
@@ -199,7 +220,7 @@ public class UserServiceImpl implements UserService {
 
         temporaryPasswordStore.delete(userId);
 
-        tokenBlacklistService.setRevokeAllBefore(userId, Instant.now());
+        tokenBlacklistService.setRevokeAllBefore(userId, nowSeconds());
     }
 
     private void blacklistIfValid(String token) {
@@ -220,5 +241,18 @@ public class UserServiceImpl implements UserService {
             sb.append(TEMP_PASSWORD_CHARS.charAt(idx));
         }
         return sb.toString();
+    }
+
+    private Instant nowSeconds() {
+        return Instant.now().truncatedTo(ChronoUnit.SECONDS);
+    }
+
+    private UserDto mapToUserDto(User user) {
+        String name = profileRepository.findByUserId(user.getId())
+                .map(Profile::getName)
+                .filter(profileName -> !profileName.isBlank())
+                .orElseThrow();
+
+        return userMapper.toDto(user, name);
     }
 }

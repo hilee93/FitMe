@@ -27,8 +27,8 @@ public class NotificationFactory {
                 user
         );
     }
-
-    public Notification weatherAlert(User user,String weatherAlert ) { // TODO : 추후에 weatherAlert가 enum이 생기면 바꿀것
+    // TODO : 추후에 weatherAlert가 enum이 생기면 바꿀것
+    public Notification weatherAlert(User user,String region_1,String region_2 ,String weatherAlert ) {
         return Notification.create(
                 NotificationLevel.INFO,
                 "["+weatherAlert +"]"+ ".",

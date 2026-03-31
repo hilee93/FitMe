@@ -35,4 +35,14 @@ public class DirectMessage extends BaseEntity {
         return new DirectMessage(senderId, receiverId, content);
     }
 
+    public static String createDmKey(UUID userId1, UUID userId2) {
+        String id1 = userId1.toString();
+        String id2 = userId2.toString();
+
+        if (id1.compareTo(id2) <= 0) {
+            return id1 + "_" + id2;
+        } else {
+            return id2 + "_" + id1;
+        }
+    }
 }
