@@ -7,15 +7,15 @@ import java.util.Arrays;
 
 @Getter
 @RequiredArgsConstructor
-public enum SortCriteria {
+public enum FeedSortCriteria {
     CREATED_AT("createdAt"),
     LIKE_COUNT("likeCount");
 
     private final String value;
 
-    public static SortCriteria from(String value) {
+    public static FeedSortCriteria from(String value) {
         return Arrays.stream(values())
-                .filter(sortCriteria -> sortCriteria.value.equals(value))
+                .filter(feedSortCriteria -> feedSortCriteria.value.equals(value))
                 .findFirst()
                 .orElseThrow(); // TODO: INVALID_SORT_CRITERIA, sortValue 커스텀 예외추가
     }

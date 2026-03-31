@@ -4,10 +4,10 @@ import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;
 
 @Component
-public class SortCriteriaConverter implements Converter<String, SortCriteria> {
+public class FeedSortCriteriaConverter implements Converter<String, FeedSortCriteria> {
 
     @Override
-    public SortCriteria convert(String source) {
-        return SortCriteria.from(source);
+    public FeedSortCriteria convert(String source) {
+        return FeedSortCriteria.from(source);
     }
 }
