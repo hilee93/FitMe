@@ -8,6 +8,7 @@ public record FeedLikedCreateEvent(
         UUID feedId,
         UUID likedId,
         UUID likerId,
+        String feedName,
         String likerName,
         Instant createdAt
 ) {
