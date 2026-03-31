@@ -58,7 +58,7 @@ class NotificationFactoryTest {
         @DisplayName("날씨 알림을 생성한다")
         void create_Weather_AlertNotification() {
 
-            Notification notification = notificationFactory.weatherAlert(user, "내일 비가 올 예정입니다.");
+            Notification notification = notificationFactory.weatherAlert(user,"지역1","지역2", "내일 비가 올 예정입니다.");
 
             assertThat(notification.getLevel()).isEqualTo(NotificationLevel.INFO);
             assertThat(notification.getTitle()).isEqualTo("[내일 비가 올 예정입니다.].");
