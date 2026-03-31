@@ -1,5 +1,6 @@
 package com.ootd.fitme.domain.feed.controller.docs;
 
+import com.ootd.fitme.domain.comment.dto.request.CommentSearchCondition;
 import com.ootd.fitme.domain.comment.dto.response.CommentCursorResponseDto;
 import com.ootd.fitme.domain.comment.dto.response.CommentResponseDto;
 import com.ootd.fitme.domain.feed.dto.request.*;
@@ -29,6 +30,6 @@ public interface FeedControllerDocs {
 
     ResponseEntity<CommentResponseDto> addComment(FeedCommentCreateRequest feedCommentCreateRequest, @Parameter(hidden = true) CustomUserPrincipal userPrincipal);
 
-    ResponseEntity<CommentCursorResponseDto> getAllFeedComments(FeedCommentSearchCondition feedCommentSearchCondition, @Parameter(hidden = true) CustomUserPrincipal userPrincipal);
+    ResponseEntity<CommentCursorResponseDto> getAllFeedComments(CommentSearchCondition feedCommentSearchCondition, @Parameter(hidden = true) CustomUserPrincipal userPrincipal);
 
 }

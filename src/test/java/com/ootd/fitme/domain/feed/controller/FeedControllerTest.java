@@ -1,8 +1,12 @@
 package com.ootd.fitme.domain.feed.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ootd.fitme.domain.comment.dto.request.CommentSearchCondition;
+import com.ootd.fitme.domain.comment.dto.response.CommentCursorResponseDto;
 import com.ootd.fitme.domain.comment.dto.response.CommentFlatRow;
 import com.ootd.fitme.domain.comment.dto.response.CommentResponseDto;
+import com.ootd.fitme.domain.comment.enums.CommentSortCriteria;
+import com.ootd.fitme.domain.comment.enums.SortDirection;
 import com.ootd.fitme.domain.comment.service.CommentService;
 import com.ootd.fitme.domain.feed.dto.request.FeedCommentCreateRequest;
 import com.ootd.fitme.domain.feed.dto.request.FeedCreateRequest;
@@ -482,6 +486,116 @@ class FeedControllerTest {
             then(commentService).should(times(1))
                     .createFeedComment(any(FeedCommentCreateRequest.class), eq(userId));
         }
+    }
+
+    @Nested
+    @DisplayName("GET /api/feeds/${feedId}/comments (피드 댓글목록 조회)")
+    class getFeedCommentsTest {
+
+        @Test
+        @DisplayName("[200] feedId와 limit가 유효하면 피드 댓글 목록 조회에 성공한다")
+        void getFeedComments_success_when_valid_request() throws Exception {
+
+            // given
+            UUID feedId = UUID.randomUUID();
+
+            CommentCursorResponseDto response = new CommentCursorResponseDto(
+                    List.of(),
+                    null,
+                    null,
+                    false,
+                    0L,
+                    CommentSortCriteria.CREATED_AT,
+                    SortDirection.DESCENDING
+            );
+
+            given(commentService.getFeedComments(any(CommentSearchCondition.class)))
+                    .willReturn(response);
+
+            // when & then
+            mockMvc.perform(get("/api/feeds/{feedId}/comments", feedId)
+                            .with(userPrincipal(UUID.randomUUID()))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .param("limit", "20")
+                            .param("feedId", feedId.toString())
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.comments").isArray())
+                    .andExpect(jsonPath("$.hasNext").value(false))
+                    .andExpect(jsonPath("$.totalCount").value(0))
+                    .andExpect(jsonPath("$.sortBy").value("CREATED_AT"))
+                    .andExpect(jsonPath("$.sortDirection").value("DESCENDING"));
+
+        }
+
+        @Test
+        @DisplayName("[200] cursor와 idAfter가 있으면 다음 페이지 댓글 목록을 조회한다")
+        void getFeedComments_next_page_success_when_valid_request() throws Exception {
+            // given
+            UUID feedId = UUID.randomUUID();
+            UUID idAfter = UUID.randomUUID();
+            String cursor = "2026-03-31T00:00:00Z";
+
+            CommentCursorResponseDto response = new CommentCursorResponseDto(
+                    List.of(),
+                    null,
+                    null,
+                    false,
+                    30L,
+                    CommentSortCriteria.CREATED_AT,
+                    SortDirection.DESCENDING
+            );
+
+            given(commentService.getFeedComments(any(CommentSearchCondition.class)))
+                    .willReturn(response);
+
+            // when & then
+            mockMvc.perform(get("/api/feeds/{feedId}/comments", feedId)
+                            .with(userPrincipal(UUID.randomUUID()))
+                            .param("feedId", feedId.toString())
+                            .param("limit", "20")
+                            .param("cursor", cursor)
+                            .param("idAfter", idAfter.toString()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.comments").isArray())
+                    .andExpect(jsonPath("$.hasNext").value(false))
+                    .andExpect(jsonPath("$.totalCount").value(30))
+                    .andExpect(jsonPath("$.sortBy").value("CREATED_AT"))
+                    .andExpect(jsonPath("$.sortDirection").value("DESCENDING"));
+
+            verify(commentService).getFeedComments(argThat(condition ->
+                    condition.feedId().equals(feedId) &&
+                            condition.limit().equals(20) &&
+                            cursor.equals(condition.cursor()) &&
+                            idAfter.equals(condition.idAfter())
+            ));
+        }
+
+        @Test
+        @DisplayName("[400] limit가 없으면 검증에 실패한다")
+        void getFeedComments_fail_when_limit_is_null() throws Exception {
+            UUID feedId = UUID.randomUUID();
+
+            mockMvc.perform(get("/api/feeds/{feedId}/comments", feedId)
+                            .with(userPrincipal(UUID.randomUUID()))
+                            .param("feedId", feedId.toString()))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("[400] idAfter가 UUID 형식이 아니면 실패한다")
+        void getFeedComments_fail_when_idAfter_invalid() throws Exception {
+            UUID feedId = UUID.randomUUID();
+
+            mockMvc.perform(get("/api/feeds/{feedId}/comments", feedId)
+                            .with(userPrincipal(UUID.randomUUID()))
+                            .param("feedId", feedId.toString())
+                            .param("limit", "20")
+                            .param("idAfter", "invalid-uuid"))
+                    .andExpect(status().isBadRequest());
+        }
+
+
     }
 
 
