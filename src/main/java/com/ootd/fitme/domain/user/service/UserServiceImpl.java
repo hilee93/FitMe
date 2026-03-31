@@ -89,7 +89,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public User validateSignIn(SignInRequest signInRequest) {
         User user = userRepository.findByEmail(signInRequest.username())
-                .orElseThrow(() -> new AuthException(ErrorCode.AUTH_INVALID_CREDENTIALS));
+                .orElseThrow();
 
         if (user.isLocked()) {
             throw new UserException(ErrorCode.USER_ACCOUNT_LOCKED);
@@ -102,7 +102,7 @@ public class UserServiceImpl implements UserService {
                     .orElse(false);
 
             if (!temporaryPasswordMatched) {
-                throw new AuthException(ErrorCode.AUTH_INVALID_CREDENTIALS);
+                throw new IllegalArgumentException();
             }
         }
 
@@ -129,7 +129,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public JwtDto refresh(String refreshToken) {
         if (refreshToken == null || !jwtProvider.validateToken(refreshToken) || !jwtProvider.isRefreshToken(refreshToken)) {
-            throw new AuthException(ErrorCode.AUTH_INVALID_TOKEN);
+            throw new IllegalArgumentException();
         }
 
         UUID userId = jwtProvider.getUserId(refreshToken);
@@ -137,16 +137,16 @@ public class UserServiceImpl implements UserService {
         Instant iat = jwtProvider.getIssuedAt(refreshToken);
 
         if (tokenBlacklistService.isBlacklisted(jti)) {
-            throw new AuthException(ErrorCode.AUTH_INVALID_TOKEN);
+            throw new IllegalArgumentException();
         }
 
         Instant cutoff = tokenBlacklistService.getRevokeAllBefore(userId);
         if (cutoff != null && iat.isBefore(cutoff.truncatedTo(ChronoUnit.SECONDS))) {
-            throw new AuthException(ErrorCode.AUTH_INVALID_TOKEN);
+            throw new IllegalArgumentException();
         }
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new AuthException(ErrorCode.AUTH_INVALID_TOKEN));
+                .orElseThrow();
 
         if (user.isLocked()) {
             throw new UserException(ErrorCode.USER_ACCOUNT_LOCKED);
