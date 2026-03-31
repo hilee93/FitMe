@@ -519,7 +519,12 @@ class FeedControllerTest {
                             .param("limit", "20")
                             .param("feedId", feedId.toString())
                     )
-                    .andExpect(status().isOk());
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.comments").isArray())
+                    .andExpect(jsonPath("$.hasNext").value(false))
+                    .andExpect(jsonPath("$.totalCount").value(0))
+                    .andExpect(jsonPath("$.sortBy").value("CREATED_AT"))
+                    .andExpect(jsonPath("$.sortDirection").value("DESCENDING"));
 
         }
 
@@ -551,7 +556,12 @@ class FeedControllerTest {
                             .param("limit", "20")
                             .param("cursor", cursor)
                             .param("idAfter", idAfter.toString()))
-                    .andExpect(status().isOk());
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.comments").isArray())
+                    .andExpect(jsonPath("$.hasNext").value(false))
+                    .andExpect(jsonPath("$.totalCount").value(30))
+                    .andExpect(jsonPath("$.sortBy").value("CREATED_AT"))
+                    .andExpect(jsonPath("$.sortDirection").value("DESCENDING"));
 
             verify(commentService).getFeedComments(argThat(condition ->
                     condition.feedId().equals(feedId) &&
