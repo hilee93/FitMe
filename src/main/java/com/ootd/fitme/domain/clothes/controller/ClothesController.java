@@ -2,19 +2,18 @@ package com.ootd.fitme.domain.clothes.controller;
 
 import com.ootd.fitme.domain.clothes.controller.docs.ClothesControllerDocs;
 import com.ootd.fitme.domain.clothes.dto.ClothesDto;
-import com.ootd.fitme.domain.clothes.dto.request.ClothesDtoCreateRequest;
+import com.ootd.fitme.domain.clothes.dto.request.ClothesCreateRequest;
 import com.ootd.fitme.domain.clothes.dto.request.ClothesDtoCursorRequest;
+import com.ootd.fitme.domain.clothes.dto.request.ClothesUpdateRequest;
 import com.ootd.fitme.domain.clothes.dto.response.ClothesDtoCursorResponse;
 import com.ootd.fitme.domain.clothes.service.ClothesService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.security.Principal;
 import java.util.UUID;
 
 @Slf4j
@@ -36,7 +35,7 @@ public class ClothesController implements ClothesControllerDocs {
 
     @PostMapping(consumes = {"multipart/form-data"})
     public ResponseEntity<ClothesDto> createClothes(
-            @RequestPart("request") ClothesDtoCreateRequest request,
+            @RequestPart("request") ClothesCreateRequest request,
             @RequestPart(value = "image", required = false) MultipartFile image
             ) {
 
@@ -52,10 +51,11 @@ public class ClothesController implements ClothesControllerDocs {
 
     @PatchMapping("/{clothesId}")
     public ResponseEntity<ClothesDto> updateClothes(
-            @PathVariable UUID clothesId
-            // TODO: 수정 시 필요한 Request DTO 추가
+            @PathVariable UUID clothesId,
+            @ModelAttribute ClothesUpdateRequest request,
+            @RequestPart(value = "image", required = false) MultipartFile image
     ) {
-        ClothesDto response = clothesService.updateClothes(clothesId);
+        ClothesDto response = clothesService.updateClothes(clothesId, request, image);
         return ResponseEntity.ok(response);
     }
 
