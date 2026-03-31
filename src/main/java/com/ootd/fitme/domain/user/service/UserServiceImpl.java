@@ -251,7 +251,7 @@ public class UserServiceImpl implements UserService {
         String name = profileRepository.findByUserId(user.getId())
                 .map(Profile::getName)
                 .filter(profileName -> !profileName.isBlank())
-                .orElseThrow();
+                .orElseThrow(() -> new ProfileException(ErrorCode.PROFILE_NOT_FOUND));
 
         return userMapper.toDto(user, name);
     }

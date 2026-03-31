@@ -3,6 +3,7 @@ package com.ootd.fitme.domain.profile.service;
 import com.ootd.fitme.domain.profile.dto.request.ProfileUpdateRequest;
 import com.ootd.fitme.domain.profile.dto.response.ProfileDto;
 import com.ootd.fitme.domain.profile.entity.Profile;
+import com.ootd.fitme.domain.profile.exception.ProfileException;
 import com.ootd.fitme.domain.profile.mapper.ProfileMapper;
 import com.ootd.fitme.domain.profile.repository.ProfileRepository;
 import com.ootd.fitme.domain.user.entity.User;
@@ -67,7 +68,7 @@ public class ProfileServiceImpl implements ProfileService {
 
     private Profile findRequiredProfile(UUID userId) {
         return profileRepository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalStateException("프로필이 존재하지 않습니다. userId =" + userId));
+                .orElseThrow(() -> new ProfileException(ErrorCode.PROFILE_NOT_FOUND));
     }
 
     private String saveImage(UUID userId, MultipartFile image) {
@@ -80,23 +81,23 @@ public class ProfileServiceImpl implements ProfileService {
             image.transferTo(target.toFile());
             return "/uploads/profile/" + fileName;
         } catch (Exception e) {
-            throw new IllegalStateException("프로필 이미지 저장 실패");
+            throw new ProfileException(ErrorCode.PROFILE_IMAGE_SAVE_FAILED);
         }
     }
 
     private void validateImage(MultipartFile image) {
         if (image.getSize() > MAX_PROFILE_IMAGE_SIZE_BYTES) {
-            throw new IllegalArgumentException("프로필 이미지는 5MB 이하여야 합니다.");
+            throw new ProfileException(ErrorCode.PROFILE_IMAGE_SAVE_FAILED);
         }
 
         String contentType = image.getContentType();
         if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType)) {
-            throw new IllegalArgumentException("지원하지 않는 이미지 형식입니다.");
+            throw new ProfileException(ErrorCode.PROFILE_IMAGE_CONTENT_TYPE_NOT_ALLOWED);
         }
 
         String extension = extractExtension(image.getOriginalFilename());
         if (!ALLOWED_EXTENSIONS.contains(extension)) {
-            throw new IllegalArgumentException("지원하지 않는 파일 확장자입니다.");
+            throw new ProfileException(ErrorCode.PROFILE_IMAGE_EXTENSION_NOT_ALLOWED);
         }
     }
 
