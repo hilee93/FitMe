@@ -41,16 +41,8 @@ public class DirectMessageServiceImpl implements DirectMessageService {
 
         directMessageRepository.save(directMessage);
 
-        Profile senderProfile = profileRepository.findByUserId(directMessage.getSenderId())
-                .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
-        Profile receiverProfile = profileRepository.findByUserId(directMessage.getReceiverId())
-                .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
-
-        UserSummary sender = new UserSummary(
-                senderProfile.getUser().getId(), senderProfile.getName(), senderProfile.getProfileImageUrl());
-
-        UserSummary receiver = new UserSummary(
-                receiverProfile.getUser().getId(), receiverProfile.getName(), receiverProfile.getProfileImageUrl());
+        UserSummary sender = getUserSummary(request.senderId());
+        UserSummary receiver = getUserSummary(request.receiverId());
 
         DirectMessageDto dto = DirectMessageMapper.toDto(directMessage, sender, receiver);
 
@@ -82,5 +74,14 @@ public class DirectMessageServiceImpl implements DirectMessageService {
 
         return new DirectMessageDtoCursorResponse(
                 messages, nextCursor, nextIdAfter, hasNext, totalCount, SortBy.createdAt, SortDirection.DESCENDING);
+    }
+
+    private UserSummary getUserSummary(UUID userId){
+        Profile profile = profileRepository.findByUserId(userId)
+                .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
+        return new UserSummary(
+                profile.getUser().getId(),
+                profile.getName(),
+                profile.getProfileImageUrl());
     }
 }
