@@ -89,7 +89,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public User validateSignIn(SignInRequest signInRequest) {
         User user = userRepository.findByEmail(signInRequest.username())
-                .orElseThrow();
+                .orElseThrow(() -> new AuthException(ErrorCode.AUTH_INVALID_CREDENTIALS));
 
         if (user.isLocked()) {
             throw new UserException(ErrorCode.USER_ACCOUNT_LOCKED);
@@ -102,7 +102,7 @@ public class UserServiceImpl implements UserService {
                     .orElse(false);
 
             if (!temporaryPasswordMatched) {
-                throw new IllegalArgumentException();
+                throw new AuthException(ErrorCode.AUTH_INVALID_CREDENTIALS);
             }
         }
 
@@ -129,7 +129,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public JwtDto refresh(String refreshToken) {
         if (refreshToken == null || !jwtProvider.validateToken(refreshToken) || !jwtProvider.isRefreshToken(refreshToken)) {
-            throw new IllegalArgumentException();
+            throw new AuthException(ErrorCode.AUTH_INVALID_TOKEN);
         }
 
         UUID userId = jwtProvider.getUserId(refreshToken);
@@ -137,16 +137,16 @@ public class UserServiceImpl implements UserService {
         Instant iat = jwtProvider.getIssuedAt(refreshToken);
 
         if (tokenBlacklistService.isBlacklisted(jti)) {
-            throw new IllegalArgumentException();
+            throw new AuthException(ErrorCode.AUTH_INVALID_TOKEN);
         }
 
         Instant cutoff = tokenBlacklistService.getRevokeAllBefore(userId);
         if (cutoff != null && iat.isBefore(cutoff.truncatedTo(ChronoUnit.SECONDS))) {
-            throw new IllegalArgumentException();
+            throw new AuthException(ErrorCode.AUTH_INVALID_TOKEN);
         }
 
         User user = userRepository.findById(userId)
-                .orElseThrow();
+                .orElseThrow(() -> new AuthException(ErrorCode.AUTH_INVALID_TOKEN));
 
         if (user.isLocked()) {
             throw new UserException(ErrorCode.USER_ACCOUNT_LOCKED);
@@ -251,7 +251,7 @@ public class UserServiceImpl implements UserService {
         String name = profileRepository.findByUserId(user.getId())
                 .map(Profile::getName)
                 .filter(profileName -> !profileName.isBlank())
-                .orElseThrow(() -> new ProfileException(ErrorCode.PROFILE_NOT_FOUND));
+                .orElseThrow();
 
         return userMapper.toDto(user, name);
     }
