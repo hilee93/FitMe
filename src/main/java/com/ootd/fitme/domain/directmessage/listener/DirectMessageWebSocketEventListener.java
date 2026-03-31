@@ -21,6 +21,6 @@ public class DirectMessageWebSocketEventListener {
         DirectMessageDto directMessageDto = event.directMessageDto();
         String dmKey = DirectMessage.createDmKey(
                 directMessageDto.sender().userId(), directMessageDto.receiver().userId());
-        messagingTemplate.convertAndSend("/direct-messages_" + dmKey, directMessageDto);
+        messagingTemplate.convertAndSend("/sub/direct-messages_" + dmKey, directMessageDto);
     }
 }
