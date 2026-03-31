@@ -131,6 +131,8 @@ class AuthControllerTest {
             JwtDto jwtDto = new JwtDto(userDto, "access-token");
             SignInResult result = new SignInResult(jwtDto, "refresh-token");
 
+            given(userService.signIn(any(SignInRequest.class))).willReturn(result);
+
             mockMvc.perform(multipart("/api/auth/sign-in")
                     .param("username", "tester@fitme.com")
                     .param("password", "password123!")
@@ -141,6 +143,8 @@ class AuthControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.accessToken").value("access-token"))
                     .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("refreshToken=")));
+
+            then(userService).should().signIn(any(SignInRequest.class));
         }
     }
 
