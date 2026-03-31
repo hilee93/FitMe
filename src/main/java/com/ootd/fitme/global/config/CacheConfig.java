@@ -24,12 +24,15 @@ public class CacheConfig {
 
     @Bean
     public CacheManager caffeineCacheManager() {
-        CaffeineCacheManager cacheManager = new CaffeineCacheManager("attributes");
-        cacheManager.setCaffeine(Caffeine.newBuilder()
+
+        CaffeineCacheManager cacheManager = new CaffeineCacheManager();
+
+        CaffeineCacheManager attributesCacheManager = new CaffeineCacheManager("attributes");
+        attributesCacheManager.setCaffeine(Caffeine.newBuilder()
                 .expireAfterWrite(1, TimeUnit.HOURS) // 1시간 후 캐시 만료
                 .maximumSize(100) // 최대 100개까지 캐싱
                 .recordStats());
-        return cacheManager;
+        return attributesCacheManager;
     }
 
     @Bean
