@@ -59,6 +59,7 @@ public class NotificationEventListener {
         try {
             notificationService.notifyFeedLiked(
                     event.likedId(),
+                    event.feedName(),
                     event.likerName()
             );
             log.info("[LIKE] 알림이벤트 처리 성공. likeId={}", event.feedLikeId());
@@ -73,6 +74,7 @@ public class NotificationEventListener {
         try {
             notificationService.notifyFeedCommented(
                     event.feedOwnerId(),
+                    event.feedName(),
                     event.commenterName(),
                     event.comment()
             );
