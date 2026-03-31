@@ -18,8 +18,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
@@ -211,8 +213,10 @@ class DirectMessageServiceImplTest {
             directMessageServiceImpl.sendDirectMessage(request2);
 
             //then
-            long count = directMessageRepository.countBySenderIdOrReceiverId(senderId, receiverId);
-            assertThat(count).isEqualTo(2);
+            List<DirectMessage> result = directMessageRepository.findAll();
+            assertThat(result).hasSize(2);
+            assertThat(result.get(0).getContent()).isEqualTo("안녕하세요");
+            assertThat(result.get(0).getSenderId()).isEqualTo(senderId);
         }
     }
 
