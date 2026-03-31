@@ -4,7 +4,6 @@ import com.ootd.fitme.domain.directmessage.dto.request.DirectMessageCreateReques
 import com.ootd.fitme.domain.directmessage.dto.response.DirectMessageDto;
 import com.ootd.fitme.domain.directmessage.entity.DirectMessage;
 import com.ootd.fitme.domain.directmessage.event.DirectMessageCreateEvent;
-import com.ootd.fitme.domain.directmessage.event.DirectMessageSentEvent;
 import com.ootd.fitme.domain.directmessage.repository.DirectMessageRepository;
 import com.ootd.fitme.domain.profile.entity.Profile;
 import com.ootd.fitme.domain.profile.repository.ProfileRepository;
@@ -108,7 +107,6 @@ class DirectMessageServiceUnitTest {
 
             //then
             then(directMessageRepository).should().save(any(DirectMessage.class));
-            then(eventPublish).should().publishEvent(any(DirectMessageSentEvent.class));
             then(eventPublish).should().publishEvent(any(DirectMessageCreateEvent.class));
             assertThat(directMessageDto).isNotNull();
         }

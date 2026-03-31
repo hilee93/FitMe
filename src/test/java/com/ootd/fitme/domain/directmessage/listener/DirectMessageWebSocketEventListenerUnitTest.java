@@ -2,7 +2,7 @@ package com.ootd.fitme.domain.directmessage.listener;
 
 import com.ootd.fitme.domain.directmessage.dto.response.DirectMessageDto;
 import com.ootd.fitme.domain.directmessage.dto.response.UserSummary;
-import com.ootd.fitme.domain.directmessage.event.DirectMessageSentEvent;
+import com.ootd.fitme.domain.directmessage.event.DirectMessageCreateEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,23 +30,29 @@ class DirectMessageWebSocketEventListenerUnitTest {
     void handleDirectMessageSent_success_sendToCorrectChannel() {
 
         //given
+        UUID messageId = UUID.randomUUID();
+        Instant now = Instant.now();
         UUID senderId = UUID.fromString("89a71b30-e73f-415f-b791-e8cb9694e5b6");
         UUID receiverId = UUID.fromString("96671e32-ff27-4215-bf96-d0575abc11f4");
 
-        UserSummary sender = new UserSummary(senderId, "보내는사람", null);
-        UserSummary receiver = new UserSummary(receiverId, "받는사람", null);
+        DirectMessageCreateEvent event = new DirectMessageCreateEvent(
+                messageId, receiverId, senderId,
+                "보내는사람", null,
+                "받는사람", null,
+                "안녕하세요", now);
 
-        DirectMessageDto directMessageDto = new DirectMessageDto(
-                UUID.randomUUID(), Instant.now(), sender, receiver, "안녕하세요");
-
-        DirectMessageSentEvent directMessageSentEvent = new DirectMessageSentEvent(directMessageDto);
+        DirectMessageDto messageDto = new DirectMessageDto(
+                messageId, now,
+                new UserSummary(senderId, "보내는사람", null),
+                new UserSummary(receiverId, "받는사람", null),
+                "안녕하세요");
 
         //when
-        eventListener.handleDirectMessageSent(directMessageSentEvent);
+        eventListener.handleDirectMessageSent(event);
 
         //then
         String channel = "/sub/direct-messages_89a71b30-e73f-415f-b791-e8cb9694e5b6_96671e32-ff27-4215-bf96-d0575abc11f4";
-        then(messagingTemplate).should().convertAndSend(channel, directMessageDto);
+        then(messagingTemplate).should().convertAndSend(channel, messageDto);
     }
 
 }
