@@ -185,29 +185,7 @@ public class NotificationService {
 
         long totalElements = notificationRepository.countByUserId(request.userId());
 
-        List<NotificationDto> pageDtoList = search.getContent()
-                .stream()
-                .map(NotificationMapper::toDto)
-                .toList();
-
-        List<Notification> content = search.getContent();
-        String nextCursor = null;
-        String nextIdAfter = null;
-
-        if (search.hasNext() && !content.isEmpty()) {
-            Notification last = content.get(content.size() - 1);
-            nextCursor = last.getCreatedAt().toString();
-            nextIdAfter = last.getId().toString();
-        }
-
-        return new NotificationPageResponse(
-                pageDtoList,
-                nextCursor,
-                nextIdAfter,
-                search.hasNext(),
-                totalElements,
-                "createdAt",
-                "DESCENDING");
+        return NotificationPageResponse.from(search, totalElements);
     }
 
     @Transactional
@@ -228,4 +206,6 @@ public class NotificationService {
 
         notificationRepository.deleteById(request.notificationId());
     }
+
+
 }
