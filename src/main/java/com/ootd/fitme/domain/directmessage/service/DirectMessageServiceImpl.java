@@ -8,7 +8,6 @@ import com.ootd.fitme.domain.directmessage.entity.DirectMessage;
 import com.ootd.fitme.domain.directmessage.enums.SortBy;
 import com.ootd.fitme.domain.directmessage.enums.SortDirection;
 import com.ootd.fitme.domain.directmessage.event.DirectMessageCreateEvent;
-import com.ootd.fitme.domain.directmessage.event.DirectMessageSentEvent;
 import com.ootd.fitme.domain.directmessage.mapper.DirectMessageMapper;
 import com.ootd.fitme.domain.directmessage.repository.DirectMessageRepository;
 import com.ootd.fitme.domain.profile.entity.Profile;
@@ -47,15 +46,14 @@ public class DirectMessageServiceImpl implements DirectMessageService {
 
         DirectMessageDto dto = DirectMessageMapper.toDto(directMessage, sender, receiver);
 
-        // Websocket 브로드캐스트용
-        eventPublisher.publishEvent(new DirectMessageSentEvent(dto));
-
-        // 알림용 이벤트 발행
         eventPublisher.publishEvent(new DirectMessageCreateEvent(
                 directMessage.getId(),
                 directMessage.getReceiverId(),
                 directMessage.getSenderId(),
                 sender.name(),
+                sender.profileImageUrl(),
+                receiver.name(),
+                receiver.profileImageUrl(),
                 directMessage.getContent(),
                 directMessage.getCreatedAt()
         ));
