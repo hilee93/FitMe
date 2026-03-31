@@ -3,10 +3,19 @@ package com.ootd.fitme.domain.directmessage.service;
 import com.ootd.fitme.domain.directmessage.dto.request.DirectMessageCreateRequest;
 import com.ootd.fitme.domain.directmessage.dto.response.DirectMessageDto;
 import com.ootd.fitme.domain.directmessage.dto.response.DirectMessageDtoCursorResponse;
+import com.ootd.fitme.domain.directmessage.dto.response.UserSummary;
+import com.ootd.fitme.domain.directmessage.entity.DirectMessage;
 import com.ootd.fitme.domain.directmessage.enums.SortBy;
 import com.ootd.fitme.domain.directmessage.enums.SortDirection;
+import com.ootd.fitme.domain.directmessage.event.DirectMessageSentEvent;
+import com.ootd.fitme.domain.directmessage.mapper.DirectMessageMapper;
 import com.ootd.fitme.domain.directmessage.repository.DirectMessageRepository;
+import com.ootd.fitme.domain.profile.entity.Profile;
+import com.ootd.fitme.domain.profile.repository.ProfileRepository;
+import com.ootd.fitme.domain.user.exception.user.UserException;
+import com.ootd.fitme.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,13 +28,36 @@ import java.util.UUID;
 public class DirectMessageServiceImpl implements DirectMessageService {
 
     private final DirectMessageRepository directMessageRepository;
+    private final ProfileRepository profileRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
 
     @Override
     @Transactional
     public DirectMessageDto sendDirectMessage(DirectMessageCreateRequest request) {
-        // TODO : 구현 예정
-        return null;
+
+        DirectMessage directMessage = DirectMessage.create(
+                request.senderId(), request.receiverId(), request.content());
+
+        directMessageRepository.save(directMessage);
+
+        Profile senderProfile = profileRepository.findByUserId(directMessage.getSenderId())
+                .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
+        Profile receiverProfile = profileRepository.findByUserId(directMessage.getReceiverId())
+                .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
+
+        UserSummary sender = new UserSummary(
+                senderProfile.getUser().getId(), senderProfile.getName(), senderProfile.getProfileImageUrl());
+
+        UserSummary receiver = new UserSummary(
+                receiverProfile.getUser().getId(), receiverProfile.getName(), receiverProfile.getProfileImageUrl());
+
+        DirectMessageDto dto = DirectMessageMapper.toDto(directMessage, sender, receiver);
+
+        // Websocket 브로드캐스트용
+        eventPublisher.publishEvent(new DirectMessageSentEvent(dto));
+
+        return dto;
     }
 
     @Override
