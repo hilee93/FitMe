@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.web.csrf.CsrfToken;
@@ -26,10 +27,21 @@ public class AuthController {
     private final UserService userService;
     private final JwtProperties jwtProperties;
 
-    @PostMapping("/sign-in")
-    public ResponseEntity<JwtDto> signIn(@Valid @RequestBody SignInRequest signInRequest,
-                                         HttpServletResponse response) {
+    @PostMapping(value = "/sign-in", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<JwtDto> signInJson(@Valid @RequestBody SignInRequest signInRequest,
+                                             HttpServletResponse response) {
         SignInResult result = userService.signIn(signInRequest);
+        addRefreshCookie(response, result.refreshToken());
+        return ResponseEntity.ok(result.jwtDto());
+    }
+
+    @PostMapping(value = "/sign-in", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<JwtDto> signInMultipart (
+            @RequestParam String username,
+            @RequestParam String password,
+            HttpServletResponse response
+    ) {
+        SignInResult result = userService.signIn(new SignInRequest(username, password));
         addRefreshCookie(response, result.refreshToken());
         return ResponseEntity.ok(result.jwtDto());
     }

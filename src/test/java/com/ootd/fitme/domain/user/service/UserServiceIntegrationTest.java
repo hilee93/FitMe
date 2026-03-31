@@ -1,5 +1,7 @@
 package com.ootd.fitme.domain.user.service;
 
+import com.ootd.fitme.domain.profile.entity.Profile;
+import com.ootd.fitme.domain.profile.repository.ProfileRepository;
 import com.ootd.fitme.domain.user.dto.request.ChangePasswordRequest;
 import com.ootd.fitme.domain.user.dto.request.ResetPasswordRequest;
 import com.ootd.fitme.domain.user.dto.request.SignInRequest;
@@ -40,6 +42,9 @@ public class UserServiceIntegrationTest {
     private UserRepository userRepository;
 
     @Autowired
+    private ProfileRepository profileRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -74,6 +79,7 @@ public class UserServiceIntegrationTest {
             assertThat(saved.getEmail()).isEqualTo(email);
             assertThat(saved.getPassword()).isNotEqualTo(rawPassword);
             assertThat(passwordEncoder.matches(rawPassword, saved.getPassword())).isTrue();
+            assertThat(result.name()).isEqualTo("tester");
         }
     }
 
@@ -172,6 +178,10 @@ public class UserServiceIntegrationTest {
         User user = User.create(email, passwordEncoder.encode(rawPassword));
         user.updateRole(role);
         user.updateLocked(locked);
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+
+        String name = email.substring(0, email.indexOf('@'));
+        profileRepository.save(Profile.createDefault(name, saved));
+        return saved;
     }
 }

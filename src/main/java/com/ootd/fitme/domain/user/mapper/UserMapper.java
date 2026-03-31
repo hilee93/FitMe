@@ -11,17 +11,12 @@ public class UserMapper {
         return User.create(userCreateRequest.email(), encodedPassword);
     }
 
-    public UserDto toDto(User user) {
-        // TODO: profile 구현 후 프로필의 이름으로 매핑
-        String fallbackName = user.getEmail() != null && user.getEmail().contains("@")
-                ? user.getEmail().substring(0, user.getEmail().indexOf('@'))
-                : "unknown";
-
+    public UserDto toDto(User user, String name) {
         return new UserDto(
                 user.getId(),
                 user.getCreatedAt(),
                 user.getEmail(),
-                fallbackName,
+                name,
                 user.getRole(),
                 user.isLocked()
         );
