@@ -53,11 +53,9 @@ public interface NotificationDocs {
     })
     ResponseEntity<NotificationPageResponse> getNotifications(
             @Parameter(hidden = true)
-            @AuthenticationPrincipal CustomUserPrincipal principal,
+             CustomUserPrincipal principal,
 
-            @Valid
             @ParameterObject
-            @ModelAttribute
             NotificationPageQueryRequest query
     );
 
@@ -78,12 +76,11 @@ public interface NotificationDocs {
     })
     ResponseEntity<Void> deleteNotification(
             @Parameter(hidden = true)
-            @AuthenticationPrincipal CustomUserPrincipal principal,
-
+            CustomUserPrincipal principal,
             @Parameter(
                     description = "삭제할 알림 ID"
             )
-            @PathVariable UUID notificationId
+             UUID notificationId
     );
 
 }
