@@ -15,6 +15,13 @@ public enum ErrorCode {
     USER_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "유저가 이미 존재합니다.", "U-007"),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다.", "U-008"),
 
+    // profile
+    PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "프로필을 찾을 수 없습니다.", "P-001"),
+    PROFILE_IMAGE_SAVE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "프로필 이미지 저장에 실패했습니다.", "P-002"),
+    PROFILE_IMAGE_TOO_LARGE(HttpStatus.BAD_REQUEST, "프로필 이미지는 5MB 이하여야 합니다.", "P-003"),
+    PROFILE_IMAGE_CONTENT_TYPE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "지원하지 않는 이미지 형식입니다.", "P-004"),
+    PROFILE_IMAGE_EXTENSION_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "지원하지 않는 파일 확장자입니다.", "P-005"),
+
     //notification
     NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND,"알림을 찾을 수 없습니다","NC-001"),
     NOTIFICATION_BAD_REQUEST(HttpStatus.BAD_REQUEST, "요청한 알림이 사용자와 일치하지 않습니다","NC-002"),
