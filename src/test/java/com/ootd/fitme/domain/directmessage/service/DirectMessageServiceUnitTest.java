@@ -103,12 +103,11 @@ class DirectMessageServiceUnitTest {
             given(receiverProfile.getProfileImageUrl()).willReturn(null);
 
             //when
-            DirectMessageDto directMessageDto = directMessageServiceImpl.sendDirectMessage(request);
+            directMessageServiceImpl.sendDirectMessage(request);
 
             //then
             then(directMessageRepository).should().save(any(DirectMessage.class));
             then(eventPublish).should().publishEvent(any(DirectMessageCreateEvent.class));
-            assertThat(directMessageDto).isNotNull();
         }
 
         @Test

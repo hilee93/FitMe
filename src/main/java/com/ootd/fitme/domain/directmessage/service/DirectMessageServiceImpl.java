@@ -34,7 +34,7 @@ public class DirectMessageServiceImpl implements DirectMessageService {
 
     @Override
     @Transactional
-    public DirectMessageDto sendDirectMessage(DirectMessageCreateRequest request) {
+    public void sendDirectMessage(DirectMessageCreateRequest request) {
 
         DirectMessage directMessage = DirectMessage.create(
                 request.senderId(), request.receiverId(), request.content());
@@ -43,8 +43,6 @@ public class DirectMessageServiceImpl implements DirectMessageService {
 
         UserSummary sender = getUserSummary(request.senderId());
         UserSummary receiver = getUserSummary(request.receiverId());
-
-        DirectMessageDto dto = DirectMessageMapper.toDto(directMessage, sender, receiver);
 
         eventPublisher.publishEvent(new DirectMessageCreateEvent(
                 directMessage.getId(),
@@ -57,8 +55,6 @@ public class DirectMessageServiceImpl implements DirectMessageService {
                 directMessage.getContent(),
                 directMessage.getCreatedAt()
         ));
-
-        return dto;
     }
 
     @Override

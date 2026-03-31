@@ -214,40 +214,6 @@ class DirectMessageServiceImplTest {
             long count = directMessageRepository.countBySenderIdOrReceiverId(senderId, receiverId);
             assertThat(count).isEqualTo(2);
         }
-
-        @Test
-        @DisplayName("성공 - sender UserSummary가 반환된다")
-        void sendDirectMessage_success_returnSenderUserSummary(){
-
-            //given
-            DirectMessageCreateRequest request = new DirectMessageCreateRequest(
-                    receiverId, senderId, "안녕하세요");
-
-            //when
-            DirectMessageDto directMessageDto = directMessageServiceImpl.sendDirectMessage(request);
-
-            //then
-            assertThat(directMessageDto.sender().userId()).isEqualTo(senderId);
-            assertThat(directMessageDto.sender().name()).isEqualTo("보내는사람");
-            assertThat(directMessageDto.sender().profileImageUrl()).isNull();
-        }
-
-        @Test
-        @DisplayName("성공 - receiver UserSummary가 반환된다")
-        void sendDirectMessage_success_returnReceiverUserSummary(){
-
-            //given
-            DirectMessageCreateRequest request = new DirectMessageCreateRequest(
-                    receiverId, senderId, "안녕하세요");
-
-            //when
-            DirectMessageDto directMessageDto = directMessageServiceImpl.sendDirectMessage(request);
-
-            //then
-            assertThat(directMessageDto.receiver().userId()).isEqualTo(receiverId);
-            assertThat(directMessageDto.receiver().name()).isEqualTo("받는사람");
-            assertThat(directMessageDto.receiver().profileImageUrl()).isNull();
-        }
     }
 
     private void saveProfile(User user, String name) {
