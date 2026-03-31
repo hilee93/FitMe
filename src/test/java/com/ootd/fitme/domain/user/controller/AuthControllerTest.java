@@ -19,6 +19,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -32,8 +33,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -114,6 +114,33 @@ class AuthControllerTest {
                     .andExpect(status().isBadRequest());
 
             then(userService).should(never()).signIn(any(SignInRequest.class));
+        }
+
+        @Test
+        @DisplayName("성공 - multipart/form-data 로그인 시 200과 refresh 쿠키를 반환")
+        void signIn_multipart_success() throws Exception {
+            UserDto userDto = new UserDto(
+                    UUID.randomUUID(),
+                    Instant.now(),
+                    "tester@fitme.com",
+                    "tester",
+                    Role.USER,
+                    false
+            );
+
+            JwtDto jwtDto = new JwtDto(userDto, "access-token");
+            SignInResult result = new SignInResult(jwtDto, "refresh-token");
+
+            mockMvc.perform(multipart("/api/auth/sign-in")
+                    .param("username", "tester@fitme.com")
+                    .param("password", "password123!")
+                    .with(req -> {
+                        req.setMethod("POST");
+                        return req;
+                    }))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.accessToken").value("access-token"))
+                    .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("refreshToken=")));
         }
     }
 

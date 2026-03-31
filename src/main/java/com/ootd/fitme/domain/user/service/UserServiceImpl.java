@@ -1,6 +1,7 @@
 package com.ootd.fitme.domain.user.service;
 
 import com.ootd.fitme.domain.profile.entity.Profile;
+import com.ootd.fitme.domain.profile.exception.ProfileException;
 import com.ootd.fitme.domain.profile.repository.ProfileRepository;
 import com.ootd.fitme.domain.user.dto.request.*;
 import com.ootd.fitme.domain.user.dto.response.JwtDto;
@@ -81,7 +82,7 @@ public class UserServiceImpl implements UserService {
 
         profileRepository.save(profile);
 
-        return userMapper.toDto(saved);
+        return mapToUserDto(saved);
     }
 
     @Transactional(readOnly = true)
@@ -119,7 +120,7 @@ public class UserServiceImpl implements UserService {
         String accessToken = jwtProvider.generateAccessToken(user.getId(), user.getRole().name());
         String refreshToken = jwtProvider.generateRefreshToken(user.getId(), user.getRole().name());
 
-        JwtDto jwtDto = new JwtDto(userMapper.toDto(user), accessToken);
+        JwtDto jwtDto = new JwtDto(mapToUserDto(user), accessToken);
 
         return new SignInResult(jwtDto, refreshToken);
     }
@@ -152,7 +153,7 @@ public class UserServiceImpl implements UserService {
         }
 
         String newAccessToken = jwtProvider.generateAccessToken(userId, user.getRole().name());
-        return new JwtDto(userMapper.toDto(user), newAccessToken);
+        return new JwtDto(mapToUserDto(user), newAccessToken);
     }
 
     @Transactional(readOnly = true)
@@ -172,7 +173,7 @@ public class UserServiceImpl implements UserService {
 
         tokenBlacklistService.setRevokeAllBefore(userId, nowSeconds());
 
-        return userMapper.toDto(user);
+        return mapToUserDto(user);
     }
 
     @Transactional
@@ -185,7 +186,7 @@ public class UserServiceImpl implements UserService {
 
         tokenBlacklistService.setRevokeAllBefore(userId, nowSeconds());
 
-        return userMapper.toDto(user);
+        return mapToUserDto(user);
     }
 
     @Override
@@ -244,5 +245,14 @@ public class UserServiceImpl implements UserService {
 
     private Instant nowSeconds() {
         return Instant.now().truncatedTo(ChronoUnit.SECONDS);
+    }
+
+    private UserDto mapToUserDto(User user) {
+        String name = profileRepository.findByUserId(user.getId())
+                .map(Profile::getName)
+                .filter(profileName -> !profileName.isBlank())
+                .orElseThrow(() -> new ProfileException(ErrorCode.PROFILE_NOT_FOUND));
+
+        return userMapper.toDto(user, name);
     }
 }

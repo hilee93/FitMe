@@ -91,11 +91,13 @@ public class UserServiceUnitTest {
         void signUp_success() {
             UserCreateRequest request = new UserCreateRequest("tester", email, rawPassword);
             User savedUser = mock(User.class);
+            Profile profile = mockProfile("tester");
 
             given(userRepository.findByEmail(email)).willReturn(Optional.empty());
             given(passwordEncoder.encode(rawPassword)).willReturn(encodedPassword);
             given(userRepository.save(any(User.class))).willReturn(savedUser);
-            given(userMapper.toDto(savedUser)).willReturn(userDto);
+            given(profileRepository.findByUserId(any())).willReturn(Optional.of(profile));
+            given(userMapper.toDto(any(User.class), anyString())).willReturn(userDto);
 
             UserDto result = userService.signUp(request);
 
@@ -126,12 +128,14 @@ public class UserServiceUnitTest {
         void signUp_success_withProfile() {
             UserCreateRequest request = new UserCreateRequest("tester", email, rawPassword);
             User savedUser = mock(User.class);
+            Profile profile = mockProfile("tester");
 
             given(userRepository.findByEmail(email)).willReturn(Optional.empty());
             given(passwordEncoder.encode(rawPassword)).willReturn(encodedPassword);
             given(userRepository.save(any(User.class))).willReturn(savedUser);
             given(profileRepository.save(any(Profile.class))).willAnswer(inv -> inv.getArgument(0));
-            given(userMapper.toDto(savedUser)).willReturn(userDto);
+            given(profileRepository.findByUserId(any())).willReturn(Optional.of(profile));
+            given(userMapper.toDto(any(User.class), anyString())).willReturn(userDto);
 
             UserDto result = userService.signUp(request);
 
@@ -147,6 +151,7 @@ public class UserServiceUnitTest {
         @DisplayName("성공 - 일반 비밀번호로 로그인")
         void signIn_normalPassword_success() {
             User user = mock(User.class);
+            Profile profile = mockProfile("tester");
 
             given(user.getId()).willReturn(userId);
             given(user.getPassword()).willReturn(encodedPassword);
@@ -155,7 +160,8 @@ public class UserServiceUnitTest {
             given(passwordEncoder.matches(rawPassword, encodedPassword)).willReturn(true);
             given(jwtProvider.generateAccessToken(userId, "USER")).willReturn("access-token");
             given(jwtProvider.generateRefreshToken(userId, "USER")).willReturn("refresh-token");
-            given(userMapper.toDto(user)).willReturn(userDto);
+            given(profileRepository.findByUserId(any())).willReturn(Optional.of(profile));
+            given(userMapper.toDto(any(User.class), anyString())).willReturn(userDto);
 
             SignInResult result = userService.signIn(new SignInRequest(email, rawPassword));
 
@@ -182,6 +188,7 @@ public class UserServiceUnitTest {
         @DisplayName("성공 - 임시 비밀번호(만료 전) 로그인")
         void signIn_temporaryPassword_success() {
             User user = mock(User.class);
+            Profile profile = mockProfile("tester");
 
             given(user.getId()).willReturn(userId);
             given(user.getPassword()).willReturn(encodedPassword);
@@ -192,7 +199,8 @@ public class UserServiceUnitTest {
             given(passwordEncoder.matches(rawPassword, "encoded-temp")).willReturn(true);
             given(jwtProvider.generateAccessToken(userId, "USER")).willReturn("access-token");
             given(jwtProvider.generateRefreshToken(userId, "USER")).willReturn("refresh-token");
-            given(userMapper.toDto(user)).willReturn(userDto);
+            given(profileRepository.findByUserId(any())).willReturn(Optional.of(profile));
+            given(userMapper.toDto(any(User.class), anyString())).willReturn(userDto);
 
             SignInResult result = userService.signIn(new SignInRequest(email, rawPassword));
 
@@ -226,6 +234,7 @@ public class UserServiceUnitTest {
         void refresh_success() {
             User user = mock(User.class);
             Instant iat = Instant.now();
+            Profile profile = mockProfile("tester");
 
             given(user.getRole()).willReturn(Role.USER);
             given(jwtProvider.validateToken("refresh-token")).willReturn(true);
@@ -237,7 +246,8 @@ public class UserServiceUnitTest {
             given(tokenBlacklistService.getRevokeAllBefore(userId)).willReturn(iat.minusSeconds(1));
             given(userRepository.findById(userId)).willReturn(Optional.of(user));
             given(jwtProvider.generateAccessToken(userId, "USER")).willReturn("new-access-token");
-            given(userMapper.toDto(user)).willReturn(userDto);
+            given(profileRepository.findByUserId(any())).willReturn(Optional.of(profile));
+            given(userMapper.toDto(any(User.class), anyString())).willReturn(userDto);
 
             JwtDto result = userService.refresh("refresh-token");
 
@@ -312,9 +322,11 @@ public class UserServiceUnitTest {
         void updateRole_success() {
             User user = mock(User.class);
             UserRoleUpdateRequest request = new UserRoleUpdateRequest(Role.ADMIN);
+            Profile profile = mockProfile("tester");
 
             given(userRepository.findById(userId)).willReturn(Optional.of(user));
-            given(userMapper.toDto(user)).willReturn(userDto);
+            given(profileRepository.findByUserId(any())).willReturn(Optional.of(profile));
+            given(userMapper.toDto(any(User.class), anyString())).willReturn(userDto);
 
             userService.updateRole(userId, request);
 
@@ -327,9 +339,11 @@ public class UserServiceUnitTest {
         void updateLock_success() {
             User user = mock(User.class);
             UserLockUpdateRequest request = new UserLockUpdateRequest(true);
+            Profile profile = mockProfile("tester");
 
             given(userRepository.findById(userId)).willReturn(Optional.of(user));
-            given(userMapper.toDto(user)).willReturn(userDto);
+            given(profileRepository.findByUserId(any())).willReturn(Optional.of(profile));
+            given(userMapper.toDto(any(User.class), anyString())).willReturn(userDto);
 
             userService.updateLock(userId, request);
 
@@ -377,5 +391,11 @@ public class UserServiceUnitTest {
             verify(temporaryPasswordStore).delete(userId);
             verify(tokenBlacklistService).setRevokeAllBefore(eq(userId), any(Instant.class));
         }
+    }
+
+    private Profile mockProfile(String name) {
+        Profile profile = mock(Profile.class);
+        given(profile.getName()).willReturn(name);
+        return profile;
     }
 }
