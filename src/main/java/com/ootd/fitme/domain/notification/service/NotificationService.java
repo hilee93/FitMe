@@ -98,13 +98,13 @@ public class NotificationService {
     }
 
     @Transactional
-    public Notification notifyFeedLiked(UUID likedId, String likerName) {
+    public Notification notifyFeedLiked(UUID likedId,String feedName, String likerName) {
 
         User user = userRepository.findById(likedId)
                 .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
 
 
-        Notification notification = notificationFactory.feedLiked(user, likerName);
+        Notification notification = notificationFactory.feedLiked(user,feedName, likerName);
 
         Notification saved = notificationRepository.save(notification);
 
@@ -116,13 +116,13 @@ public class NotificationService {
     }
 
     @Transactional
-    public Notification notifyFeedCommented(UUID feedOwnerId, String commenterName, String comment) {
+    public Notification notifyFeedCommented(UUID feedOwnerId,String feedName, String commenterName, String comment) {
 
         User user = userRepository.findById(feedOwnerId)
                 .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
 
 
-        Notification notification = notificationFactory.feedCommented(user, commenterName,comment);
+        Notification notification = notificationFactory.feedCommented(user,feedName, commenterName,comment);
 
         Notification saved = notificationRepository.save(notification);
 

@@ -107,9 +107,9 @@ class NotificationServiceUnitTest {
             Notification notification = mock(Notification.class);
 
             given(userRepository.findById(userId)).willReturn(Optional.of(user));
-            given(notificationFactory.feedLiked(user, "liker")).willReturn(notification);
+            given(notificationFactory.feedLiked(user,"feedName", "liker")).willReturn(notification);
 
-            notificationService.notifyFeedLiked(userId, "liker");
+            notificationService.notifyFeedLiked(userId,"feedName", "liker");
 
             verify(notificationRepository).save(notification);
         }
@@ -122,9 +122,9 @@ class NotificationServiceUnitTest {
             Notification notification = mock(Notification.class);
 
             given(userRepository.findById(userId)).willReturn(Optional.of(user));
-            given(notificationFactory.feedCommented(user, "commenter", "nice")).willReturn(notification);
+            given(notificationFactory.feedCommented(user,"feedName", "commenter", "nice")).willReturn(notification);
 
-            notificationService.notifyFeedCommented(userId, "commenter", "nice");
+            notificationService.notifyFeedCommented(userId,"feedName", "commenter", "nice");
 
             verify(notificationRepository).save(notification);
         }
