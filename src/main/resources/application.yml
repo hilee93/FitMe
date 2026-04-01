@@ -58,3 +58,9 @@ logging:
   level:
     root: info
 
+external:
+  kakao:
+    rest-api-key: ${KAKAO_API_KEY}
+    local:
+      base-url: https://dapi.kakao.com
+      coord2region-path: /v2/local/geo/coord2regioncode.json
