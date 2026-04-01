@@ -1,6 +1,7 @@
 package com.ootd.fitme.domain.attribute.entity;
 
 import com.ootd.fitme.domain.attribute.exception.AttributeException;
+import com.ootd.fitme.domain.selectablevalue.entity.SelectableValue;
 import com.ootd.fitme.global.exception.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -32,18 +33,33 @@ class AttributeTest {
     @Nested
     @DisplayName("updateAttribute() 메서드는")
     class Describe_updateAttribute {
+
         @Test
-        @DisplayName("이름을 수정하고 기존 옵션을 비운 뒤 새 옵션을 채운다.")
-        void it_updates_name_and_replaces_options() {
+        @DisplayName("이름을 수정하고, 기존 옵션의 객체를 유지한 채 병합(추가/삭제/순서변경)한다.")
+        void it_updates_name_and_merges_options() {
+            // given
             Attribute attribute = Attribute.create("핏");
-            attribute.addValues(List.of("오버핏", "레귤러핏"));
 
-            attribute.updateAttribute("수정된핏", List.of("슬림핏"));
+            // 인덱스: 0=오버핏, 1=레귤러핏, 2=슬림핏
+            attribute.addValues(List.of("오버핏", "레귤러핏", "슬림핏"));
 
+            SelectableValue originalRegularFit = attribute.getSelectableValues().get(1);
+
+            // when (실행)
+            attribute.updateAttribute("수정된핏", List.of("레귤러핏", "크롭핏"));
+
+            // then (검증)
             assertThat(attribute.getName()).isEqualTo("수정된핏");
-            assertThat(attribute.getSelectableValues()).hasSize(1);
-            assertThat(attribute.getSelectableValues().get(0).getType()).isEqualTo("슬림핏");
-            assertThat(attribute.getSelectableValues().get(0).getDisplayOrder()).isEqualTo(0);
+            assertThat(attribute.getSelectableValues()).hasSize(2);
+
+            SelectableValue updatedRegularFit = attribute.getSelectableValues().get(0);
+            assertThat(updatedRegularFit.getType()).isEqualTo("레귤러핏");
+            assertThat(updatedRegularFit.getDisplayOrder()).isEqualTo(0);
+            assertThat(updatedRegularFit).isSameAs(originalRegularFit);
+
+            SelectableValue newCropFit = attribute.getSelectableValues().get(1);
+            assertThat(newCropFit.getType()).isEqualTo("크롭핏");
+            assertThat(newCropFit.getDisplayOrder()).isEqualTo(1);
         }
     }
 }

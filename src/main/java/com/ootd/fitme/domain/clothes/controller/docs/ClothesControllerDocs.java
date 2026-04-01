@@ -1,8 +1,9 @@
 package com.ootd.fitme.domain.clothes.controller.docs;
 
 import com.ootd.fitme.domain.clothes.dto.ClothesDto;
-import com.ootd.fitme.domain.clothes.dto.request.ClothesDtoCreateRequest;
+import com.ootd.fitme.domain.clothes.dto.request.ClothesCreateRequest;
 import com.ootd.fitme.domain.clothes.dto.request.ClothesDtoCursorRequest;
+import com.ootd.fitme.domain.clothes.dto.request.ClothesUpdateRequest;
 import com.ootd.fitme.domain.clothes.dto.response.ClothesDtoCursorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -27,7 +28,7 @@ public interface ClothesControllerDocs {
     @ApiResponse(responseCode = "201", description = "옷 등록 성공")
     @ApiResponse(responseCode = "400", description = "잘못된 요청")
     ResponseEntity<ClothesDto> createClothes(
-            @Parameter(description = "옷 등록 정보", required = true) ClothesDtoCreateRequest request,
+            @Parameter(description = "옷 등록 정보", required = true) ClothesCreateRequest request,
             @Parameter(description = "옷 이미지 파일") MultipartFile image
     );
 
@@ -40,7 +41,9 @@ public interface ClothesControllerDocs {
     @Operation(summary = "옷 수정", description = "특정 ID의 옷 정보를 수정합니다.")
     @ApiResponse(responseCode = "200", description = "옷 수정 성공")
     ResponseEntity<ClothesDto> updateClothes(
-            @Parameter(description = "수정할 옷의 UUID", required = true) @PathVariable UUID clothesId
+            @Parameter(description = "수정할 옷의 UUID", required = true) @PathVariable UUID clothesId,
+            @Parameter(description = "수정할 옷의 정보") @ModelAttribute ClothesUpdateRequest request,
+            @Parameter(description = "수정할 옷의 사진") @RequestPart MultipartFile image
     );
 
     @Operation(summary = "구매 링크로 옷 정보 불러오기", description = "상품 링크를 통해 옷의 상세 정보를 추출합니다.")

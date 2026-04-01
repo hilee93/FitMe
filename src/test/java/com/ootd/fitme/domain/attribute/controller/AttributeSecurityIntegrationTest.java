@@ -86,7 +86,7 @@ class AttributeSecurityIntegrationTest {
             mockMvc.perform(get("/api/clothes/attribute-defs")
                             .param("sortBy", "createdAt")
                             .param("sortDirection", "DESC")
-                            .header("Authorization", "Bearer " + validAdminToken))
+                            .header("Authorization", "Bearer " + validUserToken))
                     .andDo(print())
                     .andExpect(status().isOk());
         }
