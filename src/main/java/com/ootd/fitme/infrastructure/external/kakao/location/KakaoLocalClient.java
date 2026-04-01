@@ -17,7 +17,7 @@ public class KakaoLocalClient {
 
     public RegionInfo resolveRegion(double longitude, double latitude) {
         URI uri = UriComponentsBuilder.fromUriString(properties.local().baseUrl()) // base url 시작
-                .path("/v2/local/geo/coord2regioncode.json") // api 경로
+                .path(properties.local().coord2regionPath()) // api 경로
                 .queryParam("x", longitude) // 경도
                 .queryParam("y", latitude) // 위도
                 .queryParam("input_coord", "WGS84") // 좌표계 지정
