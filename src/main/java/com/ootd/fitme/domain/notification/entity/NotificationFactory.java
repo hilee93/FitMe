@@ -31,27 +31,27 @@ public class NotificationFactory {
     public Notification weatherAlert(User user,String region_1,String region_2 ,String weatherAlert ) {
         return Notification.create(
                 NotificationLevel.INFO,
-                "["+weatherAlert +"]"+ ".",
-                "",
+                "["+region_1 +" "+ region_2 +"]"+ "의 날씨가 ["+weatherAlert+"]"+"로 바뀌었습니다",
+                "날씨를 확인해 보세요",
                 NotificationType.WEATHER_ALERT,
                 user
         );
     }
 
-    public Notification feedLiked(User user, String likerName) {
+    public Notification feedLiked(User user,String feedName, String likerName) {
         return Notification.create(
                 NotificationLevel.INFO,
-                "["+likerName +"]"+ "님이 회원님의 피드를 좋아했습니다.",
-                "피드 좋아요",
+                "["+likerName +"]"+ "님이 회원님의 피드에 좋아요를 눌렀습니다.",
+                "피드: "+feedName,
                 NotificationType.FEED_LIKED,
                 user
         );
     }
 
-    public Notification feedCommented(User user, String commenterName, String comment) {
+    public Notification feedCommented(User user,String feedName, String commenterName, String comment) {
         return Notification.create(
                 NotificationLevel.INFO,
-                "["+commenterName+"]"+ "님이 댓글을 남겼습니다: ",
+                "["+feedName+"]피드에 "+"["+commenterName+"]"+ "님이 댓글을 남겼습니다.",
                 comment,
                 NotificationType.FEED_COMMENTED,
                 user
@@ -68,32 +68,12 @@ public class NotificationFactory {
         );
     }
 
-    public Notification attributeUpdated(User user, String attributeName) {
-        return Notification.create(
-                NotificationLevel.INFO,
-                "["+attributeName+"]"+ " 속성이 변경되었습니다.",
-                "속성을 확인해보세요",
-                NotificationType.ATTRIBUTE_UPDATED,
-                user
-        );
-    }
-
     public Notification attributeAdded(User user, String attributeName) {
         return Notification.create(
                 NotificationLevel.INFO,
                 "["+attributeName+"]"+ " 속성이 추가되었습니다.",
                 "속성을 확인해보세요",
                 NotificationType.ATTRIBUTE_ADDED,
-                user
-        );
-    }
-
-    public Notification attributeDeleted(User user, String attributeName) {
-        return Notification.create(
-                NotificationLevel.WARN,
-                "["+attributeName+"]"+ " 속성이 삭제되었습니다.",
-                "속성을 확인해보세요",
-                NotificationType.ATTRIBUTE_DELETED,
                 user
         );
     }
