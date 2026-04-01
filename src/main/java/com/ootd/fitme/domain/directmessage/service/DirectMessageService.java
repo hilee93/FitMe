@@ -8,7 +8,7 @@ import java.util.UUID;
 
 public interface DirectMessageService {
 
-    DirectMessageDto sendDirectMessage(DirectMessageCreateRequest request);
+    void sendDirectMessage(DirectMessageCreateRequest request);
 
     DirectMessageDtoCursorResponse getDirectMessages(UUID userId, String cursor, UUID idAfter, int limit);
 }

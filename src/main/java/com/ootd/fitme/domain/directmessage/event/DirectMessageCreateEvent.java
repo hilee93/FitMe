@@ -8,6 +8,9 @@ public record DirectMessageCreateEvent(
         UUID receiverId,
         UUID senderId,
         String senderName,
+        String senderProfileImageUrl,
+        String receiverName,
+        String receiverProfileImageUrl,
         String message,
         Instant createdAt
 ) {

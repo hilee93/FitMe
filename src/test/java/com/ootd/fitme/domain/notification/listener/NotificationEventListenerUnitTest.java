@@ -42,7 +42,8 @@ class NotificationEventListenerUnitTest {
             Instant now = Instant.now();
 
             DirectMessageCreateEvent event =
-                    new DirectMessageCreateEvent(null,userId,senderId, "sender","msg",now );
+                    new DirectMessageCreateEvent(null,userId,senderId, "sender",
+                            null, null, null,"msg",now );
 
             listener.directMessage(event);
 
