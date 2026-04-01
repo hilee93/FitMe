@@ -1,5 +1,6 @@
 package com.ootd.fitme.domain.feed.service;
 
+import com.ootd.fitme.domain.feed.dto.request.FeedSearchCondition;
 import com.ootd.fitme.domain.feed.dto.response.*;
 import com.ootd.fitme.domain.feed.repository.FeedClothesQueryRepository;
 import com.ootd.fitme.domain.feed.repository.FeedLikeQueryRepository;
@@ -29,7 +30,7 @@ public class FeedQueryService {
 
         FeedDetailFlatRow feedDetailFlatRow = feedQueryRepository.findFeedDetail(feedId).orElseThrow(); // 해당 피드의 대략적인 필드들
 
-        Profile profile = profileRepository.findByUserId(feedDetailFlatRow.authorId()).orElseThrow(); // TODO:
+        Profile profile = profileRepository.findByUserId(feedDetailFlatRow.authorId()).orElseThrow(); // TODO: FeedProfileQueryRepository로 프로젝션
 
         List<FeedClothesFlatRow> clothesFlatRow = feedClothesQueryRepository.findFeedClothes(feedId);
 
@@ -121,6 +122,22 @@ public class FeedQueryService {
         }
 
         return new ArrayList<>(clothesById.values());
+    }
+
+    public FeedCursorResponseDto searchFeeds(FeedSearchCondition condition) {
+        CursorResult<FeedBaseFlatRow> feedFlatRowCursorResult = feedQueryRepository.findFeedListFlatRows(condition);
+
+        List<FeedBaseFlatRow> feedFlatRows = feedFlatRowCursorResult.content();
+        List<UUID> feedIds = feedFlatRows.stream()
+                .map(FeedBaseFlatRow::feedId)
+                .toList();
+
+        // 1. clothes 조회
+        // 2. LikedByMe 조회
+        // 3. grouping
+        // 4. FeedSummaryDto 리스트 조립
+
+        return FeedCursorResponseDto.from();
     }
 
 }

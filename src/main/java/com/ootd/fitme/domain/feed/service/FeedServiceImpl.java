@@ -45,7 +45,7 @@ public class FeedServiceImpl implements FeedService {
     @Override
     @Transactional(readOnly = true)
     public FeedCursorResponseDto searchFeeds(FeedSearchCondition feedSearchCondition) {
-        return null; // TODO: 검색로직 작성
+        return feedQueryService.searchFeeds(feedSearchCondition); // TODO: 검색로직 작성
     }
 
     @Override

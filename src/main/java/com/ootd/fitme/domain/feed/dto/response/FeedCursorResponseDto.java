@@ -15,4 +15,9 @@ public record FeedCursorResponseDto(
         FeedSortCriteria sortBy,
         SortDirection sortDirection
 ) {
+
+    public static FeedCursorResponseDto from() {
+        return null; // TODO: 마저구현
+    }
+
 }
