@@ -18,6 +18,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -103,7 +104,7 @@ class DirectMessageServiceUnitTest {
             given(receiverProfile.getProfileImageUrl()).willReturn(null);
 
             //when
-            directMessageServiceImpl.sendDirectMessage(request);
+            directMessageServiceImpl.sendDirectMessage(request, senderId);
 
             //then
             then(directMessageRepository).should().save(any(DirectMessage.class));
@@ -118,7 +119,7 @@ class DirectMessageServiceUnitTest {
             given(profileRepository.findByUserId(senderId)).willReturn(Optional.empty());
 
             //when & then
-            assertThatThrownBy(() -> directMessageServiceImpl.sendDirectMessage(request))
+            assertThatThrownBy(() -> directMessageServiceImpl.sendDirectMessage(request, senderId))
                     .isInstanceOf(UserException.class);
         }
 
@@ -135,8 +136,20 @@ class DirectMessageServiceUnitTest {
             given(profileRepository.findByUserId(receiverId)).willReturn(Optional.empty());
 
             //when & then
-            assertThatThrownBy(() -> directMessageServiceImpl.sendDirectMessage(request))
+            assertThatThrownBy(() -> directMessageServiceImpl.sendDirectMessage(request, senderId))
                     .isInstanceOf(UserException.class);
+        }
+
+        @Test
+        @DisplayName("실패 - senderID와 authUserId가 다르면 예외가 발생한다")
+        void sendDirectMessage_senderIdNotMatch_throwException() {
+
+            //given
+            UUID authUserId = UUID.randomUUID();
+
+            //when & then
+            assertThatThrownBy(() -> directMessageServiceImpl.sendDirectMessage(request, authUserId))
+                    .isInstanceOf(AccessDeniedException.class);
         }
 
     }

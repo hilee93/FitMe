@@ -16,6 +16,7 @@ import com.ootd.fitme.domain.user.exception.user.UserException;
 import com.ootd.fitme.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,7 +35,11 @@ public class DirectMessageServiceImpl implements DirectMessageService {
 
     @Override
     @Transactional
-    public void sendDirectMessage(DirectMessageCreateRequest request) {
+    public void sendDirectMessage(DirectMessageCreateRequest request, UUID authUserId) {
+
+        if (!request.senderId().equals(authUserId)){
+            throw new AccessDeniedException("senderID 위조");
+        }
 
         DirectMessage directMessage = DirectMessage.create(
                 request.senderId(), request.receiverId(), request.content());

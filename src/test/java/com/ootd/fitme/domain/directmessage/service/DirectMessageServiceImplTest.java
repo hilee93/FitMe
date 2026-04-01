@@ -209,8 +209,8 @@ class DirectMessageServiceImplTest {
                     receiverId, senderId, "안녕하세요2");
 
             //when
-            directMessageServiceImpl.sendDirectMessage(request);
-            directMessageServiceImpl.sendDirectMessage(request2);
+            directMessageServiceImpl.sendDirectMessage(request, senderId);
+            directMessageServiceImpl.sendDirectMessage(request2, senderId);
 
             //then
             List<DirectMessage> result = directMessageRepository.findAll();
