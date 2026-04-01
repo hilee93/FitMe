@@ -14,6 +14,6 @@ public class DirectMessageWebSocketController {
 
     @MessageMapping("/direct-messages_send")
     public void sendDirectMessage(DirectMessageCreateRequest request) {
-        // TODO : 구현 예정
+        directMessageService.sendDirectMessage(request);
     }
 }
