@@ -91,11 +91,6 @@ class DirectMessageServiceUnitTest {
         void sendDirectMessage_called_saveAndEmitEvent() {
 
             //given
-            CustomUserPrincipal customUserPrincipal = mock(CustomUserPrincipal.class);
-            given(customUserPrincipal.getUserId()).willReturn(senderId);
-            principal = new UsernamePasswordAuthenticationToken(customUserPrincipal, null,
-                    customUserPrincipal.getAuthorities());
-
             Profile senderProfile = mock(Profile.class);
             Profile receiverProfile = mock(Profile.class);
             User senderUser = mock(User.class);
@@ -114,7 +109,7 @@ class DirectMessageServiceUnitTest {
             given(receiverProfile.getProfileImageUrl()).willReturn(null);
 
             //when
-            directMessageServiceImpl.sendDirectMessage(request, principal);
+            directMessageServiceImpl.sendDirectMessage(request, senderId);
 
             //then
             then(directMessageRepository).should().save(any(DirectMessage.class));
@@ -126,14 +121,10 @@ class DirectMessageServiceUnitTest {
         void sendDirectMessage_senderProfileNotExist_throwException() {
 
             //given
-            CustomUserPrincipal customUserPrincipal = mock(CustomUserPrincipal.class);
-            given(customUserPrincipal.getUserId()).willReturn(senderId);
-            principal = new UsernamePasswordAuthenticationToken(customUserPrincipal, null,
-                    customUserPrincipal.getAuthorities());
             given(profileRepository.findByUserId(senderId)).willReturn(Optional.empty());
 
             //when & then
-            assertThatThrownBy(() -> directMessageServiceImpl.sendDirectMessage(request, principal))
+            assertThatThrownBy(() -> directMessageServiceImpl.sendDirectMessage(request, senderId))
                     .isInstanceOf(UserException.class);
         }
 
@@ -142,11 +133,6 @@ class DirectMessageServiceUnitTest {
         void sendDirectMessage_receiverProfileNotExist_throwException() {
 
             //given
-            CustomUserPrincipal customUserPrincipal = mock(CustomUserPrincipal.class);
-            given(customUserPrincipal.getUserId()).willReturn(senderId);
-            principal = new UsernamePasswordAuthenticationToken(customUserPrincipal, null,
-                    customUserPrincipal.getAuthorities());
-
             Profile senderProfile = mock(Profile.class);
             User senderUser = mock(User.class);
             given(senderProfile.getUser()).willReturn(senderUser);
@@ -155,24 +141,19 @@ class DirectMessageServiceUnitTest {
             given(profileRepository.findByUserId(receiverId)).willReturn(Optional.empty());
 
             //when & then
-            assertThatThrownBy(() -> directMessageServiceImpl.sendDirectMessage(request, principal))
+            assertThatThrownBy(() -> directMessageServiceImpl.sendDirectMessage(request, senderId))
                     .isInstanceOf(UserException.class);
         }
 
         @Test
-        @DisplayName("실패 - senderID와 인증된 사용자 Id가 다르면 예외가 발생한다")
+        @DisplayName("실패 - senderID와 authUserId가 다르면 예외가 발생한다")
         void sendDirectMessage_senderIdNotMatch_throwException() {
 
             //given
-            UUID anotherUserId = UUID.randomUUID();
-            CustomUserPrincipal anotherPrincipal = mock(CustomUserPrincipal.class);
-            given(anotherPrincipal.getUserId()).willReturn(anotherUserId);
-            UsernamePasswordAuthenticationToken principal =
-                    new UsernamePasswordAuthenticationToken(anotherPrincipal, null
-                            , anotherPrincipal.getAuthorities());
+            UUID authUserId = UUID.randomUUID();
 
             //when & then
-            assertThatThrownBy(() -> directMessageServiceImpl.sendDirectMessage(request, principal))
+            assertThatThrownBy(() -> directMessageServiceImpl.sendDirectMessage(request, authUserId))
                     .isInstanceOf(DirectMessageSenderMisMatchException.class);
         }
 

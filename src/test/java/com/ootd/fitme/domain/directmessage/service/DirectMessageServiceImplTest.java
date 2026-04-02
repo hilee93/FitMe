@@ -205,19 +205,14 @@ class DirectMessageServiceImplTest {
         void sendDirectMessage_success_saveDirectMessageDB() {
 
             //given
-            User sender = userRepository.findById(senderId).orElseThrow();
-            CustomUserPrincipal userPrincipal = CustomUserPrincipal.from(sender);
-            UsernamePasswordAuthenticationToken principal = new UsernamePasswordAuthenticationToken(userPrincipal,
-                    null, userPrincipal.getAuthorities());
-
             DirectMessageCreateRequest request = new DirectMessageCreateRequest(
                     receiverId, senderId, "안녕하세요");
             DirectMessageCreateRequest request2 = new DirectMessageCreateRequest(
                     receiverId, senderId, "안녕하세요2");
 
             //when
-            directMessageServiceImpl.sendDirectMessage(request, principal);
-            directMessageServiceImpl.sendDirectMessage(request2, principal);
+            directMessageServiceImpl.sendDirectMessage(request, senderId);
+            directMessageServiceImpl.sendDirectMessage(request2, senderId);
 
             //then
             List<DirectMessage> result = directMessageRepository.findAll();
