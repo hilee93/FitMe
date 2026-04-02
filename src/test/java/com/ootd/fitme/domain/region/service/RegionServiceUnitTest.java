@@ -58,8 +58,8 @@ public class RegionServiceUnitTest {
 
             assertThat(result.getRegionCode()).isEqualTo("1111061500");
             assertThat(result.getRegionFullName()).isEqualTo("서울 종로구 청운효자동");
-            assertThat(result.getX()).isEqualTo((int) Math.round(37.5841));
-            assertThat(result.getY()).isEqualTo((int) Math.round(126.9707));
+            assertThat(result.getX()).isEqualTo((int) Math.round(126.9707));
+            assertThat(result.getY()).isEqualTo((int) Math.round(37.5841));
 
             ArgumentCaptor<Region> captor = ArgumentCaptor.forClass(Region.class);
             verify(regionRepository).save(captor.capture());
@@ -101,8 +101,8 @@ public class RegionServiceUnitTest {
             assertThat(result).isSameAs(existing);
             assertThat(existing.getRegionFullName()).isEqualTo("서울 종로구 청운효자동");
             assertThat(existing.getRegion1depthName()).isEqualTo("서울");
-            assertThat(existing.getX()).isEqualTo((int) Math.round(37.5841));
-            assertThat(existing.getY()).isEqualTo((int) Math.round(126.9707));
+            assertThat(existing.getX()).isEqualTo((int) Math.round(126.9707));
+            assertThat(existing.getY()).isEqualTo((int) Math.round(37.5841));
 
             verify(regionRepository, never()).save(any(Region.class));
         }
@@ -130,8 +130,8 @@ public class RegionServiceUnitTest {
 
         assertThat(location.latitude()).isEqualTo(37.5841);
         assertThat(location.longitude()).isEqualTo(126.9707);
-        assertThat(location.x()).isEqualTo((int) Math.round(37.5841));
-        assertThat(location.y()).isEqualTo((int) Math.round(126.9707));
+        assertThat(location.x()).isEqualTo((int) Math.round(126.9707));
+        assertThat(location.y()).isEqualTo((int) Math.round(37.5841));
         assertThat(location.locationNames()).containsExactly("서울", "종로구", "청운효자동");
     }
 }
