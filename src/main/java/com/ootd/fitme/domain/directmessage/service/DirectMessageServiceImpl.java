@@ -8,6 +8,7 @@ import com.ootd.fitme.domain.directmessage.entity.DirectMessage;
 import com.ootd.fitme.domain.directmessage.enums.SortBy;
 import com.ootd.fitme.domain.directmessage.enums.SortDirection;
 import com.ootd.fitme.domain.directmessage.event.DirectMessageCreateEvent;
+import com.ootd.fitme.domain.directmessage.exception.DirectMessageSenderMisMatchException;
 import com.ootd.fitme.domain.directmessage.mapper.DirectMessageMapper;
 import com.ootd.fitme.domain.directmessage.repository.DirectMessageRepository;
 import com.ootd.fitme.domain.profile.entity.Profile;
@@ -38,7 +39,7 @@ public class DirectMessageServiceImpl implements DirectMessageService {
     public void sendDirectMessage(DirectMessageCreateRequest request, UUID authUserId) {
 
         if (!request.senderId().equals(authUserId)){
-            throw new AccessDeniedException("senderID 위조");
+            throw new DirectMessageSenderMisMatchException(ErrorCode.DM_SENDER_MISMATCH);
         }
 
         DirectMessage directMessage = DirectMessage.create(
