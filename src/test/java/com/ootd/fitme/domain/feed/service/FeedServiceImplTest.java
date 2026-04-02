@@ -1,5 +1,7 @@
 package com.ootd.fitme.domain.feed.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ootd.fitme.domain.attribute.repository.AttributeRepository;
 import com.ootd.fitme.domain.clothes.entity.Clothes;
 import com.ootd.fitme.domain.clothes.enums.ClothesType;
@@ -7,15 +9,22 @@ import com.ootd.fitme.domain.clothes.repository.ClothesRepository;
 import com.ootd.fitme.domain.clothesattribute.repository.ClothesAttributeRepository;
 import com.ootd.fitme.domain.clothesattributeselectablevalue.repository.ClothesAttributeSelectableValueRepository;
 import com.ootd.fitme.domain.feed.dto.request.FeedCreateRequest;
+import com.ootd.fitme.domain.feed.dto.request.FeedSearchCondition;
 import com.ootd.fitme.domain.feed.dto.request.FeedUpdateRequestDto;
+import com.ootd.fitme.domain.feed.dto.response.FeedBaseFlatRow;
+import com.ootd.fitme.domain.feed.dto.response.FeedCursorResponseDto;
 import com.ootd.fitme.domain.feed.dto.response.FeedResponseDto;
 import com.ootd.fitme.domain.feed.entity.Feed;
+import com.ootd.fitme.domain.feed.enums.FeedSortCriteria;
+import com.ootd.fitme.domain.feed.enums.SortDirection;
 import com.ootd.fitme.domain.feed.exception.FeedAccessDeniedException;
 import com.ootd.fitme.domain.feed.exception.FeedLikeAlreadyExistsException;
 import com.ootd.fitme.domain.feed.exception.FeedLikeNotFoundException;
 import com.ootd.fitme.domain.feed.exception.FeedNotFoundException;
 import com.ootd.fitme.domain.feed.fixture.FeedFixtureBuilder;
 import com.ootd.fitme.domain.feed.fixture.FeedFixtureBuilder.FeedFixture;
+import com.ootd.fitme.domain.feed.fixture.FeedFixtureBuilder.FeedFixtureWithClothesDetails;
+import com.ootd.fitme.domain.feed.fixture.FeedFixtureBuilder.FeedFixtureWithoutClothes;
 import com.ootd.fitme.domain.feed.repository.FeedRepository;
 import com.ootd.fitme.domain.feedclothes.repository.FeedClothesRepository;
 import com.ootd.fitme.domain.feedlike.entity.FeedLike;
@@ -26,20 +35,26 @@ import com.ootd.fitme.domain.selectablevalue.repository.SelectableValueRepositor
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.repository.UserRepository;
 import com.ootd.fitme.domain.weatherforecast.entity.WeatherForecast;
+import com.ootd.fitme.domain.weatherforecast.enums.PrecipitationType;
+import com.ootd.fitme.domain.weatherforecast.enums.SkyStatus;
 import com.ootd.fitme.domain.weatherforecast.repository.WeatherForecastRepository;
 import com.ootd.fitme.global.exception.ErrorCode;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -89,8 +104,17 @@ class FeedServiceImplTest {
 
     @Autowired
     private EntityManager em;
+
     @Autowired
     private FeedLikeRepository feedLikeRepository;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    private static final Logger log = LoggerFactory.getLogger(FeedServiceImplTest.class);
+
+
+
 
     @Nested
     @DisplayName("피드관리 - 피드생성")
@@ -411,6 +435,291 @@ class FeedServiceImplTest {
         }
 
     }
+
+    @Nested
+    @DisplayName("피드 조회")
+    class FeedSearchTest {
+
+        @Test
+        @DisplayName("[Positive] 피드 목록 조회 - 피드 목록 조회시 같은값 가짐")
+        void searchFeeds_success() throws JsonProcessingException {
+            // given
+
+            FeedFixtureWithClothesDetails feedFixture = feedFixtureBuilder.createFeedFixtureWithClothesDetails();
+            Feed feed = feedFixture.feed();
+            User user = feedFixture.user();
+
+            em.flush();
+            em.clear();
+
+            FeedSearchCondition condition = new FeedSearchCondition(
+                    null,
+                    FeedSortCriteria.CREATED_AT,
+                    SortDirection.DESCENDING,
+                    null,
+                    null,
+                    20,
+                    null,
+                    null,
+                    null
+                    );
+
+
+            // when
+            FeedCursorResponseDto result = feedService.searchFeeds(condition, user.getId());
+
+            // then
+            assertThat(result.data()).hasSize(1);
+            assertThat(result.hasNext()).isFalse();
+            assertThat(result.totalCount()).isEqualTo(1);
+
+
+            assertThat(result.data())
+                    .extracting(FeedResponseDto::id)
+                    .containsExactly(feed.getId());
+
+            FeedResponseDto target = result.data().stream()
+                    .filter(feedResponse -> feedResponse.id().equals(feed.getId()))
+                    .findFirst()
+                    .orElseThrow();
+
+            assertThat(target.content()).isEqualTo(feed.getContent());
+            assertThat(target.likeCount()).isEqualTo(feed.getLikeCount());
+            assertThat(target.commentCount()).isEqualTo(feed.getCommentCount());
+
+            assertThat(target.author()).isNotNull();
+            assertThat(target.author().userId()).isEqualTo(user.getId());
+
+            assertThat(target.weather()).isNotNull();
+            assertThat(target.ootds()).isNotEmpty();
+
+            log.debug("result = \n{}",
+                    objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(result));
+        }
+
+
+        @DisplayName("[Positive] 피드 목록 조회 - 결과 없음")
+        void searchFeeds_success_when_no_feed() throws JsonProcessingException {
+            // given
+            FeedSearchCondition condition = new FeedSearchCondition(
+                    null,
+                    FeedSortCriteria.CREATED_AT,
+                    SortDirection.DESCENDING,
+                    null,
+                    null,
+                    20,
+                    null,
+                    null,
+                    null
+            );
+
+            // when
+            FeedCursorResponseDto result = feedService.searchFeeds(condition, UUID.randomUUID());
+
+            // then
+            assertThat(result.data()).isEmpty();
+            assertThat(result.hasNext()).isFalse();
+            assertThat(result.totalCount()).isEqualTo(0);
+
+            log.debug("result = \n{}",
+                    objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(result));
+        }
+
+        @Test
+        @DisplayName("[Positive] 피드 목록 조회 - 옷 정보 없음")
+        void searchFeeds_success_when_feed_has_no_ootds() throws JsonProcessingException {
+// given
+            FeedFixtureWithoutClothes feedFixture = feedFixtureBuilder.createFeedFixtureWithoutClothes();
+            Feed feed = feedFixture.feed();
+            User user = feedFixture.user();
+
+            em.flush();
+            em.clear();
+
+            FeedSearchCondition condition = new FeedSearchCondition(
+                    null,
+                    FeedSortCriteria.CREATED_AT,
+                    SortDirection.DESCENDING,
+                    null,
+                    null,
+                    20,
+                    null,
+                    null,
+                    null
+            );
+
+            // when
+            FeedCursorResponseDto result = feedService.searchFeeds(condition, user.getId());
+
+            // then
+            assertThat(result.data()).hasSize(1);
+            assertThat(result.hasNext()).isFalse();
+            assertThat(result.totalCount()).isEqualTo(1);
+
+            FeedResponseDto target = result.data().stream()
+                    .filter(feedResponse -> feedResponse.id().equals(feed.getId()))
+                    .findFirst()
+                    .orElseThrow();
+
+            assertThat(target.content()).isEqualTo(feed.getContent());
+            assertThat(target.author()).isNotNull();
+            assertThat(target.weather()).isNotNull();
+            assertThat(target.ootds()).isEmpty();
+
+            log.debug("result = \n{}",
+                    objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(result));
+        }
+
+        @Test
+        @DisplayName("[Positive] 피드 목록 조회 - createdAt 내림차순 정렬")
+        void searchFeeds_success_sorted_by_createdAt_desc() throws JsonProcessingException, InterruptedException {
+            // given
+            FeedFixtureWithClothesDetails olderFixture = feedFixtureBuilder.createFeedFixtureWithClothesDetails();
+            Feed olderFeed = olderFixture.feed();
+            User user = olderFixture.user();
+
+
+            em.flush();
+
+            Thread.sleep(10);
+
+            FeedFixtureWithClothesDetails newerFixture = feedFixtureBuilder.createFeedFixtureWithClothesDetails();
+            Feed newerFeed = newerFixture.feed();
+
+            em.flush();
+            em.clear();
+
+            FeedSearchCondition condition = new FeedSearchCondition(
+                    null,
+                    FeedSortCriteria.CREATED_AT,
+                    SortDirection.DESCENDING,
+                    null,
+                    null,
+                    20,
+                    null,
+                    null,
+                    null
+            );
+
+            // when
+            FeedCursorResponseDto result = feedService.searchFeeds(condition, user.getId());
+
+            // then
+            assertThat(result.data()).hasSize(2);
+            assertThat(result.data())
+                    .extracting(FeedResponseDto::id)
+                    .containsExactly(newerFeed.getId(), olderFeed.getId());
+
+            log.debug("result = \n{}",
+                    objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(result));
+        }
+
+        @Test
+        @DisplayName("피드 목록 조회 성공 - 조회 개수 초과 시 hasNext는 true")
+        void searchFeeds_success_hasNext_true_when_more_than_limit() throws JsonProcessingException {
+// given
+            FeedFixture firstFixture = feedFixtureBuilder.createFeedFixture();
+            User user = firstFixture.user();
+
+            for (int i = 0; i < 20; i++) {
+                feedFixtureBuilder.createFeedFixture();
+            }
+
+            em.flush();
+            em.clear();
+
+            FeedSearchCondition condition = new FeedSearchCondition(
+                    null,
+                    FeedSortCriteria.CREATED_AT,
+                    SortDirection.DESCENDING,
+                    null,
+                    null,
+                    20,
+                    null,
+                    null,
+                    null
+            );
+
+            // when
+            FeedCursorResponseDto result = feedService.searchFeeds(condition, user.getId());
+
+            // then
+            assertThat(result.data()).hasSize(20);
+            assertThat(result.hasNext()).isTrue();
+            assertThat(result.totalCount()).isEqualTo(21);
+
+            log.debug("result = \n{}",
+                    objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(result));
+
+        }
+
+        @Test
+        @DisplayName("[Positive] 피드 목록 조회 - 다음 커서로 이어 조회된다")
+        void searchFeeds_success_with_next_cursor() throws JsonProcessingException {
+// given
+            FeedFixtureWithClothesDetails firstFixture = feedFixtureBuilder.createFeedFixtureWithClothesDetails();
+            User user = firstFixture.user();
+
+            for (int i = 0; i < 4; i++) {
+                feedFixtureBuilder.createFeedFixtureWithClothesDetails();
+            }
+
+            em.flush();
+            em.clear();
+
+            FeedSearchCondition firstCondition = new FeedSearchCondition(
+                    null,
+                    FeedSortCriteria.CREATED_AT,
+                    SortDirection.DESCENDING,
+                    null,
+                    null,
+                    3,
+                    null,
+                    null,
+                    null
+            );
+
+            // when
+            FeedCursorResponseDto firstPage = feedService.searchFeeds(firstCondition, user.getId());
+
+            FeedSearchCondition secondCondition = new FeedSearchCondition(
+                    null,
+                    FeedSortCriteria.CREATED_AT,
+                    SortDirection.DESCENDING,
+                    firstPage.nextCursor(),
+                    firstPage.nextIdAfter(),
+                    3,
+                    null,
+                    null,
+                    null
+            );
+
+            FeedCursorResponseDto secondPage = feedService.searchFeeds(secondCondition, user.getId());
+
+            // then
+            assertThat(firstPage.data()).hasSize(3);
+            assertThat(firstPage.hasNext()).isTrue();
+
+            assertThat(secondPage.data()).isNotEmpty();
+
+            Set<UUID> firstPageIds = firstPage.data().stream()
+                    .map(FeedResponseDto::id)
+                    .collect(Collectors.toSet());
+
+            Set<UUID> secondPageIds = secondPage.data().stream()
+                    .map(FeedResponseDto::id)
+                    .collect(Collectors.toSet());
+
+            assertThat(firstPageIds).doesNotContainAnyElementsOf(secondPageIds);
+
+            log.debug("firstPage = \n{}",
+                    objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(firstPage));
+            log.debug("secondPage = \n{}",
+                    objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(secondPage));
+        }
+
+    }
+
 
 
 }
