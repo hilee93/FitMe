@@ -1,7 +1,5 @@
 package com.ootd.fitme.domain.feed.service;
 
-import com.ootd.fitme.domain.comment.dto.response.CommentCursorResponseDto;
-import com.ootd.fitme.domain.comment.dto.response.CommentResponseDto;
 import com.ootd.fitme.domain.feed.dto.request.*;
 import com.ootd.fitme.domain.feed.dto.response.FeedCursorResponseDto;
 import com.ootd.fitme.domain.feed.dto.response.FeedResponseDto;
@@ -9,7 +7,7 @@ import com.ootd.fitme.domain.feed.dto.response.FeedResponseDto;
 import java.util.UUID;
 
 public interface FeedService {
-    FeedCursorResponseDto searchFeeds(FeedSearchCondition feedSearchCondition);
+    FeedCursorResponseDto searchFeeds(FeedSearchCondition feedSearchCondition, UUID userId);
 
     FeedResponseDto createFeed(FeedCreateRequest feedCreateRequest);
 

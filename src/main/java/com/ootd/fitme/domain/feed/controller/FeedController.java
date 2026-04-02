@@ -5,7 +5,10 @@ import com.ootd.fitme.domain.comment.dto.response.CommentCursorResponseDto;
 import com.ootd.fitme.domain.comment.dto.response.CommentResponseDto;
 import com.ootd.fitme.domain.comment.service.CommentService;
 import com.ootd.fitme.domain.feed.controller.docs.FeedControllerDocs;
-import com.ootd.fitme.domain.feed.dto.request.*;
+import com.ootd.fitme.domain.feed.dto.request.FeedCommentCreateRequest;
+import com.ootd.fitme.domain.feed.dto.request.FeedCreateRequest;
+import com.ootd.fitme.domain.feed.dto.request.FeedSearchCondition;
+import com.ootd.fitme.domain.feed.dto.request.FeedUpdateRequestDto;
 import com.ootd.fitme.domain.feed.dto.response.FeedCursorResponseDto;
 import com.ootd.fitme.domain.feed.dto.response.FeedResponseDto;
 import com.ootd.fitme.domain.feed.service.FeedService;
@@ -29,8 +32,10 @@ public class FeedController implements FeedControllerDocs {
 
     @Override
     @GetMapping
-    public ResponseEntity<FeedCursorResponseDto> getAllFeeds(FeedSearchCondition feedSearchCondition) {
-        return null;
+    public ResponseEntity<FeedCursorResponseDto> getAllFeeds(FeedSearchCondition feedSearchCondition, @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        UUID userId = userPrincipal.getUserId();
+        FeedCursorResponseDto feedCursorResponseDto = feedService.searchFeeds(feedSearchCondition, userId);
+        return ResponseEntity.ok(feedCursorResponseDto);
     }
 
     @Override

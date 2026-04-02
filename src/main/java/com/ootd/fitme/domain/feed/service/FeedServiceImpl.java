@@ -3,8 +3,6 @@ package com.ootd.fitme.domain.feed.service;
 
 import com.ootd.fitme.domain.clothes.entity.Clothes;
 import com.ootd.fitme.domain.clothes.repository.ClothesRepository;
-import com.ootd.fitme.domain.comment.dto.response.CommentCursorResponseDto;
-import com.ootd.fitme.domain.comment.dto.response.CommentResponseDto;
 import com.ootd.fitme.domain.feed.dto.request.*;
 import com.ootd.fitme.domain.feed.dto.response.FeedCursorResponseDto;
 import com.ootd.fitme.domain.feed.dto.response.FeedResponseDto;
@@ -44,8 +42,8 @@ public class FeedServiceImpl implements FeedService {
 
     @Override
     @Transactional(readOnly = true)
-    public FeedCursorResponseDto searchFeeds(FeedSearchCondition feedSearchCondition) {
-        return feedQueryService.searchFeeds(feedSearchCondition); // TODO: 검색로직 작성
+    public FeedCursorResponseDto searchFeeds(FeedSearchCondition feedSearchCondition, UUID userId) {
+        return feedQueryService.searchFeeds(feedSearchCondition, userId);
     }
 
     @Override
