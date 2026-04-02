@@ -4,7 +4,8 @@ import com.ootd.fitme.domain.clothes.enums.ClothesType;
 
 import java.util.UUID;
 
-public record FeedClothesFlatRow(
+public record FeedListClothesFlatRow(
+        UUID feedId,
         UUID clothesId,
         String clothesName,
         String imageUrl,
@@ -12,5 +13,7 @@ public record FeedClothesFlatRow(
         UUID attributeDefinitionId,
         String attributeDefinitionName,
         String attributeValue
+
 ) implements FeedClothesRowView {
+
 }

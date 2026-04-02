@@ -16,7 +16,7 @@ import java.util.UUID;
 @Tag(name = "Feed API", description = "피드 관리 관련 API")
 public interface FeedControllerDocs {
 
-    ResponseEntity<FeedCursorResponseDto> getAllFeeds(FeedSearchCondition feedSearchCondition);
+    ResponseEntity<FeedCursorResponseDto> getAllFeeds(FeedSearchCondition feedSearchCondition, @Parameter(hidden = true) CustomUserPrincipal userPrincipal);
 
     ResponseEntity<FeedResponseDto> createFeed(FeedCreateRequest feedCreateRequest);
 
