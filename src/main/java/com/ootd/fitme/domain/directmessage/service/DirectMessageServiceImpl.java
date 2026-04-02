@@ -40,14 +40,7 @@ public class DirectMessageServiceImpl implements DirectMessageService {
 
     @Override
     @Transactional
-    public void sendDirectMessage(DirectMessageCreateRequest request, Principal principal) {
-
-        if (!(principal instanceof UsernamePasswordAuthenticationToken auth)) {
-            throw new AuthException(ErrorCode.AUTH_UNAUTHORIZED);
-        }
-
-        CustomUserPrincipal userPrincipal = (CustomUserPrincipal) auth.getPrincipal();
-        UUID authUserId = userPrincipal.getUserId();
+    public void sendDirectMessage(DirectMessageCreateRequest request, UUID authUserId) {
 
         if (!request.senderId().equals(authUserId)){
             throw new DirectMessageSenderMisMatchException(ErrorCode.DM_SENDER_MISMATCH);

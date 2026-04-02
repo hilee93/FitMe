@@ -20,6 +20,9 @@ public class DirectMessageWebSocketController {
 
     @MessageMapping("/direct-messages_send")
     public void sendDirectMessage(DirectMessageCreateRequest request, Principal principal) {
-        directMessageService.sendDirectMessage(request, principal);
+        UsernamePasswordAuthenticationToken auth = (UsernamePasswordAuthenticationToken) principal;
+        CustomUserPrincipal userPrincipal = (CustomUserPrincipal) auth.getPrincipal();
+        UUID authUserId = userPrincipal.getUserId();
+        directMessageService.sendDirectMessage(request, authUserId);
     }
 }
