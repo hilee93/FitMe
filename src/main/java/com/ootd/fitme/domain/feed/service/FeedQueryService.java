@@ -80,9 +80,10 @@ public class FeedQueryService {
 
 
     public FeedCursorResponseDto searchFeeds(FeedSearchCondition condition, UUID userId) {
+        // NOTE: 기본 루트 피드 리스트 조회 및 커서구조 조합
         CursorResult<FeedBaseFlatRow> feedFlatRowCursorResult = feedQueryRepository.findFeedListFlatRows(condition);
 
-        List<FeedBaseFlatRow> feedFlatRows = feedFlatRowCursorResult.content();
+        List<FeedBaseFlatRow> feedFlatRows = feedFlatRowCursorResult.content(); // NOTE: 피드 리스트만 추출
         List<UUID> feedIds = feedFlatRows.stream()
                 .map(FeedBaseFlatRow::feedId)
                 .toList();
@@ -94,7 +95,7 @@ public class FeedQueryService {
 
         Map<UUID, FeedAuthorSummaryDto> authorsByUserIds = feedProfileQueryRepository.findAuthorsByUserIds(authorIds);
 
-        // 1. clothes 조회
+        // feedIds기반 clothes 조회
         List<FeedListClothesFlatRow> clothesRows = feedClothesQueryRepository.findFeedClothesByFeedIds(feedIds);
 
         List<UUID> attributeDefinitionIds = clothesRows.stream()
@@ -110,10 +111,10 @@ public class FeedQueryService {
 
         Map<UUID, List<FeedClothesSummaryDto>> clothesByFeedId = groupClothesByFeedId(clothesRows, attributesByClothesId);
 
-        // LikedByMe 조회
+        // NOTE: LikedByMe 조회
         Set<UUID> likedFeedIds = feedLikeQueryRepository.findLikedByFeedIds(feedIds, userId);
 
-        // FeedResponse 리스트 조립
+        // NOTE: FeedResponse 리스트 조립
         List<FeedResponseDto> feedResponseDtoList = feedFlatRows.stream()
                 .map(feedBaseFlatRow -> new FeedResponseDto(
                         feedBaseFlatRow.feedId(),
