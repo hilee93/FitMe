@@ -24,8 +24,8 @@ public class RegionServiceImpl implements RegionService {
     public Region resolveAndUpsert(double longitude, double latitude) {
         KakaoLocalClient.RegionInfo info = kakaoLocalClient.resolveRegion(longitude, latitude);
 
-        Integer x = (int) Math.round(latitude);
-        Integer y = (int) Math.round(longitude);
+        Integer x = (int) Math.round(info.longitude());
+        Integer y = (int) Math.round(info.latitude());
 
         return regionRepository.findByRegionCode(info.regionCode())
                 .map(existing -> {
