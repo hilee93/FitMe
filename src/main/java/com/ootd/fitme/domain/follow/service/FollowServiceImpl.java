@@ -5,6 +5,7 @@ import com.ootd.fitme.domain.follow.dto.response.*;
 import com.ootd.fitme.domain.follow.entity.Follow;
 import com.ootd.fitme.domain.follow.enums.SortBy;
 import com.ootd.fitme.domain.follow.enums.SortDirection;
+import com.ootd.fitme.domain.follow.event.FollowCreateEvent;
 import com.ootd.fitme.domain.follow.exception.FollowAlreadyExistsException;
 import com.ootd.fitme.domain.follow.exception.FollowNotFoundException;
 import com.ootd.fitme.domain.follow.mapper.FollowMapper;
@@ -13,6 +14,7 @@ import com.ootd.fitme.domain.follow.repository.FollowRepository;
 
 import com.ootd.fitme.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +31,7 @@ public class FollowServiceImpl implements FollowService {
     private final FollowRepository followRepository;
     private final FollowCountService followCountService;
     private final FollowProfileQueryRepository followProfileQueryRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -44,6 +47,14 @@ public class FollowServiceImpl implements FollowService {
 
         UserSummary follower = followProfileQueryRepository.findUserSummaryByUserId(request.followerId());
         UserSummary followee = followProfileQueryRepository.findUserSummaryByUserId(request.followeeId());
+
+        eventPublisher.publishEvent(new FollowCreateEvent(
+                savedFollow.getId(),
+                savedFollow.getFolloweeId(),
+                savedFollow.getFollowerId(),
+                follower.name(),
+                savedFollow.getCreatedAt()
+        ));
 
         return FollowMapper.toDto(savedFollow, followee, follower);
     }
