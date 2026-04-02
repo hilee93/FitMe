@@ -4,11 +4,13 @@ import com.ootd.fitme.domain.directmessage.dto.request.DirectMessageCreateReques
 import com.ootd.fitme.domain.directmessage.dto.response.DirectMessageDto;
 import com.ootd.fitme.domain.directmessage.entity.DirectMessage;
 import com.ootd.fitme.domain.directmessage.event.DirectMessageCreateEvent;
+import com.ootd.fitme.domain.directmessage.exception.DirectMessageSenderMisMatchException;
 import com.ootd.fitme.domain.directmessage.repository.DirectMessageRepository;
 import com.ootd.fitme.domain.profile.entity.Profile;
 import com.ootd.fitme.domain.profile.repository.ProfileRepository;
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.exception.user.UserException;
+import com.ootd.fitme.global.security.auth.CustomUserPrincipal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -19,7 +21,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 
+import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -49,6 +53,7 @@ class DirectMessageServiceUnitTest {
     private UUID senderId;
     private UUID receiverId;
     private DirectMessageCreateRequest request;
+    private UsernamePasswordAuthenticationToken principal;
 
     @BeforeEach
     void setUp(){
@@ -149,7 +154,7 @@ class DirectMessageServiceUnitTest {
 
             //when & then
             assertThatThrownBy(() -> directMessageServiceImpl.sendDirectMessage(request, authUserId))
-                    .isInstanceOf(AccessDeniedException.class);
+                    .isInstanceOf(DirectMessageSenderMisMatchException.class);
         }
 
     }
