@@ -32,7 +32,7 @@ public class FeedController implements FeedControllerDocs {
 
     @Override
     @GetMapping
-    public ResponseEntity<FeedCursorResponseDto> getAllFeeds(FeedSearchCondition feedSearchCondition, @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+    public ResponseEntity<FeedCursorResponseDto> getAllFeeds(@Valid FeedSearchCondition feedSearchCondition, @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
         UUID userId = userPrincipal.getUserId();
         FeedCursorResponseDto feedCursorResponseDto = feedService.searchFeeds(feedSearchCondition, userId);
         return ResponseEntity.ok(feedCursorResponseDto);
