@@ -62,13 +62,6 @@ public class FeedQueryRepositoryImpl implements FeedQueryRepository {
         return Optional.ofNullable(result);
     }
 
-    /*
-     * TODO: 피드목록조회,
-     *  1. 피드id목록
-     *  2. 해당 목록기준으로 부가데이터들을 한번씩 모아서 메모리에 조립
-     *
-     */
-
     @Override
     public CursorResult<FeedBaseFlatRow> findFeedListFlatRows(FeedSearchCondition condition) {
 

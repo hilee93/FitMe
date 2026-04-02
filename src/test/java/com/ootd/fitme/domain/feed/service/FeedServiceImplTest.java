@@ -498,6 +498,7 @@ class FeedServiceImplTest {
         }
 
 
+        @Test
         @DisplayName("[Positive] 피드 목록 조회 - 결과 없음")
         void searchFeeds_success_when_no_feed() throws JsonProcessingException {
             // given
