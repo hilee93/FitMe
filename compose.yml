@@ -26,8 +26,10 @@ services:
     depends_on:
       postgres: # postgres라는 동작에 의존하고 이게 될때까지 위의서비스는 대기
         condition: service_healthy # 해당 서비스(postgres)가 healthy해야만 동작하도록 조건 추가 및 대기
-#      redis:
-#        condition: service_started # healthcheck와 상관없이 단순 컨테이너가 시작하기만 하면 되는 조건
+      redis:
+        condition: service_started # healthcheck와 상관없이 단순 컨테이너가 시작하기만 하면 되는 조건
+      broker:
+        condition: service_healthy
     networks:
       - fitme-backend-network
 
@@ -69,6 +71,36 @@ services:
     networks:
       - fitme-backend-network
 
+  broker:
+    image: apache/kafka:latest
+    ports:
+      - 9094:9092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://broker:29092,EXTERNAL://localhost:9094
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_NODE_ID: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@broker:29093
+      KAFKA_LISTENERS: INTERNAL://broker:29092,CONTROLLER://broker:29093,EXTERNAL://0.0.0.0:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL # 브로커가 여러개이고 클러스터내부에서 서로 통신할때 해당 리스너 이름으로 소통해라 라고 정의
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    volumes:
+      - fitme-kafka-data:/var/lib/kafka/data
+    networks:
+      - fitme-backend-network
+    healthcheck:
+      test: [ "CMD", "bash", "-c", "nc -z localhost 9092" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 
 
 # 볼륨 정의, local일경우 생략가능하지만 명시
@@ -80,6 +112,8 @@ volumes:
   fitme-postgres-data:
     driver: local # 볼륨 데이터를 호스트의 로컬에 저장
   fitme-redis-data:
+    driver: local
+  fitme-kafka-data:
     driver: local
 
 # 네트워크 설정

@@ -22,7 +22,7 @@ spring:
       ddl-auto: validate
 
   kafka: # NOTE: 현재 카프카 사용은 안하지만 미리 세팅 추후 사용할때 참고
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: localhost:9094
 
   cache:
     type: caffeine

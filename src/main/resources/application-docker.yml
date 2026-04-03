@@ -11,6 +11,9 @@ spring:
     init:
       mode: always # schema.sql 매번 실행
 
+  kafka:
+    bootstrap-servers: broker:29092
+
   data:
     redis:
       host: redis
