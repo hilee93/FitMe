@@ -38,12 +38,18 @@ public class SecurityConfig {
                         // TODO: 보안 강화 단계에서 ignoringRequestMatchers 제거 예정
                         // csrf-token 엔드포인트는 제외하지 않음 ( 토큰 발급용)
                         .ignoringRequestMatchers(
-                                path.matcher(HttpMethod.POST,"/api/users"),
+                                path.matcher(HttpMethod.POST, "/api/users"),
                                 path.matcher(HttpMethod.POST, "/api/auth/sign-in"),
-                                path.matcher(HttpMethod.POST,"/api/auth/sign-out"),
-                                path.matcher(HttpMethod.POST,"/api/auth/refresh"),
-                                path.matcher(HttpMethod.POST,"/api/auth/reset-password")
+                                path.matcher(HttpMethod.POST, "/api/auth/sign-out"),
+                                path.matcher(HttpMethod.POST, "/api/auth/refresh"),
+                                path.matcher(HttpMethod.POST, "/api/auth/reset-password")
                         )
+                        .ignoringRequestMatchers(
+                                "/h2-console/**"
+                        )
+                )
+                .headers(headers ->
+                        headers.frameOptions(frameOptions -> frameOptions.sameOrigin()) // 클릭재킹 거부(iframe) 같은 주소를 가진 프레임(iframe) 주소라면 허용, 이건 기본 서버사이드 일때 h2화면인 iframe으로 되어있어서 허용할려고하느거고 실제 분리된 프론트에선 피료없음
                 )
                 .httpBasic(httpBasic -> httpBasic.disable())
                 .formLogin(formLogin -> formLogin.disable())
@@ -62,7 +68,9 @@ public class SecurityConfig {
                                 "/error",
                                 "/uploads/**",
                                 "/swagger-ui/**",
-                                "/v3/api-docs/**"
+                                "/v3/api-docs/**",
+                                "/.well-known/**",
+                                "/h2-console/**"
                         ).permitAll()
                         // CORS preflight 요청을 위한 설정
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()

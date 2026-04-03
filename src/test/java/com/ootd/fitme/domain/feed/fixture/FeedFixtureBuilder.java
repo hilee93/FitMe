@@ -31,6 +31,7 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Component
 public class FeedFixtureBuilder {
@@ -76,21 +77,23 @@ public class FeedFixtureBuilder {
 
 
     public FeedFixture createFeedFixture() {
+        UUID uuid = UUID.randomUUID();
         User user = userRepository.save(
-                User.create("email-" + UUID.randomUUID() + "@test.com", "password")
+                User.create("email-" + uuid + "@test.com", "password")
         );
 
         Profile profile = profileRepository.save(
                 Profile.create("name", null, null, null, null, null, null, null, null, null, null, user)
         );
 
+
         Region region = regionRepository.save(
                 Region.create(
-                        "1234567810",
-                        "경기도 남양주시 테스트읍 테스트동",
+                        randomRegionCode(),
+                        "경기도 남양주시 테스트읍 테스트동" + uuid,
                         "경기도",
                         "남양주시",
-                        "테스트읍 테스트동",
+                        "테스트읍 테스트동" +uuid,
                         "",
                         0.0,
                         0.0,
@@ -134,9 +137,63 @@ public class FeedFixtureBuilder {
         return new FeedFixture(user, region, weather, feed, clothes, feedClothes, profile);
     }
 
-    public FeedFixtureWithClothesDetails createFeedFixtureWithClothesDetails() {
+    public FeedFixtureWithoutClothes createFeedFixtureWithoutClothes() {
+        UUID uuid = UUID.randomUUID();
         User user = userRepository.save(
-                User.create("email2@test.com", "password")
+                User.create("email-" + UUID.randomUUID() + "@test.com", "password")
+        );
+
+        Profile profile = profileRepository.save(
+                Profile.create("name", null, null, null, null, null, null, null, null, null, null, user)
+        );
+
+        Region region = regionRepository.save(
+                Region.create(
+                        randomRegionCode(),
+                        "경기도 남양주시 테스트읍 테스트동" + uuid,
+                        "경기도",
+                        "남양주시",
+                        "테스트읍 테스트동" + uuid,
+                        "",
+                        0.0,
+                        0.0,
+                        0,
+                        0
+                )
+        );
+
+        WeatherForecast weather = weatherForecastRepository.save(
+                WeatherForecast.create(
+                        Instant.now(),
+                        Instant.now(),
+                        SkyStatus.CLEAR,
+                        PrecipitationType.NONE,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        WindStrengthWord.WEAK,
+                        region
+                )
+        );
+
+        Feed feed = feedRepository.save(
+                Feed.create("테스트 피드", 0, 0, weather, user)
+        );
+
+
+        return new FeedFixtureWithoutClothes(user, region, weather, feed, profile);
+    }
+
+    public FeedFixtureWithClothesDetails createFeedFixtureWithClothesDetails() {
+        UUID uuid = UUID.randomUUID();
+        User user = userRepository.save(
+                User.create("email-" + UUID.randomUUID() + "@test.com", "password")
         );
 
         Profile profile = profileRepository.save(
@@ -146,11 +203,11 @@ public class FeedFixtureBuilder {
 
         Region region = regionRepository.save(
                 Region.create(
-                        "2234567810",
-                        "경기도 남양주시 테스트읍 상세동",
+                        randomRegionCode(),
+                        "경기도 남양주시 테스트읍 상세동" + uuid,
                         "경기도",
                         "남양주시",
-                        "테스트읍 상세동",
+                        "테스트읍 상세동" + uuid,
                         "",
                         0.0,
                         0.0,
@@ -192,7 +249,7 @@ public class FeedFixtureBuilder {
         );
 
         Attribute sizeAttribute = attributeRepository.save(
-                Attribute.create("사이즈")
+                Attribute.create("사이즈" + uuid)
         );
 
         SelectableValue s = selectableValueRepository.save(
@@ -242,6 +299,15 @@ public class FeedFixtureBuilder {
     ) {
     }
 
+    public record FeedFixtureWithoutClothes(
+            User user,
+            Region region,
+            WeatherForecast weather,
+            Feed feed,
+            Profile profile
+    ) {
+    }
+
     public record FeedFixtureWithClothesDetails(
             User user,
             Region region,
@@ -254,5 +320,10 @@ public class FeedFixtureBuilder {
             ClothesAttribute clothesAttribute,
             ClothesAttributeSelectableValue selectedValue
     ) {
+    }
+
+    private String randomRegionCode() {
+        return String.format("%010d",
+                ThreadLocalRandom.current().nextLong(0, 1_000_000_0000L));
     }
 }

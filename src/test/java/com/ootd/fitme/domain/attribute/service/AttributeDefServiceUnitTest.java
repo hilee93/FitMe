@@ -117,7 +117,7 @@ class AttributeDefServiceUnitTest {
     @DisplayName("updateClothesAttributeDef() 메서드는")
     class Describe_update {
         @Test
-        @DisplayName("[성공] 존재하는 ID이고 중복되지 않은 이름이면 정보를 수정한다.")
+        @DisplayName("[성공] 존재하는 ID이고 중복되지 않은 이름이면 정보를 수정(Merge)한다.")
         void it_updates_attribute() {
             // given
             ClothesAttributeDefUpdateRequest request = new ClothesAttributeDefUpdateRequest("새로운사이즈", List.of("L"));
@@ -131,6 +131,7 @@ class AttributeDefServiceUnitTest {
             // then
             assertThat(testAttribute.getName()).isEqualTo("새로운사이즈");
             verify(attributeMapper).toDto(testAttribute);
+            // 참고: 내부 옵션(SelectableValue)이 Merge되는 로직은 엔티티 단위 테스트에서 이미 검증 완료됨
         }
 
         @Test
@@ -178,8 +179,9 @@ class AttributeDefServiceUnitTest {
     @Nested
     @DisplayName("deleteClothesAttributeDef() 메서드는")
     class Describe_delete {
+
         @Test
-        @DisplayName("[성공] 존재하는 ID가 주어지면 속성 삭제를 수행한다.")
+        @DisplayName("[성공] 존재하는 ID가 주어지면 N+1 방지를 위해 벌크 삭제(deleteByIdInBulk)를 수행한다.")
         void it_deletes_attribute() {
             // given
             given(attributeRepository.findById(attributeId)).willReturn(Optional.of(testAttribute));
@@ -188,7 +190,7 @@ class AttributeDefServiceUnitTest {
             service.deleteClothesAttributeDef(attributeId);
 
             // then
-            verify(attributeRepository).delete(testAttribute);
+            verify(attributeRepository).deleteByIdInBulk(attributeId);
         }
 
         @Test
@@ -202,7 +204,7 @@ class AttributeDefServiceUnitTest {
                     .isInstanceOf(AttributeException.class)
                     .hasMessage(ErrorCode.ATTRIBUTE_NOT_FOUND.getMessage());
 
-            verify(attributeRepository, never()).delete(any());
+            verify(attributeRepository, never()).deleteByIdInBulk(any());
         }
     }
 }

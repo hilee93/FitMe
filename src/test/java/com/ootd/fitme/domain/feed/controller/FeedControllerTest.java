@@ -10,19 +10,24 @@ import com.ootd.fitme.domain.comment.enums.SortDirection;
 import com.ootd.fitme.domain.comment.service.CommentService;
 import com.ootd.fitme.domain.feed.dto.request.FeedCommentCreateRequest;
 import com.ootd.fitme.domain.feed.dto.request.FeedCreateRequest;
+import com.ootd.fitme.domain.feed.dto.request.FeedSearchCondition;
 import com.ootd.fitme.domain.feed.dto.request.FeedUpdateRequestDto;
-import com.ootd.fitme.domain.feed.dto.response.FeedResponseDto;
+import com.ootd.fitme.domain.feed.dto.response.*;
+import com.ootd.fitme.domain.feed.enums.FeedSortCriteria;
 import com.ootd.fitme.domain.feed.exception.FeedAccessDeniedException;
 import com.ootd.fitme.domain.feed.exception.FeedLikeAlreadyExistsException;
 import com.ootd.fitme.domain.feed.exception.FeedLikeNotFoundException;
 import com.ootd.fitme.domain.feed.exception.FeedNotFoundException;
 import com.ootd.fitme.domain.feed.service.FeedService;
+import com.ootd.fitme.domain.weatherforecast.enums.PrecipitationType;
+import com.ootd.fitme.domain.weatherforecast.enums.SkyStatus;
 import com.ootd.fitme.global.exception.ErrorCode;
 import com.ootd.fitme.global.security.auth.CustomUserPrincipal;
 import com.ootd.fitme.global.security.jwt.JwtAuthenticationFilter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -596,6 +601,121 @@ class FeedControllerTest {
         }
 
 
+    }
+
+    @Nested
+    @DisplayName("GET /api/feeds/{feedId}/comments (피드 조회)")
+    class searchFeedsTest {
+        @Test
+        @DisplayName("[200] 기본 조건으로 피드 목록을 조회한다")
+        void searchFeeds_success_when_default_request() throws Exception {
+            // given
+            UUID userId = UUID.randomUUID();
+
+            FeedResponseDto feed1 = createFeedResponseDto(
+                    UUID.randomUUID(),
+                    Instant.parse("2026-04-02T10:00:00Z"),
+                    "첫 번째 피드"
+            );
+
+            FeedResponseDto feed2 = createFeedResponseDto(
+                    UUID.randomUUID(),
+                    Instant.parse("2026-04-02T09:59:00Z"),
+                    "두 번째 피드"
+            );
+
+            FeedCursorResponseDto response = new FeedCursorResponseDto(
+                    List.of(feed1, feed2),
+                    null,
+                    null,
+                    false,
+                    2,
+                    FeedSortCriteria.CREATED_AT,
+                    com.ootd.fitme.domain.feed.enums.SortDirection.DESCENDING
+            );
+
+            given(feedService.searchFeeds(any(FeedSearchCondition.class), eq(userId)))
+                    .willReturn(response);
+
+            // when & then
+            mockMvc.perform(get("/api/feeds")
+                            .with(userPrincipal(userId))
+                            .param("sortBy", "CREATED_AT")
+                            .param("sortDirection", "DESCENDING")
+                            .param("limit", "20")
+                    )
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data").isArray())
+                    .andExpect(jsonPath("$.data.length()").value(2))
+                    .andExpect(jsonPath("$.data[0].id").value(feed1.id().toString()))
+                    .andExpect(jsonPath("$.data[0].content").value("첫 번째 피드"))
+                    .andExpect(jsonPath("$.data[0].likeCount").value(3))
+                    .andExpect(jsonPath("$.data[0].commentCount").value(1))
+                    .andExpect(jsonPath("$.data[0].likedByMe").value(true))
+                    .andExpect(jsonPath("$.data[1].id").value(feed2.id().toString()))
+                    .andExpect(jsonPath("$.hasNext").value(false))
+                    .andExpect(jsonPath("$.totalCount").value(2))
+                    .andExpect(jsonPath("$.sortBy").value("CREATED_AT"))
+                    .andExpect(jsonPath("$.sortDirection").value("DESCENDING"));
+
+            ArgumentCaptor<FeedSearchCondition> captor =
+                    ArgumentCaptor.forClass(FeedSearchCondition.class);
+
+            verify(feedService).searchFeeds(captor.capture(), eq(userId));
+
+            FeedSearchCondition condition = captor.getValue();
+            assertThat(condition.sortBy()).isEqualTo(FeedSortCriteria.CREATED_AT);
+            assertThat(condition.sortDirection()).isEqualTo(com.ootd.fitme.domain.feed.enums.SortDirection.DESCENDING);
+        }
+
+        @Test
+        @DisplayName("[400] 필수 파라미터가 없으면 피드 목록 조회에 실패한다")
+        void searchFeeds_fail_when_required_params_missing() throws Exception {
+            mockMvc.perform(get("/api/feeds")
+                            .with(userPrincipal(UUID.randomUUID())))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
+    private FeedResponseDto createFeedResponseDto(UUID feedId, Instant createdAt, String content) {
+        return new FeedResponseDto(
+                feedId,
+                createdAt,
+                createdAt,
+                createAuthorSummaryDto(),
+                createWeatherSummaryDto(),
+                List.of(),
+                content,
+                3,
+                1,
+                true
+        );
+    }
+
+    private FeedAuthorSummaryDto createAuthorSummaryDto() {
+        return new FeedAuthorSummaryDto(
+                UUID.randomUUID(),
+                "tester",
+                "https://example.com/profile.jpg"
+        );
+    }
+
+    private FeedWeatherSummaryDto createWeatherSummaryDto() {
+        return new FeedWeatherSummaryDto(
+                UUID.randomUUID(),
+                SkyStatus.CLEAR,
+                new FeedPrecipitationSummaryDto(
+                        PrecipitationType.NONE,
+                        0.0,
+                        0.0
+                ),
+                new FeedTemperatureSummaryDto(
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                )
+        );
     }
 
 

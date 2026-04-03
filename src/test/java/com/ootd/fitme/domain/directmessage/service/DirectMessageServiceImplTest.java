@@ -1,5 +1,7 @@
 package com.ootd.fitme.domain.directmessage.service;
 
+import com.ootd.fitme.domain.directmessage.dto.request.DirectMessageCreateRequest;
+import com.ootd.fitme.domain.directmessage.dto.response.DirectMessageDto;
 import com.ootd.fitme.domain.directmessage.dto.response.DirectMessageDtoCursorResponse;
 import com.ootd.fitme.domain.directmessage.entity.DirectMessage;
 import com.ootd.fitme.domain.directmessage.repository.DirectMessageRepository;
@@ -7,17 +9,21 @@ import com.ootd.fitme.domain.profile.entity.Profile;
 import com.ootd.fitme.domain.profile.repository.ProfileRepository;
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.repository.UserRepository;
+import com.ootd.fitme.global.security.auth.CustomUserPrincipal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
@@ -37,23 +43,23 @@ class DirectMessageServiceImplTest {
     @Autowired
     private ProfileRepository profileRepository;
 
+    private UUID senderId;
+    private UUID receiverId;
+
+    @BeforeEach
+    void setup() {
+        User sender = userRepository.save(User.create("sender@test.com", "123456"));
+        User receiver = userRepository.save(User.create("receiver@test.com", "123456"));
+        senderId = sender.getId();
+        receiverId = receiver.getId();
+
+        saveProfile(sender, "보내는사람");
+        saveProfile(receiver, "받는사람");
+    }
+
     @Nested
     @DisplayName("DM 목록 조회")
     class GetDirectMessagesTest {
-
-        private UUID senderId;
-        private UUID receiverId;
-
-        @BeforeEach
-        void setup() {
-            User sender = userRepository.save(User.create("sender@test.com", "123456"));
-            User receiver = userRepository.save(User.create("receiver@test.com", "123456"));
-            senderId = sender.getId();
-            receiverId = receiver.getId();
-
-            saveProfile(sender, "보내는사람");
-            saveProfile(receiver, "받는사람");
-        }
 
         @Test
         @DisplayName("성공 - sender로 조회하면 DM이 반환된다")
@@ -187,6 +193,32 @@ class DirectMessageServiceImplTest {
 
             //then
             assertThat(directMessages.totalCount()).isEqualTo(3);
+        }
+    }
+
+    @Nested
+    @DisplayName("DM 전송")
+    class SendDirectMessageTest {
+
+        @Test
+        @DisplayName("성공 - DM이 DB에 저장된다")
+        void sendDirectMessage_success_saveDirectMessageDB() {
+
+            //given
+            DirectMessageCreateRequest request = new DirectMessageCreateRequest(
+                    receiverId, senderId, "안녕하세요");
+            DirectMessageCreateRequest request2 = new DirectMessageCreateRequest(
+                    receiverId, senderId, "안녕하세요2");
+
+            //when
+            directMessageServiceImpl.sendDirectMessage(request, senderId);
+            directMessageServiceImpl.sendDirectMessage(request2, senderId);
+
+            //then
+            List<DirectMessage> result = directMessageRepository.findAll();
+            assertThat(result).hasSize(2);
+            assertThat(result.get(0).getContent()).isEqualTo("안녕하세요");
+            assertThat(result.get(0).getSenderId()).isEqualTo(senderId);
         }
     }
 

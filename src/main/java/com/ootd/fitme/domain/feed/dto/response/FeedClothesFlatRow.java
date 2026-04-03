@@ -12,5 +12,5 @@ public record FeedClothesFlatRow(
         UUID attributeDefinitionId,
         String attributeDefinitionName,
         String attributeValue
-) {
+) implements FeedClothesRowView {
 }

@@ -42,7 +42,8 @@ class NotificationEventListenerUnitTest {
             Instant now = Instant.now();
 
             DirectMessageCreateEvent event =
-                    new DirectMessageCreateEvent(null,userId,senderId, "sender","msg",now );
+                    new DirectMessageCreateEvent(null,userId,senderId, "sender",
+                            null, null, null,"msg",now );
 
             listener.directMessage(event);
 
@@ -76,12 +77,12 @@ class NotificationEventListenerUnitTest {
 
 
             FeedLikedCreateEvent event =
-                    new FeedLikedCreateEvent(feedId,likeId,likedId,likerId, "liker", Instant.now());
+                    new FeedLikedCreateEvent(feedId,likeId,likedId,likerId,"feedName", "liker", Instant.now());
 
             listener.feedLiked(event);
 
             verify(notificationService)
-                    .notifyFeedLiked(likedId, "liker");
+                    .notifyFeedLiked(likedId, "feedName","liker");
         }
 
         @Test
@@ -98,6 +99,7 @@ class NotificationEventListenerUnitTest {
                             feedId,
                             feedOwnerId,
                             commenterId,
+                            "feedName",
                             "commenter",
                              "nice",
                             Instant.now());
@@ -105,7 +107,7 @@ class NotificationEventListenerUnitTest {
             listener.feedCommented(event);
 
             verify(notificationService)
-                    .notifyFeedCommented(feedOwnerId, "commenter", "nice");
+                    .notifyFeedCommented(feedOwnerId,"feedName", "commenter", "nice");
         }
 
         @Test

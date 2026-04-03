@@ -11,6 +11,8 @@ import com.ootd.fitme.domain.selectablevalue.entity.SelectableValue;
 import com.ootd.fitme.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +30,7 @@ public class AttributeDefServiceImpl implements AttributeDefService {
     private final AttributeMapper attributeMapper;
 
     @Override
+    @Cacheable(value = "attributes", key = "#sortBy + '_' + #sortDirection + '_' + #keywordLike")
     public List<ClothesAttributeDefDto> getClothesAttributeDefs(String sortBy, String sortDirection, String keywordLike) {
         List<Attribute> attributes = attributeRepository.findAttributesWithCondition(sortBy, sortDirection, keywordLike);
         return attributes.stream()
@@ -37,6 +40,7 @@ public class AttributeDefServiceImpl implements AttributeDefService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "attributes", allEntries = true)
     public ClothesAttributeDefDto createClothesAttributeDef(ClothesAttributeDefCreateRequest request) {
         validateDuplicateName(request.name());
 
@@ -51,6 +55,7 @@ public class AttributeDefServiceImpl implements AttributeDefService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "attributes", allEntries = true)
     public ClothesAttributeDefDto updateClothesAttributeDef(UUID definitionId, ClothesAttributeDefUpdateRequest request) {
         Attribute attribute = getAttributeOrThrow(definitionId);
 
@@ -66,9 +71,10 @@ public class AttributeDefServiceImpl implements AttributeDefService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "attributes", allEntries = true)
     public void deleteClothesAttributeDef(UUID definitionId) {
         Attribute attribute = getAttributeOrThrow(definitionId);
-        attributeRepository.delete(attribute);
+        attributeRepository.deleteByIdInBulk(definitionId);
         log.info("의상 속성 정의 삭제 완료 - ID: {}", definitionId);
     }
 

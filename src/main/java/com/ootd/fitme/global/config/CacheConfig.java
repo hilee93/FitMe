@@ -3,6 +3,7 @@ package com.ootd.fitme.global.config;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -14,6 +15,7 @@ import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSeriali
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 @Configuration
 @EnableCaching
@@ -22,8 +24,14 @@ public class CacheConfig {
 
     @Bean
     public CacheManager caffeineCacheManager() {
+
         CaffeineCacheManager cacheManager = new CaffeineCacheManager();
 
+        cacheManager.registerCustomCache("attributes",
+                Caffeine.newBuilder()
+                        .maximumSize(500)
+                        .expireAfterWrite(10, TimeUnit.MINUTES)
+                        .build());
         return cacheManager;
     }
 
