@@ -29,20 +29,31 @@ public class NotificationSseService {
 
         emitter.onCompletion(() -> {
             log.debug("SSE completed userId={}, emitterId={}", userId, emitterId);
-            emitterRepository.deleteByUserIdAndEmitterId(userId, emitterId);
+            emitterRepository.deleteByUserId(userId);
         });
 
         emitter.onTimeout(() -> {
             log.warn("SSE timeout userId={}, emitterId={}", userId, emitterId);
-            emitterRepository.deleteByUserIdAndEmitterId(userId, emitterId);
+            emitterRepository.deleteByUserId(userId);
         });
 
         emitter.onError((e) -> {
             log.error("SSE error userId={}, emitterId={}", userId, emitterId, e);
-            emitterRepository.deleteByUserIdAndEmitterId(userId, emitterId);
+            emitterRepository.deleteByUserId(userId);
         });
 
         emitterRepository.save(userId, emitterId, emitter);
+
+        try {
+            emitter.send(
+                    SseEmitter.event()
+                            .name("ping")
+                            .data("")
+            );
+        } catch (IOException | IllegalStateException e) {
+            log.warn("SSE ping send failed userId={}, emitterId={}", userId, emitterId, e);
+            emitterRepository.deleteByUserId(userId);
+        }
 
 
         return emitter;
@@ -89,7 +100,7 @@ public class NotificationSseService {
             );
         } catch (IOException | IllegalStateException e) {
             log.warn("SSE send failed userId={}, emitterId={}", userId, emitterId, e);
-            emitterRepository.deleteByUserIdAndEmitterId(userId, emitterId);
+            emitterRepository.deleteByUserId(userId);
         }
     }
 
