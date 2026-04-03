@@ -4,11 +4,12 @@ import com.ootd.fitme.domain.directmessage.dto.request.DirectMessageCreateReques
 import com.ootd.fitme.domain.directmessage.dto.response.DirectMessageDto;
 import com.ootd.fitme.domain.directmessage.dto.response.DirectMessageDtoCursorResponse;
 
+import java.security.Principal;
 import java.util.UUID;
 
 public interface DirectMessageService {
 
-    void sendDirectMessage(DirectMessageCreateRequest request, UUID authUserID);
+    void sendDirectMessage(DirectMessageCreateRequest request,  UUID authUserId);
 
     DirectMessageDtoCursorResponse getDirectMessages(UUID userId, String cursor, UUID idAfter, int limit);
 }

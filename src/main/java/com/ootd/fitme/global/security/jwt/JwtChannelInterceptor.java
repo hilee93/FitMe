@@ -1,5 +1,8 @@
 package com.ootd.fitme.global.security.jwt;
 
+import com.ootd.fitme.domain.user.exception.auth.AuthException;
+import com.ootd.fitme.global.exception.ErrorCode;
+import com.ootd.fitme.global.exception.FitmeException;
 import com.ootd.fitme.global.security.auth.CustomUserDetailsService;
 import com.ootd.fitme.global.security.auth.CustomUserPrincipal;
 import lombok.RequiredArgsConstructor;
@@ -49,7 +52,7 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
     private String extractToken(StompHeaderAccessor accessor) {
         String authHeader = accessor.getFirstNativeHeader(AUTHORIZATION);
         if (authHeader == null || !authHeader.startsWith(BEARER_PREFIX)) {
-            throw new IllegalArgumentException("토큰이 유효하지 않습니다.");
+            throw new AuthException(ErrorCode.AUTH_INVALID_TOKEN);
         }
         return authHeader.substring(BEARER_PREFIX.length());
     }
@@ -58,19 +61,19 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
     private void handlerConnect(StompHeaderAccessor accessor) {
         String token = extractToken(accessor);
         if (!jwtProvider.validateToken(token) || !jwtProvider.isAccessToken(token)) {
-            throw new IllegalArgumentException("토큰이 유효하지 않습니다.");
+            throw new AuthException(ErrorCode.AUTH_INVALID_TOKEN);
         }
         UUID userId = jwtProvider.getUserId(token);
         String jti = jwtProvider.getTokenId(token);
         Instant iat = jwtProvider.getIssuedAt(token);
 
         if(tokenBlacklistService.isBlacklisted(jti)){
-            throw new IllegalArgumentException("만료된 토큰입니다.");
+            throw new AuthException(ErrorCode.AUTH_TOKEN_EXPIRED);
         }
 
         Instant cutoff = tokenBlacklistService.getRevokeAllBefore(userId);
         if (cutoff != null && iat.isBefore(cutoff)) {
-            throw new IllegalArgumentException("만료된 토큰입니다.");
+            throw new AuthException(ErrorCode.AUTH_TOKEN_EXPIRED);
         }
 
         UserDetails userDetails = userDetailsService.loadUserById(userId);
@@ -88,7 +91,7 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
         String dmKey = destination.substring(DM_SUBSCRIBE_PREFIX.length());
         String[] part = dmKey.split("_");
         if (part.length != 2) {
-            throw new IllegalArgumentException("잘못된 채널 형식입니다.");
+            throw new FitmeException(ErrorCode.INVALID_INPUT_VALUE);
         }
         UUID channelUserId1;
         UUID channelUserId2;
@@ -97,17 +100,17 @@ public class JwtChannelInterceptor implements ChannelInterceptor {
             channelUserId1 = UUID.fromString(part[0]);
             channelUserId2 = UUID.fromString(part[1]);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("잘못된 채널 형식입니다.");
+            throw new FitmeException(ErrorCode.INVALID_INPUT_VALUE);
         }
 
         if(!(principal instanceof UsernamePasswordAuthenticationToken auth)) {
-            throw new AccessDeniedException("인증 정보가 없습니다.");
+            throw new AuthException(ErrorCode.AUTH_UNAUTHORIZED);
         }
         CustomUserPrincipal userPrincipal = (CustomUserPrincipal) auth.getPrincipal();
         UUID authUserId = userPrincipal.getUserId();
 
         if (!authUserId.equals(channelUserId1) && !authUserId.equals(channelUserId2)) {
-            throw new AccessDeniedException("해당 채널에 접근 권한이 없습니다.");
+            throw new AuthException(ErrorCode.AUTH_FORBIDDEN);
         }
     }
 }

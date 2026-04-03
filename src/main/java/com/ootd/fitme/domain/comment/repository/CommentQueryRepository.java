@@ -67,7 +67,6 @@ public class CommentQueryRepository {
 
 
         int size = condition.limit();
-        log.debug("size: {}", size);
 
         List<CommentFlatRow> commentFlatRows = queryFactory.select(
                         Projections.constructor(

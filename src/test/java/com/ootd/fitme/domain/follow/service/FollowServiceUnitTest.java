@@ -3,6 +3,7 @@ package com.ootd.fitme.domain.follow.service;
 import com.ootd.fitme.domain.follow.dto.request.FollowCreateRequest;
 import com.ootd.fitme.domain.follow.dto.response.UserSummary;
 import com.ootd.fitme.domain.follow.entity.Follow;
+import com.ootd.fitme.domain.follow.event.FollowCreateEvent;
 import com.ootd.fitme.domain.follow.exception.FollowAlreadyExistsException;
 import com.ootd.fitme.domain.follow.exception.FollowNotFoundException;
 import com.ootd.fitme.domain.follow.repository.FollowProfileQueryRepository;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.List;
 import java.util.Optional;
@@ -37,6 +39,9 @@ class FollowServiceUnitTest {
 
     @Mock
     private FollowProfileQueryRepository followProfileQueryRepository;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private FollowServiceImpl followServiceImpl;
@@ -69,6 +74,7 @@ class FollowServiceUnitTest {
             //then
             then(followRepository).should().save(any(Follow.class));
             then(followCountService).should().increaseFollowCount(any(Follow.class));
+            then(eventPublisher).should().publishEvent(any(FollowCreateEvent.class));
         }
 
         @Test

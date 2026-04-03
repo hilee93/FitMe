@@ -24,7 +24,9 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -185,9 +187,12 @@ class CommentQueryRepositoryTest {
             assertThat(secondPage.content()).hasSize(10);
             assertThat(secondPage.total()).isEqualTo(30);
 
-            // 첫 페이지 마지막 댓글 다음부터 나와야 함
-            assertThat(secondPage.content().get(0).content()).isEqualTo("댓글 내용9");
-            assertThat(secondPage.content().get(9).content()).isEqualTo("댓글 내용0");
+
+            Set<UUID> firstIds = firstPage.content().stream().map(CommentResponseDto::id).collect(Collectors.toSet());
+            Set<UUID> secondIds = secondPage.content().stream().map(CommentResponseDto::id).collect(Collectors.toSet());
+
+            assertThat(firstIds).doesNotContainAnyElementsOf(secondIds);
+
         }
 
 

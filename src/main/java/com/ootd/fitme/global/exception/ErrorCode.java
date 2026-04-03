@@ -62,7 +62,10 @@ public enum ErrorCode {
     // follow
     FOLLOW_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "이미 팔로우한 사용자입니다.", "FL-001"),
     FOLLOW_NOT_FOUND(HttpStatus.BAD_REQUEST, "존재하지 않는 팔로우입니다.", "FL-002"),
-    FOLLOW_SELF_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "자신을 팔로우 할 수 없습니다.", "FL-003");
+    FOLLOW_SELF_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "자신을 팔로우 할 수 없습니다.", "FL-003"),
+
+    // direct message
+    DM_SENDER_MISMATCH(HttpStatus.FORBIDDEN, "메시지 발신자 정보가 일치하지 않습니다.", "DM-001");
 
     private final String message;
     private final HttpStatus status;
