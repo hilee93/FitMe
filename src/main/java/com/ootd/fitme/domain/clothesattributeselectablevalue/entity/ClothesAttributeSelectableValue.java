@@ -35,4 +35,8 @@ public class ClothesAttributeSelectableValue extends BaseEntity {
     public static ClothesAttributeSelectableValue create(ClothesAttribute clothesAttribute, SelectableValue selectableValue) {
         return new ClothesAttributeSelectableValue(clothesAttribute, selectableValue);
     }
+
+    public void updateSelectableValue(SelectableValue newSelectableValue) {
+        this.selectableValue = newSelectableValue;
+    }
 }
