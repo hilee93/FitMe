@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.util.HtmlUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,7 +54,9 @@ public class ClothesServiceImpl implements ClothesService {
 //            imageUrl = imageUploadService.uploadImage(image);
 //        }
 
-        Clothes clothes = Clothes.createWithImage(request.name(), request.type(), user, imageUrl);
+        String safeName = HtmlUtils.htmlEscape(request.name());
+
+        Clothes clothes = Clothes.createWithImage(safeName, request.type(), user, imageUrl);
 
         List<ClothesAttribute> attributes = buildClothesAttributes(clothes, request.attributes());
         clothes.replaceAttributes(attributes);
@@ -80,11 +83,14 @@ public class ClothesServiceImpl implements ClothesService {
 
     @Override
     @Transactional
-    public ClothesDto updateClothes(UUID clothesId, ClothesUpdateRequest request, MultipartFile image) {
-        Clothes clothes = clothesRepository.findById(clothesId)
+    public ClothesDto updateClothes(UUID clothesId, UUID loginUserId, ClothesUpdateRequest request, MultipartFile image) {
+        Clothes clothes = clothesRepository.findByIdWithDetails(clothesId)
                 .orElseThrow(() -> new ClothesException(ErrorCode.CLOTHES_NOT_FOUND));
 
-
+        if (!clothes.getUser().getId().equals(loginUserId)) {
+            log.warn("[ClothesService] 타인의 옷 수정 시도 차단 - clothesId: {}, loginUserId: {}", clothesId, loginUserId);
+            throw new ClothesException(ErrorCode.AUTH_FORBIDDEN);
+        }
 
         String imgUrl = null;
 //        if (image != null && !image.isEmpty()) {
@@ -92,43 +98,78 @@ public class ClothesServiceImpl implements ClothesService {
 //            // clothes.updateImage(newImageUrl);
 //        }
 
-        clothes.updateClothesInfo(request.name(), request.type(), imgUrl);
+        String safeName = request.name() != null ? HtmlUtils.htmlEscape(request.name()) : clothes.getName();
+
+        clothes.updateClothesInfo(safeName, request.type(), imgUrl);
 
         List<ClothesAttribute> incomingAttributes = buildClothesAttributes(clothes, request.attributes());
         clothes.updateAttributes(incomingAttributes);
 
-        List<ClothesAttributeWithDefDto> updatedAttributeDtos = request.attributes().stream()
-                .map(reqAttr -> new ClothesAttributeWithDefDto(
-                        reqAttr.definitionId(),
-                        attributeRepository.getReferenceById(reqAttr.definitionId()).getName(),
-                        null,
-                        reqAttr.type()
-                )).toList();
+        List<ClothesAttributeWithDefDto> updatedAttributeDtos = buildAttributeDtos(incomingAttributes);
 
         return new ClothesDto(
                 clothes.getId(),
                 clothes.getUser().getId(),
-                request.name() != null ? request.name() : clothes.getName(),
+                clothes.getName(),
                 clothes.getImageUrl(),
-                request.type() != null ? request.type() : clothes.getClothesType(),
+                clothes.getClothesType(),
                 updatedAttributeDtos
         );
     }
 
     @Override
     @Transactional
-    public void deleteClothes(UUID clothesId) {
-        boolean exists = clothesRepository.existsById(clothesId);
-        if (!exists) {
-            throw new ClothesException(ErrorCode.CLOTHES_NOT_FOUND);
+    public void deleteClothes(UUID clothesId, UUID loginUserId) {
+        Clothes clothes = clothesRepository.findById(clothesId)
+                .orElseThrow(() -> new ClothesException(ErrorCode.CLOTHES_NOT_FOUND));
+
+        // 🌟 서비스 내부 권한 검증
+        if (!clothes.getUser().getId().equals(loginUserId)) {
+            log.warn("[ClothesService] 타인의 옷 삭제 시도 차단 - clothesId: {}, loginUserId: {}", clothesId, loginUserId);
+            throw new ClothesException(ErrorCode.AUTH_FORBIDDEN);
         }
+
         clothesRepository.deleteByIdInBulk(clothesId);
     }
 
     @Override
-    public ClothesDtoCursorResponse getClothesList(ClothesDtoCursorRequest request) {
-        // QueryDSL 등을 활용한 커서 기반 페이징 로직 구현
-        return null;
+    public ClothesDtoCursorResponse getClothesList(ClothesDtoCursorRequest request, UUID loginUserId) {
+        log.info("[Clothes] 옷 목록 커서 조회 요청 - ownerId: {}, limit: {}", request.ownerId(), request.limit());
+
+        if (loginUserId == null) {
+            log.warn("[ClothesService] 조회 실패: 로그인 유저 ID가 서버 내부에서 누락됨");
+            throw new ClothesException(ErrorCode.INVALID_REQUEST);
+        }
+
+        ClothesDtoCursorRequest secureRequest = new ClothesDtoCursorRequest(
+                request.cursor(),
+                request.idAfter(),
+                request.limit(),
+                request.typeEqual(),
+                loginUserId.toString(),
+                request.sortBy(),
+                request.sortDirection()
+        );
+
+        if (secureRequest.ownerId() == null || secureRequest.ownerId().isBlank()) {
+            log.warn("[Clothes] 옷 목록 조회 실패: ownerId 누락");
+            throw new ClothesException(ErrorCode.INVALID_REQUEST);
+        }
+
+        boolean hasCursor = secureRequest.cursor() != null && !secureRequest.cursor().isBlank();
+        boolean hasIdAfter = secureRequest.idAfter() != null && !secureRequest.idAfter().isBlank();
+
+        if (hasCursor ^ hasIdAfter) {
+            log.warn("[Clothes] 옷 목록 조회 실패: 불완전한 커서 정보 - cursor: {}, idAfter: {}", secureRequest.cursor(), secureRequest.idAfter());
+            throw new ClothesException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        ClothesDtoCursorResponse response = clothesRepository.findClothesByCursor(secureRequest);
+
+        log.info("[Clothes] 옷 목록 커서 조회 완료 - 반환된 아이템 수: {}, 다음 페이지 존재 여부: {}",
+                response.contents().size(), response.hasNext());
+
+        return response;
     }
 
     @Override
@@ -178,6 +219,16 @@ public class ClothesServiceImpl implements ClothesService {
         }
 
         return attributes;
+    }
+
+    private List<ClothesAttributeWithDefDto> buildAttributeDtos(List<ClothesAttribute> attributes) {
+        return attributes.stream()
+                .map(attr -> new ClothesAttributeWithDefDto(
+                        attr.getAttribute().getId(),
+                        attr.getAttribute().getName(),
+                        null,
+                        attr.getClothesAttributeSelectableValue().getSelectableValue().getType()
+                )).toList();
     }
 
 }

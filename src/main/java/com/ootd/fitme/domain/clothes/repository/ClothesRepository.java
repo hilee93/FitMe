@@ -10,7 +10,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface ClothesRepository extends JpaRepository<Clothes, UUID> {
+public interface ClothesRepository extends JpaRepository<Clothes, UUID>, ClothesRepositoryCustom{
     @EntityGraph(attributePaths = {
             "attributes",
             "attributes.clothesAttributeSelectableValue",
