@@ -58,3 +58,14 @@ logging:
   level:
     root: info
 
+external:
+  kakao:
+    rest-api-key: ${KAKAO_API_KEY}
+    local:
+      base-url: https://dapi.kakao.com
+      coord2region-path: /v2/local/geo/coord2regioncode.json
+
+  openweather:
+    rest-api-key: ${OPEN_WEATHER_API_KEY}
+    base-url: https://api.openweathermap.org
+    forecast-path: /data/2.5/forecast

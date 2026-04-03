@@ -58,11 +58,11 @@ class NotificationFactoryTest {
         @DisplayName("날씨 알림을 생성한다")
         void create_Weather_AlertNotification() {
 
-            Notification notification = notificationFactory.weatherAlert(user,"지역1","지역2", "내일 비가 올 예정입니다.");
+            Notification notification = notificationFactory.weatherAlert(user,"지역1","지역2", "내일 비가 올 예정입니다");
 
             assertThat(notification.getLevel()).isEqualTo(NotificationLevel.INFO);
-            assertThat(notification.getTitle()).isEqualTo("[내일 비가 올 예정입니다.].");
-            assertThat(notification.getContent()).isEqualTo("");
+            assertThat(notification.getTitle()).isEqualTo("[지역1 지역2]의 날씨가 [내일 비가 올 예정입니다]로 바뀌었습니다");
+            assertThat(notification.getContent()).isEqualTo("날씨를 확인해 보세요");
             assertThat(notification.getType()).isEqualTo(NotificationType.WEATHER_ALERT);
             assertThat(notification.getUser()).isEqualTo(user);
         }
@@ -71,11 +71,11 @@ class NotificationFactoryTest {
         @DisplayName("피드 좋아요 알림을 생성한다")
         void create_FeedLiked_Notification() {
 
-            Notification notification = notificationFactory.feedLiked(user, "제원");
+            Notification notification = notificationFactory.feedLiked(user, "피드이름","제원");
 
             assertThat(notification.getLevel()).isEqualTo(NotificationLevel.INFO);
-            assertThat(notification.getTitle()).isEqualTo("[제원]님이 회원님의 피드를 좋아했습니다.");
-            assertThat(notification.getContent()).isEqualTo("피드 좋아요");
+            assertThat(notification.getTitle()).isEqualTo("[제원]님이 회원님의 피드에 좋아요를 눌렀습니다.");
+            assertThat(notification.getContent()).isEqualTo("피드: 피드이름");
             assertThat(notification.getType()).isEqualTo(NotificationType.FEED_LIKED);
             assertThat(notification.getUser()).isEqualTo(user);
         }
@@ -84,10 +84,10 @@ class NotificationFactoryTest {
         @DisplayName("피드 댓글 알림을 생성한다")
         void create_FeedCommented_Notification() {
 
-            Notification notification = notificationFactory.feedCommented(user, "제원", "좋은 글이네요!");
+            Notification notification = notificationFactory.feedCommented(user, "피드이름","제원","좋은 글이네요!");
 
             assertThat(notification.getLevel()).isEqualTo(NotificationLevel.INFO);
-            assertThat(notification.getTitle()).isEqualTo("[제원]님이 댓글을 남겼습니다: ");
+            assertThat(notification.getTitle()).isEqualTo("[피드이름]피드에 [제원]님이 댓글을 남겼습니다.");
             assertThat(notification.getContent()).isEqualTo("좋은 글이네요!");
             assertThat(notification.getType()).isEqualTo(NotificationType.FEED_COMMENTED);
             assertThat(notification.getUser()).isEqualTo(user);
@@ -106,18 +106,6 @@ class NotificationFactoryTest {
             assertThat(notification.getUser()).isEqualTo(user);
         }
 
-        @Test
-        @DisplayName("속성 변경 알림을 생성한다")
-        void createAttributeUpdatedNotification() {
-
-            Notification notification = notificationFactory.attributeUpdated(user, "색상");
-
-            assertThat(notification.getLevel()).isEqualTo(NotificationLevel.INFO);
-            assertThat(notification.getTitle()).isEqualTo("[색상] 속성이 변경되었습니다.");
-            assertThat(notification.getContent()).isEqualTo("속성을 확인해보세요");
-            assertThat(notification.getType()).isEqualTo(NotificationType.ATTRIBUTE_UPDATED);
-            assertThat(notification.getUser()).isEqualTo(user);
-        }
 
         @Test
         @DisplayName("속성 추가 알림을 생성한다")
@@ -132,17 +120,5 @@ class NotificationFactoryTest {
             assertThat(notification.getUser()).isEqualTo(user);
         }
 
-        @Test
-        @DisplayName("속성 삭제 알림을 생성한다")
-        void createAttributeDeletedNotification() {
-
-            Notification notification = notificationFactory.attributeDeleted(user, "브랜드");
-
-            assertThat(notification.getLevel()).isEqualTo(NotificationLevel.WARN);
-            assertThat(notification.getTitle()).isEqualTo("[브랜드] 속성이 삭제되었습니다.");
-            assertThat(notification.getContent()).isEqualTo("속성을 확인해보세요");
-            assertThat(notification.getType()).isEqualTo(NotificationType.ATTRIBUTE_DELETED);
-            assertThat(notification.getUser()).isEqualTo(user);
-        }
     }
 }

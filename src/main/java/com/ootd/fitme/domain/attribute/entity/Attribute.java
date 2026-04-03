@@ -9,9 +9,11 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Getter
 @Entity
@@ -22,9 +24,10 @@ public class Attribute extends BaseUpdateEntity {
     @Column(name = "name", nullable = false, length = 100, unique = true)
     private String name;
 
+    @BatchSize(size = 100)
     @OneToMany(mappedBy = "attribute", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("displayOrder ASC")
-    private List<SelectableValue> selectableValues = new ArrayList<>();
+    private final List<SelectableValue> selectableValues = new ArrayList<>();
 
     private Attribute(String name) {
         validateName(name);
@@ -45,8 +48,23 @@ public class Attribute extends BaseUpdateEntity {
     public void updateAttribute(String newName, List<String> newTypes) {
         validateName(newName);
         this.name = newName;
-        this.selectableValues.clear();
-        this.addValues(newTypes);
+
+        this.selectableValues.removeIf(existing -> !newTypes.contains(existing.getType()));
+
+        for (int i = 0; i < newTypes.size(); i++) {
+            String targetType = newTypes.get(i);
+            int newOrder = i;
+
+            Optional<SelectableValue> existingOpt = this.selectableValues.stream()
+                    .filter(v -> v.getType().equals(targetType))
+                    .findFirst();
+
+            if (existingOpt.isPresent()) {
+                existingOpt.get().updateDisplayOrder(newOrder);
+            } else {
+                this.selectableValues.add(SelectableValue.create(targetType, newOrder, this));
+            }
+        }
     }
 
     private void validateName(String name) {
@@ -54,4 +72,5 @@ public class Attribute extends BaseUpdateEntity {
             throw new AttributeException(ErrorCode.ATTRIBUTE_NAME_INVALID);
         }
     }
+
 }

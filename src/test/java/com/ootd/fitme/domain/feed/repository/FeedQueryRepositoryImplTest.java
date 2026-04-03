@@ -1,7 +1,14 @@
 package com.ootd.fitme.domain.feed.repository;
 
+import com.ootd.fitme.domain.feed.dto.request.FeedSearchCondition;
+import com.ootd.fitme.domain.feed.dto.response.CursorResult;
+import com.ootd.fitme.domain.feed.dto.response.FeedBaseFlatRow;
 import com.ootd.fitme.domain.feed.dto.response.FeedDetailFlatRow;
 import com.ootd.fitme.domain.feed.entity.Feed;
+import com.ootd.fitme.domain.feed.enums.FeedSortCriteria;
+import com.ootd.fitme.domain.feed.enums.SortDirection;
+import com.ootd.fitme.domain.feed.fixture.FeedFixtureBuilder;
+import com.ootd.fitme.domain.feed.fixture.FeedFixtureBuilder.FeedFixture;
 import com.ootd.fitme.domain.region.entity.Region;
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.weatherforecast.entity.WeatherForecast;
@@ -18,8 +25,11 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -28,7 +38,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @Import({
         JpaAuditingConfig.class,
         QuerydslConfig.class,
-        FeedQueryRepositoryImpl.class
+        FeedQueryRepositoryImpl.class,
+        FeedFixtureBuilder.class
 })
 class FeedQueryRepositoryImplTest {
     @Autowired
@@ -36,6 +47,9 @@ class FeedQueryRepositoryImplTest {
 
     @Autowired
     private FeedQueryRepository feedQueryRepository;
+
+    @Autowired
+    private FeedFixtureBuilder feedFixtureBuilder;
 
     @Test
     @DisplayName("feedId로 조회하면 피드 상세 flat row를 반환한다")
@@ -133,4 +147,71 @@ class FeedQueryRepositoryImplTest {
         // then
         assertThat(result).isEmpty();
     }
+
+    @Test
+    @DisplayName("커서 페이징 - 다음 페이지 정상 조회")
+    void findFeeds_with_cursor() {
+        // given
+        FeedFixture feedFixture = feedFixtureBuilder.createFeedFixture();
+
+
+        for (int i = 0; i < 5; i++) {
+            feedFixtureBuilder.createFeedFixture();
+        }
+
+        em.flush();
+        em.clear();
+
+        FeedSearchCondition condition = new FeedSearchCondition(
+                null,
+                FeedSortCriteria.CREATED_AT,
+                SortDirection.DESCENDING,
+                null,
+                null,
+                3,
+                null,
+                null,
+                null
+        );
+
+        // when
+        CursorResult<FeedBaseFlatRow> firstPage =
+                feedQueryRepository.findFeedListFlatRows(condition);
+
+        List<FeedBaseFlatRow> content = firstPage.content();
+        FeedBaseFlatRow lastRow = content.get(content.size() - 1);
+
+        FeedSearchCondition nextCondition = new FeedSearchCondition(
+                null,
+                FeedSortCriteria.CREATED_AT,
+                SortDirection.DESCENDING,
+                lastRow.createdAt().toString(),
+                lastRow.feedId(),
+                3,
+                null,
+                null,
+                null
+        );
+
+        CursorResult<FeedBaseFlatRow> secondPage =
+                feedQueryRepository.findFeedListFlatRows(nextCondition);
+
+        // then
+        assertThat(firstPage.content()).hasSize(3);
+        assertThat(firstPage.hasNext()).isTrue();
+
+        assertThat(secondPage.content()).isNotEmpty();
+
+        Set<UUID> firstIds = firstPage.content().stream()
+                .map(FeedBaseFlatRow::feedId)
+                .collect(Collectors.toSet());
+
+        Set<UUID> secondIds = secondPage.content().stream()
+                .map(FeedBaseFlatRow::feedId)
+                .collect(Collectors.toSet());
+
+        assertThat(firstIds).doesNotContainAnyElementsOf(secondIds);
+    }
+
+
 }

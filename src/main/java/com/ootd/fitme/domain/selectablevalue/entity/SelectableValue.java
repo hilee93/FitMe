@@ -19,6 +19,7 @@ import org.hibernate.annotations.OnDeleteAction;
 public class SelectableValue extends BaseDeletableEntity {
 
     @JoinColumn(name = "attribute_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     @ManyToOne(fetch = FetchType.LAZY)
     private Attribute attribute;
 
@@ -43,5 +44,9 @@ public class SelectableValue extends BaseDeletableEntity {
         if (type == null || type.isBlank()) {
             throw new SelectableValueException(ErrorCode.SELECTABLE_VALUE_INVALID);
         }
+    }
+
+    public void updateDisplayOrder(int newDisplayOrder) {
+        this.displayOrder = newDisplayOrder;
     }
 }
