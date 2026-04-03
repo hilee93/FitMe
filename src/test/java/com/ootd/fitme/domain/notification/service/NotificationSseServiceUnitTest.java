@@ -124,7 +124,7 @@ class NotificationSseServiceUnitTest {
 
             // then
             verify(emitterRepository).findAllByUserId(userId);
-            verify(emitterRepository).deleteByUserIdAndEmitterId(userId, emitterId);
+            verify(emitterRepository).deleteByUserId(userId);
         }
 
         @Test
@@ -156,7 +156,7 @@ class NotificationSseServiceUnitTest {
 
             // then
             verify(emitterRepository).findAllByUserId(userId);
-            verify(emitterRepository).deleteByUserIdAndEmitterId(userId, emitterId);
+            verify(emitterRepository).deleteByUserId(userId);
         }
     }
 }

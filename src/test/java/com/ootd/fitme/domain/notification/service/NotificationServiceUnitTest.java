@@ -292,7 +292,7 @@ class NotificationServiceUnitTest {
 
             NotificationPageResponse result = notificationService.getNotifications(request);
 
-            assertThat(result.content()).hasSize(2);
+            assertThat(result.data()).hasSize(2);
             assertThat(result.nextCursor()).isEqualTo(lastCreatedAt.toString());
             assertThat(result.nextIdAfter()).isEqualTo(lastId.toString());
             assertThat(result.hasNext()).isTrue();
@@ -324,7 +324,7 @@ class NotificationServiceUnitTest {
 
             NotificationPageResponse result = notificationService.getNotifications(request);
 
-            assertThat(result.content()).hasSize(1);
+            assertThat(result.data()).hasSize(1);
             assertThat(result.nextCursor()).isNull();
             assertThat(result.nextIdAfter()).isNull();
             assertThat(result.hasNext()).isFalse();
