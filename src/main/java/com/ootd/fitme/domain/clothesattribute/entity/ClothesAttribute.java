@@ -45,6 +45,10 @@ public class ClothesAttribute extends BaseEntity {
     }
 
     public void assignOption(SelectableValue selectableValue) {
-        this.clothesAttributeSelectableValue = ClothesAttributeSelectableValue.create(this, selectableValue);
+        if (this.clothesAttributeSelectableValue == null) {
+            this.clothesAttributeSelectableValue = ClothesAttributeSelectableValue.create(this, selectableValue);
+        } else {
+            this.clothesAttributeSelectableValue.updateSelectableValue(selectableValue);
+        }
     }
 }

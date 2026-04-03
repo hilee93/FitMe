@@ -7,7 +7,7 @@ import org.springframework.data.domain.Slice;
 import java.util.List;
 
 public record NotificationPageResponse(
-        List<NotificationDto> content,
+        List<NotificationDto> data,
         String nextCursor,
         String nextIdAfter,
         boolean hasNext,
