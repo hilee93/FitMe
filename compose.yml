@@ -23,9 +23,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
-#    depends_on:
-#      postgres: # postgres라는 동작에 의존하고 이게 될때까지 위의서비스는 대기
-#        condition: service_healthy # 해당 서비스(postgres)가 healthy해야만 동작하도록 조건 추가 및 대기
+    depends_on:
+      postgres: # postgres라는 동작에 의존하고 이게 될때까지 위의서비스는 대기
+        condition: service_healthy # 해당 서비스(postgres)가 healthy해야만 동작하도록 조건 추가 및 대기
 #      redis:
 #        condition: service_started # healthcheck와 상관없이 단순 컨테이너가 시작하기만 하면 되는 조건
     networks:

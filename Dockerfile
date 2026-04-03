@@ -8,8 +8,6 @@ COPY . .
 RUN chmod +x ./gradlew
 RUN ./gradlew clean build -x test
 
-# TODO: COPY 혹은 WORKDIR 에 /app  경로 추가하여 컨테이너 루트파일시스템에서 어플리케이션 폴더구성
-
 # 런타임 실행 스테이지
 FROM eclipse-temurin:17-jre-jammy
 
