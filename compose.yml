@@ -31,14 +31,34 @@ services:
     networks:
       - fitme-backend-network
 
+  postgres:
+    image: postgres:16
+    ports:
+      - "5433:5432" # 외부 사용시 로컬에 이미 실행중이면 충돌날수있기때문에 5433으로 사용
+    volumes:
+      - fitme-postgres-data:/var/lib/postgresql/data
+    # DB에서도 사용하는 메모리 제한 설정
+    command: >
+      postgres 
+      -c shared_buffers=128MB 
+      -c max_connections=50
+
+    healthcheck: # 컨테이너가 정상인지 주기적으로 확인
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d postgres" ]
+      interval: 10s # 실패할시 10초마다 재시도
+      timeout: 5s # 5초안에 응답없다면 실패 간주 unhealthy
+      retries: 5 # 재시도 횟수, 이후 unhealthy로 판정
+    networks:
+      - fitme-backend-network
+
 # 볼륨 정의, local일경우 생략가능하지만 명시
 volumes:
   fitme-storage:
     driver: local
   fitme-logs:
     driver: local
-#  my-postgres-data:
-#    driver: local # 볼륨 데이터를 호스트의 로컬에 저장
+  fitme-postgres-data:
+    driver: local # 볼륨 데이터를 호스트의 로컬에 저장
 #  redis-data:
 #    driver: local
 
