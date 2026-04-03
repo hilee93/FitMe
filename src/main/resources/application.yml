@@ -71,15 +71,15 @@ external:
     base-url: https://api.openweathermap.org
     forecast-path: /data/2.5/forecast
 
-security:
-  cors:
-    allowed-origins:
-
-# 운영단계에서 확인 필요
+# 운영 Prod에서 오버라이딩 할예정이라 그대로 씀
 admin:
   bootstrap:
-    enabled: false
-    email:
-    password:
-    profile-name:
+    enabled: true
+    email: admin@test.com
+    password: admin123!
+    profile-name: admin
     reset-password: false
+
+security:
+  cors:
+    allowed-origins: http://localhost:8080
