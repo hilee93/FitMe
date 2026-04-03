@@ -1,5 +1,6 @@
 package com.ootd.fitme.domain.user.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ootd.fitme.domain.user.dto.request.ChangePasswordRequest;
 import com.ootd.fitme.domain.user.dto.request.UserCreateRequest;
@@ -29,6 +30,7 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -108,6 +110,17 @@ class UserSecurityIntegrationTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isCreated());
+        }
+
+        @Test
+        @DisplayName("실패 - 회원가입 요청에 CSRF 없으면 403")
+        void signUp_withoutCsrf_return403() throws Exception {
+            UserCreateRequest request = new UserCreateRequest("tester", "tester@fitme.com", "password123!");
+
+            mockMvc.perform(post("/api/users")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isForbidden());
         }
     }
 
