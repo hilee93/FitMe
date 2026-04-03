@@ -29,10 +29,10 @@ spring:
     redis:
       enable-statistics: true
 
-  data: # TODO: 추후 redis로 연결할때 볼것
+  data:
     redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
+      host: localhost
+      port: 6380
 
 logging:
   level:

@@ -11,6 +11,11 @@ spring:
     init:
       mode: always # schema.sql 매번 실행
 
+  data:
+    redis:
+      host: redis
+      port: 6379
+
 logging:
   level:
     com.ootd: debug

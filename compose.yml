@@ -54,6 +54,22 @@ services:
       retries: 5 # 재시도 횟수, 이후 unhealthy로 판정
     networks:
       - fitme-backend-network
+  redis:
+    image: redis:7.4.8-alpine3.21
+    ports:
+      - "6380:6379" # 로컬 실행중 충돌방지 6380으로 설정
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru # 레디스 메모리 제한
+    volumes:
+      - fitme-redis-data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - fitme-backend-network
+
+
 
 # 볼륨 정의, local일경우 생략가능하지만 명시
 volumes:
@@ -63,8 +79,8 @@ volumes:
     driver: local
   fitme-postgres-data:
     driver: local # 볼륨 데이터를 호스트의 로컬에 저장
-#  redis-data:
-#    driver: local
+  fitme-redis-data:
+    driver: local
 
 # 네트워크 설정
 networks:
