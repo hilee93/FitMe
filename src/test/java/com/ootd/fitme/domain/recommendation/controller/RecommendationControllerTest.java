@@ -45,7 +45,7 @@ class RecommendationControllerTest {
     private RecommendationService recommendationService;
 
     @Nested
-    @DisplayName("GET /api/v1/recommendations (추천 조회)")
+    @DisplayName("GET /api/recommendations (추천 조회)")
     class GetRecommendationTest {
 
         @Test
@@ -63,7 +63,7 @@ class RecommendationControllerTest {
             given(recommendationService.recommendation(userId, weatherId)).willReturn(responseDto);
 
             // when & then
-            mockMvc.perform(get("/api/v1/recommendations")
+            mockMvc.perform(get("/api/recommendations")
                             .param("userId", userId.toString())
                             .param("weatherId", weatherId.toString()))
                     .andExpect(status().isOk())
@@ -81,7 +81,7 @@ class RecommendationControllerTest {
             UUID weatherId = UUID.randomUUID();
 
             // when & then
-            mockMvc.perform(get("/api/v1/recommendations")
+            mockMvc.perform(get("/api/recommendations")
                             .param("weatherId", weatherId.toString()))
                     .andExpect(status().isBadRequest());
 
@@ -95,7 +95,7 @@ class RecommendationControllerTest {
             UUID userId = UUID.randomUUID();
 
             // when & then
-            mockMvc.perform(get("/api/v1/recommendations")
+            mockMvc.perform(get("/api/recommendations")
                             .param("userId", userId.toString()))
                     .andExpect(status().isBadRequest());
 
