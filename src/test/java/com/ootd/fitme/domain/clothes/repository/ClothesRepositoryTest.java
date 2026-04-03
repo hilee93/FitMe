@@ -183,13 +183,13 @@ class ClothesRepositoryTest {
             ClothesDtoCursorResponse response = clothesRepository.findClothesByCursor(request);
 
             // then: 1. 데이터 검증
-            assertThat(response.contents()).hasSize(2);
-            assertThat(response.contents().get(0).name()).isEqualTo("가_셔츠");
-            assertThat(response.contents().get(1).name()).isEqualTo("나_바지");
+            assertThat(response.data()).hasSize(2);
+            assertThat(response.data().get(0).name()).isEqualTo("가_셔츠");
+            assertThat(response.data().get(1).name()).isEqualTo("나_바지");
 
             // then: 2. DTO 내부에 속성(Attributes)이 잘 조립되었는지 검증
-            assertThat(response.contents().get(0).attributes()).hasSize(1);
-            assertThat(response.contents().get(0).attributes().get(0).value()).isEqualTo("빨강");
+            assertThat(response.data().get(0).attributes()).hasSize(1);
+            assertThat(response.data().get(0).attributes().get(0).value()).isEqualTo("빨강");
 
             // then: 3. 다음 페이지 여부 및 커서 검증
             assertThat(response.hasNext()).isTrue();
@@ -226,9 +226,9 @@ class ClothesRepositoryTest {
             ClothesDtoCursorResponse secondResponse = clothesRepository.findClothesByCursor(secondRequest);
 
             // then
-            assertThat(secondResponse.contents()).hasSize(2);
-            assertThat(secondResponse.contents().get(0).name()).isEqualTo("다_자켓");
-            assertThat(secondResponse.contents().get(1).name()).isEqualTo("라_코트");
+            assertThat(secondResponse.data()).hasSize(2);
+            assertThat(secondResponse.data().get(0).name()).isEqualTo("다_자켓");
+            assertThat(secondResponse.data().get(1).name()).isEqualTo("라_코트");
 
             assertThat(secondResponse.hasNext()).isTrue();
             assertThat(secondResponse.totalCount()).isEqualTo(5L);
@@ -254,8 +254,8 @@ class ClothesRepositoryTest {
             ClothesDtoCursorResponse lastResponse = clothesRepository.findClothesByCursor(lastRequest);
 
             // then
-            assertThat(lastResponse.contents()).hasSize(1);
-            assertThat(lastResponse.contents().get(0).name()).isEqualTo("마_패딩");
+            assertThat(lastResponse.data()).hasSize(1);
+            assertThat(lastResponse.data().get(0).name()).isEqualTo("마_패딩");
 
             // 더 이상 남은 데이터가 없으므로 hasNext는 false
             assertThat(lastResponse.hasNext()).isFalse();
@@ -331,7 +331,7 @@ class ClothesRepositoryTest {
             ClothesDtoCursorResponse response = clothesRepository.findClothesByCursor(request);
 
             // then
-            assertThat(response.contents()).isEmpty();
+            assertThat(response.data()).isEmpty();
             assertThat(response.hasNext()).isFalse();
             assertThat(response.nextCursor()).isNull();
             assertThat(response.nextIdAfter()).isNull();

@@ -167,7 +167,7 @@ public class ClothesServiceImpl implements ClothesService {
         ClothesDtoCursorResponse response = clothesRepository.findClothesByCursor(secureRequest);
 
         log.info("[Clothes] 옷 목록 커서 조회 완료 - 반환된 아이템 수: {}, 다음 페이지 존재 여부: {}",
-                response.contents().size(), response.hasNext());
+                response.data().size(), response.hasNext());
 
         return response;
     }

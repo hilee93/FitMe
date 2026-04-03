@@ -7,7 +7,7 @@ import com.ootd.fitme.domain.clothes.enums.SortDirection;
 import java.util.List;
 
 public record ClothesDtoCursorResponse(
-        List<ClothesDto> contents,
+        List<ClothesDto> data,
         String nextCursor,
         String nextIdAfter,
         boolean hasNext,

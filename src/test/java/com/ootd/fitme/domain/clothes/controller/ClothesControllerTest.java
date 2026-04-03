@@ -11,7 +11,7 @@ import com.ootd.fitme.domain.clothes.enums.SortDirection;
 import com.ootd.fitme.domain.clothes.exception.ClothesException;
 import com.ootd.fitme.domain.clothes.service.ClothesService;
 import com.ootd.fitme.global.exception.ErrorCode;
-
+import com.ootd.fitme.global.security.auth.CustomUserPrincipal;
 import com.ootd.fitme.global.security.auth.CustomUserDetailsService;
 import com.ootd.fitme.global.security.jwt.JwtProvider;
 
@@ -38,6 +38,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.mock;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -67,12 +68,14 @@ class ClothesControllerTest {
     private TokenBlacklistService tokenBlacklistService;
 
     private UUID loginUserId;
-    private Authentication mockAuthentication;
+    private Authentication customPrincipalAuthentication;
 
     @BeforeEach
     void setUp() {
         loginUserId = UUID.randomUUID();
-        mockAuthentication = new TestingAuthenticationToken(loginUserId, null, "ROLE_USER");
+        CustomUserPrincipal principal = mock(CustomUserPrincipal.class);
+        given(principal.getUserId()).willReturn(loginUserId);
+        customPrincipalAuthentication = new TestingAuthenticationToken(principal, null, "ROLE_USER");
     }
 
     @Nested
@@ -101,7 +104,7 @@ class ClothesControllerTest {
             // when & then
             mockMvc.perform(multipart("/api/clothes")
                             .file(requestPart)
-                            .with(authentication(mockAuthentication))
+                            .with(authentication(customPrincipalAuthentication))
                             .with(csrf())
                     )
                     .andDo(print())
@@ -127,7 +130,7 @@ class ClothesControllerTest {
             // when & then
             mockMvc.perform(multipart("/api/clothes")
                             .file(requestPart)
-                            .with(authentication(mockAuthentication))
+                            .with(authentication(customPrincipalAuthentication))
                             .with(csrf())
                     )
                     .andDo(print())
@@ -159,7 +162,7 @@ class ClothesControllerTest {
             // when & then
             mockMvc.perform(get("/api/clothes")
                             .param("limit", "20")
-                            .with(authentication(mockAuthentication))
+                            .with(authentication(customPrincipalAuthentication))
                     )
                     .andDo(print())
                     .andExpect(status().isOk());
@@ -191,7 +194,7 @@ class ClothesControllerTest {
                                 request.setMethod(HttpMethod.PATCH.name());
                                 return request;
                             })
-                            .with(authentication(mockAuthentication))
+                            .with(authentication(customPrincipalAuthentication))
                             .with(csrf())
                     )
                     .andDo(print())
@@ -214,7 +217,7 @@ class ClothesControllerTest {
 
             // when & then
             mockMvc.perform(delete("/api/clothes/{clothesId}", clothesId)
-                            .with(authentication(mockAuthentication))
+                            .with(authentication(customPrincipalAuthentication))
                             .with(csrf())
                     )
                     .andDo(print())
