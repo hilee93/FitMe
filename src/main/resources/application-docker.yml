@@ -1,4 +1,41 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/postgres
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  sql:
+    init:
+      mode: always # schema.sql 매번 실행
 
+logging:
+  level:
+    com.ootd: debug
+    org.hibernate.SQL: debug
+    org.hibernate.orm.jdbc.bind: trace
 
+# 명시적으로 설정
+server:
+  port: 8080
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
 
+  endpoint:
+    health:
+      show-details: always  # Health 상세 정보 표시
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  info:
+    env:
+      enabled: true
+  observations:
+    annotations:
+      enabled: true
