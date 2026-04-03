@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ootd.fitme.domain.clothes.dto.ClothesDto;
 import com.ootd.fitme.domain.clothes.dto.request.ClothesCreateRequest;
 import com.ootd.fitme.domain.clothes.dto.request.ClothesDtoCursorRequest;
-import com.ootd.fitme.domain.clothes.dto.request.ClothesUpdateRequest;
 import com.ootd.fitme.domain.clothes.dto.response.ClothesDtoCursorResponse;
 import com.ootd.fitme.domain.clothes.enums.ClothesType;
 import com.ootd.fitme.domain.clothes.enums.SortBy;
@@ -13,7 +12,6 @@ import com.ootd.fitme.domain.clothes.exception.ClothesException;
 import com.ootd.fitme.domain.clothes.service.ClothesService;
 import com.ootd.fitme.global.exception.ErrorCode;
 
-// 🌟 본인의 프로젝트 패키지에 맞게 import 경로를 확인해 주세요!
 import com.ootd.fitme.global.security.auth.CustomUserDetailsService;
 import com.ootd.fitme.global.security.jwt.JwtProvider;
 
@@ -24,7 +22,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-// 🌟 Spring Boot 3.4+ 최신 Mockito 어노테이션
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;

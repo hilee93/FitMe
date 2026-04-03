@@ -15,7 +15,6 @@ import com.ootd.fitme.domain.clothes.enums.SortDirection;
 import com.ootd.fitme.domain.clothes.exception.ClothesException;
 import com.ootd.fitme.domain.clothes.repository.ClothesRepository;
 import com.ootd.fitme.domain.clothesattribute.entity.ClothesAttribute;
-import com.ootd.fitme.domain.selectablevalue.entity.SelectableValue;
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.repository.UserRepository;
 import com.ootd.fitme.global.config.JpaAuditingConfig;
