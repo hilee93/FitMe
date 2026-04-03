@@ -39,7 +39,6 @@ logging:
     org.hibernate.SQL: debug
     org.hibernate.orm.jdbc.bind: trace
     com.ootd: debug
-
 management:
   endpoints:
     web:
@@ -63,15 +62,5 @@ management:
 fitme:
   storage:
     type: local  # <= 여기 값이 'local'일 때만 LocalBinaryContentStorage를 빈으로 등록, s3 이면 S3BinaryContentStorage 빈 등록
-
-admin:
-  bootstrap:
-    enabled: true
-    email: admin@test.com
-    password: admin123!
-    profile-name: admin
-    reset-password: false
-
-security:
-  cors:
-    allowed-origins: http://localhost:8080
+    local:
+      root-path: ./storage # 로컬환경 프로젝트 루트에서 /storage 로사용
