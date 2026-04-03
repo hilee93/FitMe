@@ -146,8 +146,8 @@ CREATE TABLE weather_forecast
         CHECK (temperature_min <= temperature_max),
     CONSTRAINT chk_weather_forecast_wind_speed
         CHECK (wind_speed >= 0),
-    CONSTRAINT uk_weather_forecast_region_forecasted_at
-        UNIQUE (region_id, forecasted_at)
+    CONSTRAINT uk_weather_forecast_region_forecast_at
+        UNIQUE (region_id, forecast_at)
 );
 
 CREATE TABLE clothes
