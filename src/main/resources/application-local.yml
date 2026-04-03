@@ -64,3 +64,6 @@ fitme:
     type: local  # <= 여기 값이 'local'일 때만 LocalBinaryContentStorage를 빈으로 등록, s3 이면 S3BinaryContentStorage 빈 등록
     local:
       root-path: ./storage # 로컬환경 프로젝트 루트에서 /storage 로사용
+
+server:
+  port: 8081 # local의 경우 이제 도커 컴포즈로 기본 실행하면 8080을 사용하기때문에 충돌방지를 위해 Local은 8081
