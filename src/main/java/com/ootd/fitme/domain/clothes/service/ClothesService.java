@@ -10,9 +10,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.UUID;
 
 public interface ClothesService {
-    ClothesDtoCursorResponse getClothesList(ClothesDtoCursorRequest request);
+    ClothesDtoCursorResponse getClothesList(ClothesDtoCursorRequest request, UUID loginUserId);
     ClothesDto createClothes(ClothesCreateRequest request, MultipartFile image);
-    void deleteClothes(UUID clothesId);
-    ClothesDto updateClothes(UUID clothesId, ClothesUpdateRequest request, MultipartFile image);
+    void deleteClothes(UUID clothesId, UUID loginUserId);
+    ClothesDto updateClothes(UUID clothesId, UUID loginUserId, ClothesUpdateRequest request, MultipartFile image);
     Object extractInfoFromLink(String link);
 }
