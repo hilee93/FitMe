@@ -27,7 +27,8 @@ public class RecommendationClothesQueryRepositoryImpl implements RecommendationC
                         RecommendationClothesSummaryDto.class,
                         clothes.id,
                         clothes.name,
-                        clothes.clothesType
+                        clothes.clothesType,
+                        clothes.imageUrl
                 ))
                 .from(clothes)
                 .join(clothes.user, user)

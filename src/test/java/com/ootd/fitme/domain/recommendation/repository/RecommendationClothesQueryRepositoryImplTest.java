@@ -40,9 +40,26 @@ class RecommendationClothesQueryRepositoryImplTest {
             // given
             User user = em.persist(User.create("test_user@example.com", "password"));
 
-            Clothes clothes1 = em.persist(Clothes.create("셔츠", ClothesType.TOP, user));
-            Clothes clothes2 = em.persist(Clothes.create("바지", ClothesType.BOTTOM, user));
-            Clothes clothes3 = em.persist(Clothes.create("자켓", ClothesType.OUTER, user));
+            Clothes clothes1 = em.persist(Clothes.createWithImage(
+                    "셔츠",
+                    ClothesType.TOP,
+                    user,
+                    "https://example.com/shirt.jpg" // imageUrl 포함
+            ));
+
+            Clothes clothes2 = em.persist(Clothes.createWithImage(
+                    "바지",
+                    ClothesType.BOTTOM,
+                    user,
+                    "https://example.com/pants.jpg"
+            ));
+
+            Clothes clothes3 = em.persist(Clothes.createWithImage(
+                    "자켓",
+                    ClothesType.OUTER,
+                    user,
+                    "https://example.com/jacket.jpg"
+            ));
 
             em.flush();
             em.clear();
@@ -54,25 +71,26 @@ class RecommendationClothesQueryRepositoryImplTest {
             // then
             assertThat(result).hasSize(3);
 
+            // 검증
             assertThat(result)
                     .anySatisfy(row -> {
-                        assertThat(row.id()).isEqualTo(clothes1.getId());
                         assertThat(row.name()).isEqualTo("셔츠");
                         assertThat(row.type()).isEqualTo(ClothesType.TOP);
+                        assertThat(row.imageUrl()).isEqualTo("https://example.com/shirt.jpg");
                     });
 
             assertThat(result)
                     .anySatisfy(row -> {
-                        assertThat(row.id()).isEqualTo(clothes2.getId());
                         assertThat(row.name()).isEqualTo("바지");
                         assertThat(row.type()).isEqualTo(ClothesType.BOTTOM);
+                        assertThat(row.imageUrl()).isEqualTo("https://example.com/pants.jpg");
                     });
 
             assertThat(result)
                     .anySatisfy(row -> {
-                        assertThat(row.id()).isEqualTo(clothes3.getId());
                         assertThat(row.name()).isEqualTo("자켓");
                         assertThat(row.type()).isEqualTo(ClothesType.OUTER);
+                        assertThat(row.imageUrl()).isEqualTo("https://example.com/jacket.jpg");
                     });
         }
 
