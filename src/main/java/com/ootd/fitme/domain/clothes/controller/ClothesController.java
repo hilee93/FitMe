@@ -58,8 +58,9 @@ public class ClothesController implements ClothesControllerDocs {
     @DeleteMapping("/{clothesId}")
     public ResponseEntity<Void> deleteClothes(
             @PathVariable UUID clothesId,
-            @AuthenticationPrincipal UUID loginUserId
+            @AuthenticationPrincipal CustomUserPrincipal principal
     ) {
+        UUID loginUserId = principal.getUserId();
         clothesService.deleteClothes(clothesId, loginUserId);
         return ResponseEntity.noContent().build();
     }
@@ -69,8 +70,9 @@ public class ClothesController implements ClothesControllerDocs {
             @PathVariable UUID clothesId,
             @ModelAttribute ClothesUpdateRequest request,
             @RequestPart(value = "image", required = false) MultipartFile image,
-            @AuthenticationPrincipal UUID loginUserId
+            @AuthenticationPrincipal CustomUserPrincipal principal
     ) {
+        UUID loginUserId = principal.getUserId();
         ClothesDto response = clothesService.updateClothes(clothesId, loginUserId, request, image);
         return ResponseEntity.ok(response);
     }

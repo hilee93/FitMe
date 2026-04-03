@@ -39,8 +39,21 @@ public class AuthSecurityIntegrationTest {
     private UserService userService;
 
     @Test
-    @DisplayName("실패 - CSRF 없이 로그인 요청하면 403")
-    void signIn_withoutCsrf_return403() throws Exception {
+    @DisplayName("성공 - CSRF 없이 로그인 요청해도 200 (API CSRF 예외 경로)")
+    void signIn_withoutCsrf_return200() throws Exception {
+        UserDto userDto = new UserDto(
+                UUID.randomUUID(),
+                Instant.now(),
+                "tester@fitme.com",
+                "tester",
+                Role.USER,
+                false
+        );
+
+        JwtDto jwtDto = new JwtDto(userDto, "access-token");
+        given(userService.signIn(any(SignInRequest.class)))
+                .willReturn(new SignInResult(jwtDto, "refresh-token"));
+
         mockMvc.perform(post("/api/auth/sign-in")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
@@ -49,7 +62,7 @@ public class AuthSecurityIntegrationTest {
                         "password": "password123!"
                         }
                         """))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk());
     }
 
     @Test

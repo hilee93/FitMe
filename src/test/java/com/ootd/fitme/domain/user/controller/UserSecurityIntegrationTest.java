@@ -113,14 +113,23 @@ class UserSecurityIntegrationTest {
         }
 
         @Test
-        @DisplayName("실패 - 회원가입 요청에 CSRF 없으면 403")
-        void signUp_withoutCsrf_return403() throws Exception {
+        @DisplayName("성공 - 회원가입 요청은 CSRF 없이도 201 (API CSRF 예외 경로)")
+        void signUp_withoutCsrf_return201() throws Exception {
             UserCreateRequest request = new UserCreateRequest("tester", "tester@fitme.com", "password123!");
+            UserDto response = new UserDto(
+                    UUID.randomUUID(),
+                    Instant.now(),
+                    "tester@fitme.com",
+                    "tester",
+                    Role.USER,
+                    false
+            );
+            given(userService.signUp(any(UserCreateRequest.class))).willReturn(response);
 
             mockMvc.perform(post("/api/users")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isCreated());
         }
     }
 

@@ -45,7 +45,7 @@ public interface ClothesControllerDocs {
     @ApiResponse(responseCode = "404", description = "해당 옷을 찾을 수 없음")
     ResponseEntity<Void> deleteClothes(
             @Parameter(description = "삭제할 옷의 UUID", required = true) @PathVariable UUID clothesId,
-            @Parameter(hidden = true) @AuthenticationPrincipal UUID loginUserId
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserPrincipal principal
     );
 
     @Operation(summary = "옷 수정", description = "특정 ID의 옷 정보를 수정합니다. (Multipart Form-Data 형식)")
@@ -56,7 +56,7 @@ public interface ClothesControllerDocs {
             @Parameter(description = "수정할 옷의 UUID", required = true) @PathVariable UUID clothesId,
             @Parameter(description = "수정할 옷의 정보") @ModelAttribute ClothesUpdateRequest request,
             @Parameter(description = "수정할 옷의 사진") @RequestPart(value = "image", required = false) MultipartFile image,
-            @Parameter(hidden = true) @AuthenticationPrincipal UUID loginUserId
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserPrincipal principal
     );
 
     @Operation(summary = "구매 링크로 옷 정보 불러오기", description = "상품 링크를 통해 옷의 상세 정보를 추출합니다.")
