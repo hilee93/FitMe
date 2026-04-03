@@ -30,7 +30,7 @@ spring:
     exclude: org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
 
   storage:
-    type: azure # s3?? azure(?? blob)? ??
+    type: azure # 기본 application, -prod 에서 azure를 쓰도록 하고 만약 자신이 Local을 쓰고싶다면 -local 에서 local로 사용테스트
     app:
       azure: # aws?? azure? ??
         cdn: # cloud-front?? cdn?? ??
@@ -47,8 +47,9 @@ spring:
           container: fitme-v1-container # bucket?? container? ??
           log-container: wardrobe-v1-log-container
 
+# prod제외 모든 환경에서 환경변수 값으로 동적이거나 보안적으로 가릴 필요없기때문에 공통적인 값은 그대로 쓰는방식, Prod에서만 환경변수로 오버라이딩 처리
 jwt:
-  secret-key: ${JWT_SECRET:mySecretKeyForJwtTokenGeneration1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ}
+  secret-key: mySecretKeyForJwtTokenGeneration1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ
   access-token-expiration-ms: 900000      # 15분
   refresh-token-expiration-ms: 1209600000 # 2주
   issuer: fitme
