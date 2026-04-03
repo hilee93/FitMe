@@ -61,6 +61,7 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/.well-known/**",
+                                "/actuator/**",
                                 "/h2-console/**" // 운영단계에서 제거
                         ).permitAll()
                         // CORS preflight 요청을 위한 설정
