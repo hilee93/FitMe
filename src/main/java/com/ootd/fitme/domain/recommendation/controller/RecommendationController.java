@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/recommendations")
+@RequestMapping("/api/recommendations")
 @RequiredArgsConstructor
 public class RecommendationController implements RecommendationControllerDocs {
 

@@ -21,8 +21,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("RecommendationServiceImpl - 테스트")
-class RecommendationServiceImplTest {
+@DisplayName("RecommendationServiceImpl - 통합 테스트")
+class RecommendationServiceUnitTest {
 
     @InjectMocks
     private RecommendationServiceImpl recommendationService;
@@ -76,7 +76,7 @@ class RecommendationServiceImplTest {
     }
 
     @Test
-    @DisplayName("[Failure] 유효하지 않은 userId로 추천 시 - 예외 발생")
+    @DisplayName("유효하지 않은 userId로 추천 시 - 예외 발생")
     void recommendation_throwsException_whenInvalidUserId() {
         // given
         UUID invalidUserId = UUID.randomUUID();
@@ -95,7 +95,7 @@ class RecommendationServiceImplTest {
     }
 
     @Test
-    @DisplayName("[Failure] 유효하지 않은 weatherId로 추천 시 - 예외 발생")
+    @DisplayName("유효하지 않은 weatherId로 추천 시 - 예외 발생")
     void recommendation_throwsException_whenInvalidWeatherId() {
         // given
         UUID validUserId = UUID.randomUUID();

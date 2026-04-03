@@ -3,6 +3,8 @@ package com.ootd.fitme.domain.recommendation.service;
 import com.ootd.fitme.domain.clothes.enums.ClothesType;
 import com.ootd.fitme.domain.recommendation.dto.response.RecommendationClothesSummaryDto;
 import com.ootd.fitme.domain.recommendation.dto.response.RecommendationProfileSummaryDto;
+import com.ootd.fitme.domain.recommendation.exception.RecommendationProfileDataNotFoundException;
+import com.ootd.fitme.domain.recommendation.exception.RecommendationUserNotFoundException;
 import com.ootd.fitme.domain.recommendation.repository.RecommendationClothesQueryRepository;
 import com.ootd.fitme.domain.recommendation.repository.RecommendationProfileQueryRepository;
 import com.ootd.fitme.domain.user.entity.User;
@@ -25,8 +27,8 @@ import static org.mockito.Mockito.*;
 
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("RecommendationQueryService 테스트")
-class RecommendationQueryServiceTest {
+@DisplayName("RecommendationQueryService - 유닛 테스트")
+class RecommendationQueryServiceUnitTest {
 
     @InjectMocks
     private RecommendationQueryService recommendationQueryService;
@@ -66,19 +68,17 @@ class RecommendationQueryServiceTest {
         // then
         assertThat(result).isNotNull();
         assertThat(result).hasSize(3);
-
-        assertThat(result)
-                .anySatisfy(clothes -> {
-                    assertThat(clothes.name()).isEqualTo("셔츠");
-                    assertThat(clothes.type()).isEqualTo(ClothesType.TOP);
-                });
+        assertThat(result).anySatisfy(clothes -> {
+            assertThat(clothes.name()).isEqualTo("셔츠");
+            assertThat(clothes.type()).isEqualTo(ClothesType.TOP);
+        });
 
         verify(userRepository).findById(userId);
         verify(recommendationClothesQueryRepository).findClothesByUserId(userId);
     }
 
     @Test
-    @DisplayName("유효하지 않은 userId로 의상 데이터 조회 - 예외 발생")
+    @DisplayName("유효하지 않은 userId로 의상 데이터 조회 - RecommendationUserNotFoundException 발생")
     void getClothesByUserId_throwsException_whenInvalidUserId() {
         // given
         UUID invalidUserId = UUID.randomUUID();
@@ -86,10 +86,13 @@ class RecommendationQueryServiceTest {
         when(userRepository.findById(invalidUserId)).thenReturn(Optional.empty());
 
         // when & then
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> recommendationQueryService.getClothesByUserId(invalidUserId));
+        RecommendationUserNotFoundException exception = assertThrows(
+                RecommendationUserNotFoundException.class,
+                () -> recommendationQueryService.getClothesByUserId(invalidUserId)
+        );
 
-        assertThat(exception.getMessage()).isEqualTo("유효하지 않은 사용자 ID입니다.");
+        assertThat(exception.getMessage()).isEqualTo("R-001");
+        assertThat(exception.getDetails().get("userId")).isEqualTo(invalidUserId);
 
         verify(userRepository).findById(invalidUserId);
         verify(recommendationClothesQueryRepository, never()).findClothesByUserId(any());
@@ -117,19 +120,24 @@ class RecommendationQueryServiceTest {
     }
 
     @Test
-    @DisplayName("유효하지 않은 userId로 프로필 조회 - 예외 발생")
-    void getProfileByUserId_throwsException_whenInvalidUserId() {
+    @DisplayName("유효한 userId로 프로필을 못 찾을 경우 - RecommendationProfileDataNotFoundException 발생")
+    void getProfileByUserId_throwsException_whenProfileNotFound() {
         // given
-        UUID invalidUserId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
 
-        when(recommendationProfileQueryRepository.findProfileByUserId(invalidUserId))
+        when(recommendationProfileQueryRepository.findProfileByUserId(userId))
                 .thenReturn(Optional.empty());
 
         // when & then
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> recommendationQueryService.getProfileByUserId(invalidUserId));
+        RecommendationProfileDataNotFoundException exception = assertThrows(
+                RecommendationProfileDataNotFoundException.class,
+                () -> recommendationQueryService.getProfileByUserId(userId)
+        );
 
-        assertThat(exception.getMessage()).isEqualTo("사용자 프로필을 찾을 수 없습니다.");
-        verify(recommendationProfileQueryRepository).findProfileByUserId(invalidUserId);
+        assertThat(exception.getMessage()).isEqualTo("R-003");
+        assertThat(exception.getDetails().get("userId")).isEqualTo(userId);
+
+        // Mock 호출 검증
+        verify(recommendationProfileQueryRepository).findProfileByUserId(userId);
     }
 }
