@@ -30,6 +30,8 @@ services:
         condition: service_started # healthcheck와 상관없이 단순 컨테이너가 시작하기만 하면 되는 조건
       broker:
         condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
     networks:
       - fitme-backend-network
 
@@ -101,6 +103,30 @@ services:
       timeout: 5s
       retries: 5
 
+  elasticsearch:
+    image: elasticsearch:8.19.13
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false # 운영에서는 무조건 true, 그게아니면 누구나 데이터 조회/삭제 가능
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - network.host=0.0.0.0 # 공식 이미지 기본설정은 이미 yml에 들어가있어서 굳이 안써도되지만 까먹을수있기때문에 명시해놓고 추후 익숙해지면 제거
+#      - bootstrap.memory_lock=true # 추후 swap 되는 상황 예를들어 부하테스트 또는 달느상황으로 elasticsearch 일부를 디스크로 빼버려서 성능이 저하되는 상황을 볼때 킬것(트러블슈팅)
+#    ulimits: # memory_lock = true 옵션을 실제로 동작하기 위한 필요한 설정, OS 수준에서 메모리 lock 제한을 해제하여 ES가 메모리 swap으로 내려가는 것 방지
+#      memlock:
+#        soft: -1 # 고정 램 무제한 설정(현재 512)
+#        hard: -1 # 고정 램 무제한 설정(현재 512)
+    ports:
+      - "9201:9200"
+    volumes:
+      - fitme-elasticsearch-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:9200 >/dev/null || exit 1" ]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+    networks:
+      - fitme-backend-network
+
 
 
 # 볼륨 정의, local일경우 생략가능하지만 명시
@@ -114,6 +140,8 @@ volumes:
   fitme-redis-data:
     driver: local
   fitme-kafka-data:
+    driver: local
+  fitme-elasticsearch-data:
     driver: local
 
 # 네트워크 설정
