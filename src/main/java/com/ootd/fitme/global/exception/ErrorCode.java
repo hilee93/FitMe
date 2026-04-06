@@ -65,7 +65,12 @@ public enum ErrorCode {
     FOLLOW_SELF_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "자신을 팔로우 할 수 없습니다.", "FL-003"),
 
     // direct message
-    DM_SENDER_MISMATCH(HttpStatus.FORBIDDEN, "메시지 발신자 정보가 일치하지 않습니다.", "DM-001");
+    DM_SENDER_MISMATCH(HttpStatus.FORBIDDEN, "메시지 발신자 정보가 일치하지 않습니다.", "DM-001"),
+
+    // recommendation
+    RECOMMENDATION_USER_NOT_FOUND(HttpStatus.NOT_FOUND, "유저 정보를 찾을 수 없습니다.", "R-001"),
+    RECOMMENDATION_WEATHER_NOT_FOUND(HttpStatus.NOT_FOUND, "날씨 정보를 찾을 수 없습니다.", "R-002"),
+    RECOMMENDATION_PROFILE_DATA_NOT_FOUND(HttpStatus.NOT_FOUND, "유저의 프로필 데이터를 찾을 수 없습니다.", "R-003");
 
     private final String message;
     private final HttpStatus status;
