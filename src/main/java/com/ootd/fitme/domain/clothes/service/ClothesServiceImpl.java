@@ -8,7 +8,6 @@ import com.ootd.fitme.domain.clothes.dto.request.ClothesDtoCursorRequest;
 import com.ootd.fitme.domain.clothes.dto.request.ClothesUpdateRequest;
 import com.ootd.fitme.domain.clothes.dto.response.ClothesDtoCursorResponse;
 import com.ootd.fitme.domain.clothes.entity.Clothes;
-import com.ootd.fitme.domain.clothes.enums.ClothesType;
 import com.ootd.fitme.domain.clothes.exception.ClothesException;
 import com.ootd.fitme.domain.clothes.repository.ClothesRepository;
 import com.ootd.fitme.domain.clothesattribute.entity.ClothesAttribute;
@@ -17,7 +16,6 @@ import com.ootd.fitme.domain.selectablevalue.repository.SelectableValueRepositor
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.repository.UserRepository;
 import com.ootd.fitme.global.exception.ErrorCode;
-import com.ootd.fitme.infrastructure.ai.AiDataExtractor;
 import com.ootd.fitme.infrastructure.scraper.PlaywrightScraper;
 import com.ootd.fitme.infrastructure.storage.image.ImageStorage;
 import lombok.RequiredArgsConstructor;
@@ -49,7 +47,6 @@ public class ClothesServiceImpl implements ClothesService {
     private final ImageStorage imageStorage;
     private final ApplicationEventPublisher eventPublisher;
     private final PlaywrightScraper scraper;
-    private final AiDataExtractor aiExtractor;
 
     @Override
     @Transactional
@@ -307,46 +304,4 @@ public class ClothesServiceImpl implements ClothesService {
                     );
                 }).toList();
     }
-
-    private String buildAttributePromptGuide(List<Attribute> attributes) {
-        StringBuilder guide = new StringBuilder();
-        for (Attribute attr : attributes) {
-            String options = attr.getSelectableValues().stream()
-                    .map(sv -> sv.getType())
-                    .collect(Collectors.joining(", "));
-            guide.append("- ").append(attr.getName()).append(" (선택가능 옵션: ").append(options).append(")\n");
-        }
-        return guide.toString();
-    }
-
-
-    private List<ClothesAttributeWithDefDto> mapAiResultToOurSystem(List<AiClothesResult.AiAttribute> aiAttributes, List<Attribute> allAttributes) {
-        if (aiAttributes == null) return new ArrayList<>();
-
-        List<ClothesAttributeWithDefDto> mappedList = new ArrayList<>();
-
-        for (AiClothesResult.AiAttribute aiAttr : aiAttributes) {
-            allAttributes.stream()
-                    .filter(dbAttr -> dbAttr.getName().equalsIgnoreCase(aiAttr.definitionName()))
-                    .findFirst()
-                    .ifPresent(matchedDbAttr -> {
-                        List<String> selectableOptions = matchedDbAttr.getSelectableValues().stream()
-                                .map(sv -> sv.getType())
-                                .toList();
-
-                        String finalValue = selectableOptions.contains(aiAttr.value()) ? aiAttr.value() : null;
-
-                        if (finalValue != null) {
-                            mappedList.add(new ClothesAttributeWithDefDto(
-                                    matchedDbAttr.getId(),
-                                    matchedDbAttr.getName(),
-                                    selectableOptions,
-                                    finalValue
-                            ));
-                        }
-                    });
-        }
-        return mappedList;
-    }
-
 }

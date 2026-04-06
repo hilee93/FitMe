@@ -2,6 +2,7 @@ package com.ootd.fitme.domain.clothes.controller;
 
 import com.ootd.fitme.domain.clothes.controller.docs.ClothesControllerDocs;
 import com.ootd.fitme.domain.clothes.dto.ClothesDto;
+import com.ootd.fitme.domain.clothes.dto.ExtractedClothesInfo;
 import com.ootd.fitme.domain.clothes.dto.request.ClothesCreateRequest;
 import com.ootd.fitme.domain.clothes.dto.request.ClothesDtoCursorRequest;
 import com.ootd.fitme.domain.clothes.dto.request.ClothesUpdateRequest;
