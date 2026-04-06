@@ -68,9 +68,9 @@ public enum ErrorCode {
     DM_SENDER_MISMATCH(HttpStatus.FORBIDDEN, "메시지 발신자 정보가 일치하지 않습니다.", "DM-001"),
 
     // recommendation
-    RECOMMENDATION_USER_NOT_FOUND(HttpStatus.NOT_FOUND, "R-001", "유저 정보를 찾을 수 없습니다."),
-    RECOMMENDATION_WEATHER_NOT_FOUND(HttpStatus.NOT_FOUND, "R-002", "날씨 정보를 찾을 수 없습니다."),
-    RECOMMENDATION_PROFILE_DATA_NOT_FOUND(HttpStatus.NOT_FOUND, "R-003", "유저의 프로필 데이터를 찾을 수 없습니다.");
+    RECOMMENDATION_USER_NOT_FOUND(HttpStatus.NOT_FOUND, "유저 정보를 찾을 수 없습니다.", "R-001"),
+    RECOMMENDATION_WEATHER_NOT_FOUND(HttpStatus.NOT_FOUND, "날씨 정보를 찾을 수 없습니다.", "R-002"),
+    RECOMMENDATION_PROFILE_DATA_NOT_FOUND(HttpStatus.NOT_FOUND, "유저의 프로필 데이터를 찾을 수 없습니다.", "R-003");
 
     private final String message;
     private final HttpStatus status;
