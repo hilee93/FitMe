@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
 import java.util.UUID;
 
 public interface AttributeRepository extends JpaRepository<Attribute, UUID>, AttributeRepositoryCustom {
@@ -14,4 +15,6 @@ public interface AttributeRepository extends JpaRepository<Attribute, UUID>, Att
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM Attribute a WHERE a.id = :id")
     void deleteByIdInBulk(@Param("id") UUID id);
+
+    Optional<Attribute> findByName(String name);
 }

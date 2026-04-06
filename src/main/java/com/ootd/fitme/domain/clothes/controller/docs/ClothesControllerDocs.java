@@ -26,7 +26,7 @@ public interface ClothesControllerDocs {
     @ApiResponse(responseCode = "401", description = "인증되지 않은 사용자")
     ResponseEntity<ClothesDtoCursorResponse> getClothes(
             @ModelAttribute ClothesDtoCursorRequest request,
-            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserPrincipal principal
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "userId") UUID loginUserId
     );
 
     @Operation(summary = "옷 등록", description = "새로운 옷과 이미지를 등록합니다. (Multipart Form-Data 형식)")
@@ -36,7 +36,7 @@ public interface ClothesControllerDocs {
     ResponseEntity<ClothesDto> createClothes(
             @Parameter(description = "옷 등록 정보 (JSON 형식)", required = true) @RequestPart("request") ClothesCreateRequest request,
             @Parameter(description = "옷 이미지 파일") @RequestPart(value = "image", required = false) MultipartFile image,
-            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserPrincipal principal
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "userId") UUID loginUserId
     );
 
     @Operation(summary = "옷 삭제", description = "로그인한 유저 본인 소유의 특정 ID 옷을 삭제합니다.")
@@ -45,7 +45,7 @@ public interface ClothesControllerDocs {
     @ApiResponse(responseCode = "404", description = "해당 옷을 찾을 수 없음")
     ResponseEntity<Void> deleteClothes(
             @Parameter(description = "삭제할 옷의 UUID", required = true) @PathVariable UUID clothesId,
-            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserPrincipal principal
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "userId") UUID loginUserId
     );
 
     @Operation(summary = "옷 수정", description = "특정 ID의 옷 정보를 수정합니다. (Multipart Form-Data 형식)")
@@ -56,12 +56,12 @@ public interface ClothesControllerDocs {
             @Parameter(description = "수정할 옷의 UUID", required = true) @PathVariable UUID clothesId,
             @Parameter(description = "수정할 옷의 정보") @ModelAttribute ClothesUpdateRequest request,
             @Parameter(description = "수정할 옷의 사진") @RequestPart(value = "image", required = false) MultipartFile image,
-            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserPrincipal principal
+            @Parameter(hidden = true) @AuthenticationPrincipal(expression = "userId") UUID loginUserId
     );
 
     @Operation(summary = "구매 링크로 옷 정보 불러오기", description = "상품 링크를 통해 옷의 상세 정보를 추출합니다.")
     @ApiResponse(responseCode = "200", description = "정보 추출 성공")
     ResponseEntity<?> extractClothesInfo(
-            @Parameter(description = "상품 구매 링크", required = true) @RequestParam String link
+            @Parameter(description = "상품 구매 링크", required = true) @RequestParam String url
     );
 }

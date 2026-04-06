@@ -2,14 +2,13 @@ package com.ootd.fitme.domain.clothes.service;
 
 import com.ootd.fitme.domain.attribute.entity.Attribute;
 import com.ootd.fitme.domain.attribute.repository.AttributeRepository;
-import com.ootd.fitme.domain.clothes.dto.ClothesAttributeDto;
-import com.ootd.fitme.domain.clothes.dto.ClothesAttributeWithDefDto;
-import com.ootd.fitme.domain.clothes.dto.ClothesDto;
+import com.ootd.fitme.domain.clothes.dto.*;
 import com.ootd.fitme.domain.clothes.dto.request.ClothesCreateRequest;
 import com.ootd.fitme.domain.clothes.dto.request.ClothesDtoCursorRequest;
 import com.ootd.fitme.domain.clothes.dto.request.ClothesUpdateRequest;
 import com.ootd.fitme.domain.clothes.dto.response.ClothesDtoCursorResponse;
 import com.ootd.fitme.domain.clothes.entity.Clothes;
+import com.ootd.fitme.domain.clothes.enums.ClothesType;
 import com.ootd.fitme.domain.clothes.exception.ClothesException;
 import com.ootd.fitme.domain.clothes.repository.ClothesRepository;
 import com.ootd.fitme.domain.clothesattribute.entity.ClothesAttribute;
@@ -18,8 +17,12 @@ import com.ootd.fitme.domain.selectablevalue.repository.SelectableValueRepositor
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.repository.UserRepository;
 import com.ootd.fitme.global.exception.ErrorCode;
+import com.ootd.fitme.infrastructure.ai.AiDataExtractor;
+import com.ootd.fitme.infrastructure.scraper.PlaywrightScraper;
+import com.ootd.fitme.infrastructure.storage.image.ImageStorage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -43,16 +46,26 @@ public class ClothesServiceImpl implements ClothesService {
     private final SelectableValueRepository selectableValueRepository;
 
 
+    private final ImageStorage imageStorage;
+    private final ApplicationEventPublisher eventPublisher;
+    private final PlaywrightScraper scraper;
+    private final AiDataExtractor aiExtractor;
+
     @Override
     @Transactional
-    public ClothesDto createClothes(ClothesCreateRequest request, MultipartFile image) {
+    public ClothesDto createClothes(ClothesCreateRequest request, MultipartFile image, UUID loginUserId) {
+        if (!loginUserId.equals(request.ownerId())) {
+            log.warn("[ClothesController] 타인 명의로 옷 생성 시도 차단 - loginUser: {}, requestOwner: {}", loginUserId, request.ownerId());
+            throw new ClothesException(ErrorCode.AUTH_FORBIDDEN);
+        }
+
         User user = userRepository.findById(request.ownerId())
                 .orElseThrow(() -> new ClothesException(ErrorCode.CLOTHES_OWNER_NOT_FOUND));
 
         String imageUrl = null;
-//        if (image != null && !image.isEmpty()) {
-//            imageUrl = imageUploadService.uploadImage(image);
-//        }
+        if (image != null && !image.isEmpty()) {
+            imageUrl = imageStorage.upload(image, "clothes");
+        }
 
         String safeName = HtmlUtils.htmlEscape(request.name());
 
@@ -63,13 +76,7 @@ public class ClothesServiceImpl implements ClothesService {
 
         Clothes savedClothes = clothesRepository.save(clothes);
 
-        List<ClothesAttributeWithDefDto> attributeDtos = attributes.stream()
-                .map(attr -> new ClothesAttributeWithDefDto(
-                        attr.getAttribute().getId(),
-                        attr.getAttribute().getName(),
-                        null,
-                        attr.getClothesAttributeSelectableValue().getSelectableValue().getType()
-                )).toList();
+        List<ClothesAttributeWithDefDto> attributeDtos = buildAttributeDtos(attributes);
 
         return new ClothesDto(
                 savedClothes.getId(),
@@ -92,18 +99,23 @@ public class ClothesServiceImpl implements ClothesService {
             throw new ClothesException(ErrorCode.AUTH_FORBIDDEN);
         }
 
-        String imgUrl = null;
-//        if (image != null && !image.isEmpty()) {
-//            String newImageUrl = imageUploadService.uploadImage(image);
-//            // clothes.updateImage(newImageUrl);
-//        }
+        String oldImageUrl = clothes.getImageUrl();
+        String imageUrl = oldImageUrl;
+
+        if (image != null && !image.isEmpty()) {
+            imageUrl = imageStorage.upload(image, "clothes");
+        }
 
         String safeName = request.name() != null ? HtmlUtils.htmlEscape(request.name()) : clothes.getName();
 
-        clothes.updateClothesInfo(safeName, request.type(), imgUrl);
+        clothes.updateClothesInfo(safeName, request.type(), imageUrl);
 
         List<ClothesAttribute> incomingAttributes = buildClothesAttributes(clothes, request.attributes());
         clothes.updateAttributes(incomingAttributes);
+
+        if (image != null && !image.isEmpty() && oldImageUrl != null && !oldImageUrl.isBlank()) {
+            eventPublisher.publishEvent(new ImageDeleteEvent(oldImageUrl));
+        }
 
         List<ClothesAttributeWithDefDto> updatedAttributeDtos = buildAttributeDtos(incomingAttributes);
 
@@ -123,13 +135,16 @@ public class ClothesServiceImpl implements ClothesService {
         Clothes clothes = clothesRepository.findById(clothesId)
                 .orElseThrow(() -> new ClothesException(ErrorCode.CLOTHES_NOT_FOUND));
 
-        // 🌟 서비스 내부 권한 검증
         if (!clothes.getUser().getId().equals(loginUserId)) {
             log.warn("[ClothesService] 타인의 옷 삭제 시도 차단 - clothesId: {}, loginUserId: {}", clothesId, loginUserId);
             throw new ClothesException(ErrorCode.AUTH_FORBIDDEN);
         }
 
+        String imageUrlToDelete = clothes.getImageUrl();
+
         clothesRepository.deleteByIdInBulk(clothesId);
+
+        eventPublisher.publishEvent(new ImageDeleteEvent(imageUrlToDelete));
     }
 
     @Override
@@ -173,8 +188,64 @@ public class ClothesServiceImpl implements ClothesService {
     }
 
     @Override
-    public Object extractInfoFromLink(String link) {
-        return null;
+    public ClothesDto extractInfoFromLink(String link) {
+        log.info("[ClothesLinkService] 단순 스크래핑 시작 - URL: {}", link);
+
+        PlaywrightScraper.ScrapedData scrapedData = scraper.scrape(link);
+
+        String finalImageUrl = (scrapedData.imageUrl() != null && !scrapedData.imageUrl().isBlank())
+                ? scrapedData.imageUrl()
+                : "";
+        String finalName = (scrapedData.title() != null && !scrapedData.title().isBlank())
+                ? HtmlUtils.htmlEscape(scrapedData.title())
+                : "이름 없음";
+
+        if (finalName.length() > 100) {
+            finalName = finalName.substring(0, 100);
+        }
+
+        log.info("[ClothesLinkService] 스크래핑 완료 - 상품명: {}", finalName);
+
+        return new ClothesDto(
+                null,                      // clothesId (아직 DB에 없으므로 null)
+                null,                      // userId (마찬가지로 null)
+                finalName,                 // 스크래핑한 깔끔한 상품명
+                finalImageUrl,             // 스크래핑한 이미지 URL
+                null,
+                new ArrayList<>()          // 유저가 직접 고르도록 빈 리스트 세팅
+        );
+    }
+
+    @Override
+    @Transactional
+    public ClothesDto createClothesFromExtracted(UUID loginUserId, ExtractedClothesInfo extractedInfo) {
+        User user = userRepository.findById(loginUserId)
+                .orElseThrow(() -> new ClothesException(ErrorCode.CLOTHES_OWNER_NOT_FOUND));
+
+        Clothes clothes = Clothes.createWithImage(
+                extractedInfo.name(),
+                extractedInfo.type(),
+                user,
+                extractedInfo.imageUrl()
+        );
+
+        List<ClothesAttribute> clothesAttributes = buildClothesAttributes(clothes, extractedInfo.attributes());
+        clothes.replaceAttributes(clothesAttributes);
+
+        Clothes savedClothes = clothesRepository.save(clothes);
+
+        List<ClothesAttributeWithDefDto> attributeDtos = buildAttributeDtos(clothesAttributes);
+
+        log.info("[ClothesLinkService] DB 저장 완료 - ID: {}", savedClothes.getId());
+
+        return new ClothesDto(
+                savedClothes.getId(),
+                user.getId(),
+                savedClothes.getName(),
+                savedClothes.getImageUrl(),
+                savedClothes.getClothesType(),
+                attributeDtos
+        );
     }
 
     // --- 내부 private 헬퍼 메서드들 ---
@@ -205,7 +276,7 @@ public class ClothesServiceImpl implements ClothesService {
                 throw new ClothesException(ErrorCode.ATTRIBUTE_NOT_FOUND);
             }
 
-            String compositeKey = dto.definitionId() + "_" + dto.type();
+            String compositeKey = dto.definitionId() + "_" + dto.value();
             SelectableValue selectedValue = valueMap.get(compositeKey);
 
             if (selectedValue == null) {
@@ -223,12 +294,59 @@ public class ClothesServiceImpl implements ClothesService {
 
     private List<ClothesAttributeWithDefDto> buildAttributeDtos(List<ClothesAttribute> attributes) {
         return attributes.stream()
-                .map(attr -> new ClothesAttributeWithDefDto(
-                        attr.getAttribute().getId(),
-                        attr.getAttribute().getName(),
-                        null,
-                        attr.getClothesAttributeSelectableValue().getSelectableValue().getType()
-                )).toList();
+                .map(attr -> {
+                    List<String> selectableOptions = attr.getAttribute().getSelectableValues().stream()
+                            .map(SelectableValue::getType)
+                            .toList();
+
+                    return new ClothesAttributeWithDefDto(
+                            attr.getAttribute().getId(),
+                            attr.getAttribute().getName(),
+                            selectableOptions,
+                            attr.getClothesAttributeSelectableValue().getSelectableValue().getType()
+                    );
+                }).toList();
+    }
+
+    private String buildAttributePromptGuide(List<Attribute> attributes) {
+        StringBuilder guide = new StringBuilder();
+        for (Attribute attr : attributes) {
+            String options = attr.getSelectableValues().stream()
+                    .map(sv -> sv.getType())
+                    .collect(Collectors.joining(", "));
+            guide.append("- ").append(attr.getName()).append(" (선택가능 옵션: ").append(options).append(")\n");
+        }
+        return guide.toString();
+    }
+
+
+    private List<ClothesAttributeWithDefDto> mapAiResultToOurSystem(List<AiClothesResult.AiAttribute> aiAttributes, List<Attribute> allAttributes) {
+        if (aiAttributes == null) return new ArrayList<>();
+
+        List<ClothesAttributeWithDefDto> mappedList = new ArrayList<>();
+
+        for (AiClothesResult.AiAttribute aiAttr : aiAttributes) {
+            allAttributes.stream()
+                    .filter(dbAttr -> dbAttr.getName().equalsIgnoreCase(aiAttr.definitionName()))
+                    .findFirst()
+                    .ifPresent(matchedDbAttr -> {
+                        List<String> selectableOptions = matchedDbAttr.getSelectableValues().stream()
+                                .map(sv -> sv.getType())
+                                .toList();
+
+                        String finalValue = selectableOptions.contains(aiAttr.value()) ? aiAttr.value() : null;
+
+                        if (finalValue != null) {
+                            mappedList.add(new ClothesAttributeWithDefDto(
+                                    matchedDbAttr.getId(),
+                                    matchedDbAttr.getName(),
+                                    selectableOptions,
+                                    finalValue
+                            ));
+                        }
+                    });
+        }
+        return mappedList;
     }
 
 }

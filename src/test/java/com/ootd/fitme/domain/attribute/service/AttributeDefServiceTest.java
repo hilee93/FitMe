@@ -27,9 +27,12 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+        "spring.cache.type=none"
+})
 @Transactional
 @DisplayName("AttributeDefService 통합 테스트 (DB 연동)")
+
 class AttributeDefServiceTest {
 
     @Autowired
@@ -58,10 +61,16 @@ class AttributeDefServiceTest {
             // then
             Attribute savedAttribute = repository.findById(result.id()).orElseThrow();
             assertThat(savedAttribute.getName()).isEqualTo("사이즈");
-            assertThat(savedAttribute.getSelectableValues()).hasSize(3);
-            assertThat(savedAttribute.getSelectableValues().get(0).getType()).isEqualTo("S");
-            assertThat(savedAttribute.getSelectableValues().get(2).getType()).isEqualTo("L");
-            assertThat(savedAttribute.getSelectableValues().get(2).getDisplayOrder()).isEqualTo(2);
+
+            // List의 사이즈와 내부 요소들의 특정 필드(type, displayOrder)를 한 번에 우아하게 검증합니다.
+            assertThat(savedAttribute.getSelectableValues())
+                    .hasSize(3)
+                    .extracting("type", "displayOrder")
+                    .containsExactly(
+                            org.assertj.core.groups.Tuple.tuple("S", 0),
+                            org.assertj.core.groups.Tuple.tuple("M", 1),
+                            org.assertj.core.groups.Tuple.tuple("L", 2)
+                    );
         }
 
         @Test
@@ -301,15 +310,21 @@ class AttributeDefServiceTest {
     @DisplayName("getClothesAttributeDefs() 메서드는")
     class Describe_getClothesAttributeDefs {
         @BeforeEach
-        void setUp() {
+        void setUp() throws InterruptedException{
             Attribute attr1 = Attribute.create("아우터핏");
             attr1.addValues(List.of("오버핏"));
+            repository.save(attr1);
+            Thread.sleep(10); // 생성 시간에 미세한 차이를 두기 위해 대기
+
             Attribute attr2 = Attribute.create("상의사이즈");
             attr2.addValues(List.of("95", "100"));
+            repository.save(attr2);
+            Thread.sleep(10);
+
             Attribute attr3 = Attribute.create("하의사이즈");
             attr3.addValues(List.of("28", "30"));
+            repository.save(attr3);
 
-            repository.saveAll(List.of(attr1, attr2, attr3));
             flushAndClear();
         }
 
@@ -329,16 +344,16 @@ class AttributeDefServiceTest {
         }
 
         @Test
-        @DisplayName("[성공] 정렬 조건(name, ASC)에 맞춰 데이터를 반환한다.")
-        void it_fetches_with_sorting() {
+        @DisplayName("[성공] 정렬 조건(createdAt, DESC)에 맞춰 가장 최근에 생성된 데이터를 먼저 반환한다.")
+        void it_fetches_with_created_at_sorting() {
             // when
-            List<ClothesAttributeDefDto> result = service.getClothesAttributeDefs("name", "ASC", null);
+            List<ClothesAttributeDefDto> result = service.getClothesAttributeDefs("createdAt", "DESC", null);
 
             // then
             assertThat(result).hasSize(3);
-            assertThat(result.get(0).name()).isEqualTo("상의사이즈"); // ㅅ
-            assertThat(result.get(1).name()).isEqualTo("아우터핏");   // ㅇ
-            assertThat(result.get(2).name()).isEqualTo("하의사이즈"); // ㅎ
+            assertThat(result)
+                    .extracting("name")
+                    .containsExactly("하의사이즈", "상의사이즈", "아우터핏");
         }
     }
 

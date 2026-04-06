@@ -65,7 +65,16 @@ public enum ErrorCode {
     FOLLOW_SELF_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "자신을 팔로우 할 수 없습니다.", "FL-003"),
 
     // direct message
-    DM_SENDER_MISMATCH(HttpStatus.FORBIDDEN, "메시지 발신자 정보가 일치하지 않습니다.", "DM-001");
+    DM_SENDER_MISMATCH(HttpStatus.FORBIDDEN, "메시지 발신자 정보가 일치하지 않습니다.", "DM-001"),
+
+    // storage
+    INVALID_STORAGE_KEY(HttpStatus.INTERNAL_SERVER_ERROR, "스토리지 연결 키가 유효하지 않거나 설정되지 않았습니다.", "S-001"),
+    FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다.", "S-002"),
+    INVALID_FILE_FORMAT(HttpStatus.BAD_REQUEST, "지원하지 않는 파일 형식입니다.", "S-003"),
+    FILE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 삭제 실패했습니다.", "S-004"),
+
+    // scraper
+    SCRAP_FAILED(HttpStatus.INTERNAL_SERVER_ERROR,"해당 링크에 접근할 수 없거나 보안에 막혔습니다.","SCRAP-001");
 
     private final String message;
     private final HttpStatus status;

@@ -3,6 +3,7 @@ spring:
     name: fitme
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:local}
+
   servlet:
     multipart:
       max-file-size: 10MB
@@ -26,26 +27,39 @@ spring:
     job:
       enabled: false
 
-  autoconfigure: # TODO: 추후 도커 redis 서버 연결시 redis 자동설정 무시했던 이부분 지울것
+  # TODO: 추후 도커 redis 서버 연결시 redis 자동설정 무시했던 이부분 지울것
+  autoconfigure:
     exclude: org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
 
+  ai:
+    openai:
+      api-key: ${API_KEY:dummy-key}
+      base-url: https://generativelanguage.googleapis.com/v1beta/openai
+      chat:
+        completions-path: /chat/completions
+        options:
+          model: gemini-2.5-flash
+          temperature: 0.1
+
+
+fitme:
   storage:
-    type: azure # 기본 application, -prod 에서 azure를 쓰도록 하고 만약 자신이 Local을 쓰고싶다면 -local 에서 local로 사용테스트
-    app:
-      azure: # aws?? azure? ??
-        cdn: # cloud-front?? cdn?? ??
-          domain: https://your-cdn-endpoint.azureedge.net # Azure CDN ??? ??
-        credentials:
-          account-name: ${AZURE_STORAGE_ACCOUNT_NAME}
-          account-key: ${AZURE_STORAGE_ACCOUNT_KEY}
-        log-credentials:
-          account-name: ${AZURE_LOG_STORAGE_ACCOUNT_NAME}
-          account-key: ${AZURE_LOG_STORAGE_ACCOUNT_KEY}
-        region:
-          static: koreacentral # ap-northeast-2(??)? ???? Azure ???
-        blob: # s3?? blob?? ??
-          container: fitme-v1-container # bucket?? container? ??
-          log-container: wardrobe-v1-log-container
+    type: local
+    azure:
+      credentials:
+        account-name: ${AZURE_STORAGE_ACCOUNT_NAME}
+        account-key: ${AZURE_STORAGE_ACCOUNT_KEY}
+      log-credentials:
+        account-name: ${AZURE_LOG_STORAGE_ACCOUNT_NAME}
+        account-key: ${AZURE_LOG_STORAGE_ACCOUNT_KEY}
+      region:
+        static: koreacentral
+      blob:
+        base-url: https://fitmeblobstorage.blob.core.windows.net
+        container: fitme-v1-container
+        log-container: fitme-log-v1-container
+    local:
+      root-path: ./storage
 
 # prod제외 모든 환경에서 환경변수 값으로 동적이거나 보안적으로 가릴 필요없기때문에 공통적인 값은 그대로 쓰는방식, Prod에서만 환경변수로 오버라이딩 처리
 jwt:
@@ -53,7 +67,6 @@ jwt:
   access-token-expiration-ms: 900000      # 15분
   refresh-token-expiration-ms: 1209600000 # 2주
   issuer: fitme
-
 
 logging:
   level:
