@@ -91,7 +91,7 @@ class RecommendationQueryServiceUnitTest {
                 () -> recommendationQueryService.getClothesByUserId(invalidUserId)
         );
 
-        assertThat(exception.getMessage()).isEqualTo("R-001");
+        assertThat(exception.getMessage()).isEqualTo("유저 정보를 찾을 수 없습니다.");
         assertThat(exception.getDetails().get("userId")).isEqualTo(invalidUserId);
 
         verify(userRepository).findById(invalidUserId);
@@ -134,10 +134,9 @@ class RecommendationQueryServiceUnitTest {
                 () -> recommendationQueryService.getProfileByUserId(userId)
         );
 
-        assertThat(exception.getMessage()).isEqualTo("R-003");
+        assertThat(exception.getMessage()).isEqualTo("유저의 프로필 데이터를 찾을 수 없습니다.");
         assertThat(exception.getDetails().get("userId")).isEqualTo(userId);
 
-        // Mock 호출 검증
         verify(recommendationProfileQueryRepository).findProfileByUserId(userId);
     }
 }
