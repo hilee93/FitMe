@@ -9,6 +9,7 @@ import com.ootd.fitme.domain.clothes.dto.response.ClothesDtoCursorResponse;
 import com.ootd.fitme.domain.clothes.exception.ClothesException;
 import com.ootd.fitme.domain.clothes.service.ClothesService;
 import com.ootd.fitme.global.exception.ErrorCode;
+import com.ootd.fitme.global.security.auth.CustomUserPrincipal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -31,8 +32,9 @@ public class ClothesController implements ClothesControllerDocs {
     @GetMapping
     public ResponseEntity<ClothesDtoCursorResponse> getClothes(
             @ModelAttribute ClothesDtoCursorRequest request,
-            @AuthenticationPrincipal UUID loginUserId
+            @AuthenticationPrincipal CustomUserPrincipal principal
     ) {
+        UUID loginUserId = principal.getUserId();
         ClothesDtoCursorResponse response = clothesService.getClothesList(request, loginUserId);
         return ResponseEntity.ok(response);
     }
@@ -41,8 +43,9 @@ public class ClothesController implements ClothesControllerDocs {
     public ResponseEntity<ClothesDto> createClothes(
             @RequestPart("request") ClothesCreateRequest request,
             @RequestPart(value = "image", required = false) MultipartFile image,
-            @AuthenticationPrincipal UUID loginUserId
+            @AuthenticationPrincipal CustomUserPrincipal principal
     ) {
+        UUID loginUserId = principal.getUserId();
         if (!loginUserId.equals(request.ownerId())) {
             log.warn("[ClothesController] 타인 명의로 옷 생성 시도 차단 - loginUser: {}, requestOwner: {}", loginUserId, request.ownerId());
             throw new ClothesException(ErrorCode.AUTH_FORBIDDEN);
@@ -55,8 +58,9 @@ public class ClothesController implements ClothesControllerDocs {
     @DeleteMapping("/{clothesId}")
     public ResponseEntity<Void> deleteClothes(
             @PathVariable UUID clothesId,
-            @AuthenticationPrincipal UUID loginUserId
+            @AuthenticationPrincipal CustomUserPrincipal principal
     ) {
+        UUID loginUserId = principal.getUserId();
         clothesService.deleteClothes(clothesId, loginUserId);
         return ResponseEntity.noContent().build();
     }
@@ -66,8 +70,9 @@ public class ClothesController implements ClothesControllerDocs {
             @PathVariable UUID clothesId,
             @ModelAttribute ClothesUpdateRequest request,
             @RequestPart(value = "image", required = false) MultipartFile image,
-            @AuthenticationPrincipal UUID loginUserId
+            @AuthenticationPrincipal CustomUserPrincipal principal
     ) {
+        UUID loginUserId = principal.getUserId();
         ClothesDto response = clothesService.updateClothes(clothesId, loginUserId, request, image);
         return ResponseEntity.ok(response);
     }

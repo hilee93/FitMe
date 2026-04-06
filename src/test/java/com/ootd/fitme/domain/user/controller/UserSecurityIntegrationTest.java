@@ -1,5 +1,6 @@
 package com.ootd.fitme.domain.user.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ootd.fitme.domain.user.dto.request.ChangePasswordRequest;
 import com.ootd.fitme.domain.user.dto.request.UserCreateRequest;
@@ -29,6 +30,7 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -107,6 +109,26 @@ class UserSecurityIntegrationTest {
                             .with(csrf())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isCreated());
+        }
+
+        @Test
+        @DisplayName("성공 - 회원가입 요청은 CSRF 없이도 201 (API CSRF 예외 경로)")
+        void signUp_withoutCsrf_return201() throws Exception {
+            UserCreateRequest request = new UserCreateRequest("tester", "tester@fitme.com", "password123!");
+            UserDto response = new UserDto(
+                    UUID.randomUUID(),
+                    Instant.now(),
+                    "tester@fitme.com",
+                    "tester",
+                    Role.USER,
+                    false
+            );
+            given(userService.signUp(any(UserCreateRequest.class))).willReturn(response);
+
+            mockMvc.perform(post("/api/users")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isCreated());
         }
     }

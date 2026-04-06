@@ -39,3 +39,9 @@ management:
   endpoint:
     health:
       show-details: always # (보안) 운영서버지만 초기에 잘 뜨는지 확인하기위해 always설정 추후 when_authorized 변경 고려
+
+jwt:
+  secret-key: ${JWT_SECRET}
+  access-token-expiration-ms: 900000      # 15분
+  refresh-token-expiration-ms: 1209600000 # 2주
+  issuer: fitme

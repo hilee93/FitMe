@@ -10,7 +10,10 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
+import org.springframework.data.redis.cache.RedisCacheManager;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 
@@ -23,16 +26,36 @@ import java.util.concurrent.TimeUnit;
 public class CacheConfig {
 
     @Bean
+    @Primary
     public CacheManager caffeineCacheManager() {
 
         CaffeineCacheManager cacheManager = new CaffeineCacheManager();
+
+        cacheManager.setCaffeine(
+                Caffeine.newBuilder()
+                        .maximumSize(1000)
+                        .expireAfterWrite(10, TimeUnit.MINUTES)
+                        .recordStats()
+        );
 
         cacheManager.registerCustomCache("attributes",
                 Caffeine.newBuilder()
                         .maximumSize(500)
                         .expireAfterWrite(10, TimeUnit.MINUTES)
+                        .recordStats()
                         .build());
         return cacheManager;
+    }
+
+    @Bean
+    public CacheManager redisCacheManager(RedisConnectionFactory factory, RedisCacheConfiguration config) {
+
+        // TOOD: 추후 개별 캐시 추가시 개별 RedisCacheConfiguration 설정
+
+        return RedisCacheManager.builder(factory)
+                .cacheDefaults(config)
+                .enableStatistics()
+                .build();
     }
 
     @Bean

@@ -21,6 +21,8 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.security.web.csrf.DefaultCsrfToken;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -199,10 +201,15 @@ class AuthControllerTest {
     class CsrfTokenTest {
 
         @Test
-        @DisplayName("성공 - csrf 토큰 조회 요청 시 204를 반환한다")
+        @DisplayName("성공 - csrf 토큰 조회 요청 시 200를 반환한다")
         void csrfToken_success() throws Exception {
-            mockMvc.perform(get("/api/auth/csrf-token"))
-                    .andExpect(status().isNoContent());
+            mockMvc.perform(get("/api/auth/csrf-token")
+                            .requestAttr(CsrfToken.class.getName(),
+                                    new DefaultCsrfToken("X-CSRF-TOKEN", "_csrf", "test-csrf-token")))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.headerName").value("X-CSRF-TOKEN"))
+                    .andExpect(jsonPath("$.parameterName").value("_csrf"))
+                    .andExpect(jsonPath("$.token").value("test-csrf-token"));
         }
     }
 

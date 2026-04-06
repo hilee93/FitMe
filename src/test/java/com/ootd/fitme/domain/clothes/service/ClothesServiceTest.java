@@ -175,9 +175,9 @@ class ClothesServiceTest {
             ClothesDtoCursorResponse firstResponse = clothesService.getClothesList(firstRequest, testUser.getId());
 
             // then: 1. 본인 옷 중 이름 역순(옷_3, 옷_2) 2개만 조회되어야 함
-            assertThat(firstResponse.contents()).hasSize(2);
-            assertThat(firstResponse.contents().get(0).name()).isEqualTo("옷_3");
-            assertThat(firstResponse.contents().get(1).name()).isEqualTo("옷_2");
+            assertThat(firstResponse.data()).hasSize(2);
+            assertThat(firstResponse.data().get(0).name()).isEqualTo("옷_3");
+            assertThat(firstResponse.data().get(1).name()).isEqualTo("옷_2");
             assertThat(firstResponse.hasNext()).isTrue();
             assertThat(firstResponse.totalCount()).isEqualTo(3L);
 
@@ -189,8 +189,8 @@ class ClothesServiceTest {
             ClothesDtoCursorResponse secondResponse = clothesService.getClothesList(secondRequest, testUser.getId());
 
             // then: 2. 남은 '옷_1' 1개만 조회되고 hasNext는 false가 되어야 함
-            assertThat(secondResponse.contents()).hasSize(1);
-            assertThat(secondResponse.contents().get(0).name()).isEqualTo("옷_1");
+            assertThat(secondResponse.data()).hasSize(1);
+            assertThat(secondResponse.data().get(0).name()).isEqualTo("옷_1");
             assertThat(secondResponse.hasNext()).isFalse();
         }
 

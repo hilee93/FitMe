@@ -17,6 +17,7 @@ import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -65,8 +66,12 @@ public class AuthController {
     }
 
     @GetMapping("/csrf-token")
-    public ResponseEntity<Void> csrfToken(CsrfToken csrfToken) {
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<Map<String, String>> csrfToken(CsrfToken csrfToken) {
+        return ResponseEntity.ok(Map.of(
+                "headerName", csrfToken.getHeaderName(),
+                "parameterName", csrfToken.getParameterName(),
+                "token", csrfToken.getToken()
+        ));
     }
 
     @PostMapping("/reset-password")
