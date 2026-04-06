@@ -14,10 +14,18 @@ spring:
   kafka:
     bootstrap-servers: broker:29092
 
+  elasticsearch:
+    uris: http://elasticsearch:9200
+
+
   data:
     redis:
       host: redis
       port: 6379
+
+    elasticsearch:
+      repositories:
+        enabled: false
 
 logging:
   level:
