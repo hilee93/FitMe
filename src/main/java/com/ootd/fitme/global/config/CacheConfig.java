@@ -27,17 +27,6 @@ public class CacheConfig {
 
     @Bean
     @Primary
-    public CacheManager redisCacheManager(RedisConnectionFactory factory, RedisCacheConfiguration config) {
-
-        // TOOD: 추후 개별 캐시 추가시 개별 RedisCacheConfiguration 설정
-
-        return RedisCacheManager.builder(factory)
-                .cacheDefaults(config)
-                .enableStatistics()
-                .build();
-    }
-
-    @Bean
     public CacheManager caffeineCacheManager() {
 
         CaffeineCacheManager cacheManager = new CaffeineCacheManager();
@@ -56,6 +45,17 @@ public class CacheConfig {
                         .recordStats()
                         .build());
         return cacheManager;
+    }
+
+    @Bean
+    public CacheManager redisCacheManager(RedisConnectionFactory factory, RedisCacheConfiguration config) {
+
+        // TOOD: 추후 개별 캐시 추가시 개별 RedisCacheConfiguration 설정
+
+        return RedisCacheManager.builder(factory)
+                .cacheDefaults(config)
+                .enableStatistics()
+                .build();
     }
 
     @Bean
