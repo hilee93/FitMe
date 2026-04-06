@@ -71,7 +71,6 @@ public enum ErrorCode {
     RECOMMENDATION_USER_NOT_FOUND(HttpStatus.NOT_FOUND, "유저 정보를 찾을 수 없습니다.", "R-001"),
     RECOMMENDATION_WEATHER_NOT_FOUND(HttpStatus.NOT_FOUND, "날씨 정보를 찾을 수 없습니다.", "R-002"),
     RECOMMENDATION_PROFILE_DATA_NOT_FOUND(HttpStatus.NOT_FOUND, "유저의 프로필 데이터를 찾을 수 없습니다.", "R-003"),
-    DM_SENDER_MISMATCH(HttpStatus.FORBIDDEN, "메시지 발신자 정보가 일치하지 않습니다.", "DM-001"),
 
     // storage
     INVALID_STORAGE_KEY(HttpStatus.INTERNAL_SERVER_ERROR, "스토리지 연결 키가 유효하지 않거나 설정되지 않았습니다.", "S-001"),
