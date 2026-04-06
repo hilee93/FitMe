@@ -14,6 +14,8 @@ spring:
     console:
       enabled: on
       path: /h2-console
+      settings:
+        web-allow-others: true # NOTE: docker 컨테이너 내부 앱이기때문에 브라우저로 접근시 localhost:8080으로 허용해준건 컨테이너 내부인거고 외부접근은 허용되지않았기때문에 이렇게 해줘야함
   sql:
     init:
       mode: always
@@ -22,15 +24,20 @@ spring:
       ddl-auto: validate
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: broker:29092
+
+  elasticsearch:
+    uris: http://elasticsearch:9200
 
   data:
     redis:
-      host: localhost
+      host: redis
       port: 6379
 
     elasticsearch:
-      uris: http://localhost:9200
+      repositories:
+        enabled: false
+
 
 logging:
   level:
@@ -64,4 +71,4 @@ fitme:
       root-path: ./storage # 로컬환경 프로젝트 루트에서 /storage 로사용
 
 server:
-  port: 8080
+  port: 8080 # local의 경우 이제 도커 컴포즈로 기본 실행하면 8080을 사용하기때문에 충돌방지를 위해 Local은 8081, 추후 Nginx로 사용시 도커 8080 port안쓸때는 8080으로 수정

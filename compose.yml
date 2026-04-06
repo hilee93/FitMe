@@ -16,18 +16,23 @@ services:
     volumes:
       - fitme-storage:/app/storage
       - fitme-logs:/app/.logs
-    ports: # 추후에는 nginx가 외부에서 받아서 app으로 연결하기때문에 나중에 compose Port에서 지우도록 한다.
-      - "8080:8080"
+#    ports: # 개발 초기 테스트용 (nginx 없이 직접 접근할 때 사용)
+#      - "8080:8080"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 10s
       timeout: 5s
-      retries: 3
+      retries: 10
+      start_period: 40s
     depends_on:
       postgres: # postgres라는 동작에 의존하고 이게 될때까지 위의서비스는 대기
         condition: service_healthy # 해당 서비스(postgres)가 healthy해야만 동작하도록 조건 추가 및 대기
-#      redis:
-#        condition: service_started # healthcheck와 상관없이 단순 컨테이너가 시작하기만 하면 되는 조건
+      redis:
+        condition: service_started # healthcheck와 상관없이 단순 컨테이너가 시작하기만 하면 되는 조건
+      broker:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
     networks:
       - fitme-backend-network
 
@@ -54,6 +59,88 @@ services:
       retries: 5 # 재시도 횟수, 이후 unhealthy로 판정
     networks:
       - fitme-backend-network
+  redis:
+    image: redis:7.4.8-alpine3.21
+    ports:
+      - "6380:6379" # 로컬 실행중 충돌방지 6380으로 설정
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru # 레디스 메모리 제한
+    volumes:
+      - fitme-redis-data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - fitme-backend-network
+
+  broker:
+    image: apache/kafka:latest
+    ports:
+      - 9094:9092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://broker:29092,EXTERNAL://localhost:9094
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_NODE_ID: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@broker:29093
+      KAFKA_LISTENERS: INTERNAL://broker:29092,CONTROLLER://broker:29093,EXTERNAL://0.0.0.0:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL # 브로커가 여러개이고 클러스터내부에서 서로 통신할때 해당 리스너 이름으로 소통해라 라고 정의
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    volumes:
+      - fitme-kafka-data:/var/lib/kafka/data
+    networks:
+      - fitme-backend-network
+    healthcheck:
+      test: [ "CMD", "bash", "-c", "nc -z localhost 9092" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.13
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false # 운영에서는 무조건 true, 그게아니면 누구나 데이터 조회/삭제 가능
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - network.host=0.0.0.0 # 공식 이미지 기본설정은 이미 yml에 들어가있어서 굳이 안써도되지만 까먹을수있기때문에 명시해놓고 추후 익숙해지면 제거
+#      - bootstrap.memory_lock=true # 추후 swap 되는 상황 예를들어 부하테스트 또는 달느상황으로 elasticsearch 일부를 디스크로 빼버려서 성능이 저하되는 상황을 볼때 킬것(트러블슈팅)
+#    ulimits: # memory_lock = true 옵션을 실제로 동작하기 위한 필요한 설정, OS 수준에서 메모리 lock 제한을 해제하여 ES가 메모리 swap으로 내려가는 것 방지
+#      memlock:
+#        soft: -1 # 고정 램 무제한 설정(현재 512)
+#        hard: -1 # 고정 램 무제한 설정(현재 512)
+    ports:
+      - "9201:9200"
+    volumes:
+      - fitme-elasticsearch-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:9200 >/dev/null || exit 1" ]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+    networks:
+      - fitme-backend-network
+
+  nginx:
+    image: nginx:1.28-alpine
+    ports:
+      - "80:80" # 외부 요청(80)을 nginx로 받고 → 내부 app:8080으로 프록시
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - fitme-backend-network
+
+
 
 # 볼륨 정의, local일경우 생략가능하지만 명시
 volumes:
@@ -63,8 +150,12 @@ volumes:
     driver: local
   fitme-postgres-data:
     driver: local # 볼륨 데이터를 호스트의 로컬에 저장
-#  redis-data:
-#    driver: local
+  fitme-redis-data:
+    driver: local
+  fitme-kafka-data:
+    driver: local
+  fitme-elasticsearch-data:
+    driver: local
 
 # 네트워크 설정
 networks:
