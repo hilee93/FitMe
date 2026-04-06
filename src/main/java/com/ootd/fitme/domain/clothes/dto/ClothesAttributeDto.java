@@ -4,5 +4,5 @@ import java.util.UUID;
 
 public record ClothesAttributeDto(
         UUID definitionId,
-        String type) {
+        String value) {
 }
