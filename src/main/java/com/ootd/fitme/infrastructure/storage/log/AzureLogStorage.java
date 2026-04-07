@@ -20,10 +20,10 @@ import java.time.format.DateTimeFormatter;
 @ConditionalOnProperty(name = "fitme.storage.type", havingValue = "azure")
 public class AzureLogStorage implements LogStorage {
 
-    @Value("${fitme.storage.azure.log-credentials.account-name}")
+    @Value("${fitme.storage.azure.credentials.account-name}")
     private String logAccountName;
 
-    @Value("${fitme.storage.azure.log-credentials.account-key}")
+    @Value("${fitme.storage.azure.credentials.account-key}")
     private String logAccountKey;
 
     @Value("${fitme.storage.azure.blob.log-container}")
