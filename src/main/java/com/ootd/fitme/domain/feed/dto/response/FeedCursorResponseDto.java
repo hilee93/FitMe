@@ -12,7 +12,7 @@ public record FeedCursorResponseDto(
         UUID nextIdAfter,
         boolean hasNext,
         int totalCount,
-        FeedSortCriteria sortBy,
+        String sortBy,
         SortDirection sortDirection
 ) {
 
@@ -43,7 +43,7 @@ public record FeedCursorResponseDto(
                 nextIdAfter,
                 cursorResult.hasNext(),
                 (int) cursorResult.total(),
-                sortBy,
+                sortBy.getValue(),
                 sortDirection
                 );
     }

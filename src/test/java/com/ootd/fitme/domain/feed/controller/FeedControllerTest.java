@@ -510,7 +510,7 @@ class FeedControllerTest {
                     null,
                     false,
                     0L,
-                    CommentSortCriteria.CREATED_AT,
+                    CommentSortCriteria.CREATED_AT.getValue(),
                     SortDirection.DESCENDING
             );
 
@@ -525,10 +525,10 @@ class FeedControllerTest {
                             .param("feedId", feedId.toString())
                     )
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.comments").isArray())
+                    .andExpect(jsonPath("$.data").isArray())
                     .andExpect(jsonPath("$.hasNext").value(false))
                     .andExpect(jsonPath("$.totalCount").value(0))
-                    .andExpect(jsonPath("$.sortBy").value("CREATED_AT"))
+                    .andExpect(jsonPath("$.sortBy").value("createdAt"))
                     .andExpect(jsonPath("$.sortDirection").value("DESCENDING"));
 
         }
@@ -547,7 +547,7 @@ class FeedControllerTest {
                     null,
                     false,
                     30L,
-                    CommentSortCriteria.CREATED_AT,
+                    CommentSortCriteria.CREATED_AT.getValue(),
                     SortDirection.DESCENDING
             );
 
@@ -562,10 +562,10 @@ class FeedControllerTest {
                             .param("cursor", cursor)
                             .param("idAfter", idAfter.toString()))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.comments").isArray())
+                    .andExpect(jsonPath("$.data").isArray())
                     .andExpect(jsonPath("$.hasNext").value(false))
                     .andExpect(jsonPath("$.totalCount").value(30))
-                    .andExpect(jsonPath("$.sortBy").value("CREATED_AT"))
+                    .andExpect(jsonPath("$.sortBy").value("createdAt"))
                     .andExpect(jsonPath("$.sortDirection").value("DESCENDING"));
 
             verify(commentService).getFeedComments(argThat(condition ->
@@ -630,7 +630,7 @@ class FeedControllerTest {
                     null,
                     false,
                     2,
-                    FeedSortCriteria.CREATED_AT,
+                    FeedSortCriteria.CREATED_AT.getValue(),
                     com.ootd.fitme.domain.feed.enums.SortDirection.DESCENDING
             );
 
@@ -640,7 +640,7 @@ class FeedControllerTest {
             // when & then
             mockMvc.perform(get("/api/feeds")
                             .with(userPrincipal(userId))
-                            .param("sortBy", "CREATED_AT")
+                            .param("sortBy", "createdAt")
                             .param("sortDirection", "DESCENDING")
                             .param("limit", "20")
                     )
@@ -655,7 +655,7 @@ class FeedControllerTest {
                     .andExpect(jsonPath("$.data[1].id").value(feed2.id().toString()))
                     .andExpect(jsonPath("$.hasNext").value(false))
                     .andExpect(jsonPath("$.totalCount").value(2))
-                    .andExpect(jsonPath("$.sortBy").value("CREATED_AT"))
+                    .andExpect(jsonPath("$.sortBy").value("createdAt"))
                     .andExpect(jsonPath("$.sortDirection").value("DESCENDING"));
 
             ArgumentCaptor<FeedSearchCondition> captor =
