@@ -13,7 +13,7 @@ public record CommentCursorResponseDto(
         UUID nextIdAfter,
         boolean hasNext,
         long totalCount,
-        CommentSortCriteria sortBy,
+        String sortBy,
         SortDirection sortDirection
 ) {
     public static CommentCursorResponseDto from(CursorResult<CommentResponseDto> cursorResult) {
@@ -34,7 +34,7 @@ public record CommentCursorResponseDto(
                 nextIdAfter,
                 cursorResult.hasNext(),
                 cursorResult.total(),
-                CommentSortCriteria.CREATED_AT,
+                CommentSortCriteria.CREATED_AT.getValue(),
                 SortDirection.DESCENDING
         );
     }
