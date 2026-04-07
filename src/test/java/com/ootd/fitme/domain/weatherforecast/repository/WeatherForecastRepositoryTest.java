@@ -50,10 +50,10 @@ public class WeatherForecastRepositoryTest {
         );
 
         assertThat(result).hasSize(5);
-        assertThat(result).allMatch(w -> !w.getForecastedAt().isBefore(baseTime));
-        assertThat(result).isSortedAccordingTo((a,b) -> a.getForecastedAt().compareTo(b.getForecastedAt()));
-        assertThat(result.get(0).getForecastedAt()).isEqualTo(baseTime.plusSeconds(3600));
-        assertThat(result.get(4).getForecastedAt()).isEqualTo(baseTime.plusSeconds(18000));
+        assertThat(result).allMatch(w -> !w.getForecastAt().isBefore(baseTime));
+        assertThat(result).isSortedAccordingTo((a,b) -> a.getForecastAt().compareTo(b.getForecastAt()));
+        assertThat(result.get(0).getForecastAt()).isEqualTo(baseTime.plusSeconds(3600));
+        assertThat(result.get(4).getForecastAt()).isEqualTo(baseTime.plusSeconds(18000));
     }
 
     @Test

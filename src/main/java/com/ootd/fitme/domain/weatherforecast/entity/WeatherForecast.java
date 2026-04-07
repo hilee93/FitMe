@@ -136,4 +136,34 @@ public class WeatherForecast extends BaseEntity {
                 region
         );
     }
+
+    public void updateFromCollection(
+            Instant forecastedAt,
+            SkyStatus skyStatus,
+            PrecipitationType precipitationType,
+            Double precipitationAmount,
+            Double precipitationProbability,
+            Double humidityCurrent,
+            Double humidityComparedToDayBefore,
+            Double temperatureCurrent,
+            Double temperatureComparedToDayBefore,
+            Double temperatureMin,
+            Double temperatureMax,
+            Double windSpeed,
+            WindStrengthWord windStrengthWord
+    ) {
+        this.forecastedAt = forecastedAt;
+        this.skyStatus = skyStatus;
+        this.precipitationType = precipitationType;
+        this.precipitationAmount = precipitationAmount;
+        this.precipitationProbability = precipitationProbability;
+        this.humidityCurrent = humidityCurrent;
+        this.humidityComparedToDayBefore = humidityComparedToDayBefore;
+        this.temperatureCurrent = temperatureCurrent;
+        this.temperatureComparedToDayBefore = temperatureComparedToDayBefore;
+        this.temperatureMin = temperatureMin;
+        this.temperatureMax = temperatureMax;
+        this.windSpeed = windSpeed;
+        this.windStrengthWord = windStrengthWord;
+    }
 }
