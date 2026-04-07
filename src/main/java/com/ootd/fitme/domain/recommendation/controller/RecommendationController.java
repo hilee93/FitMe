@@ -3,16 +3,16 @@ package com.ootd.fitme.domain.recommendation.controller;
 import com.ootd.fitme.domain.recommendation.controller.docs.RecommendationControllerDocs;
 import com.ootd.fitme.domain.recommendation.dto.response.RecommendationDto;
 import com.ootd.fitme.domain.recommendation.service.RecommendationService;
+import com.ootd.fitme.global.security.auth.CustomUserPrincipal;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.security.Principal;
 import java.util.UUID;
 
 @RestController
@@ -25,16 +25,12 @@ public class RecommendationController implements RecommendationControllerDocs {
     @Override
     @GetMapping
     public ResponseEntity<RecommendationDto> getRecommendation(
-            Principal principal,
+            @AuthenticationPrincipal CustomUserPrincipal userPrincipal,
             @RequestParam("weatherId") @NotNull UUID weatherId) {
 
-        if (principal == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(null);
-        }
+        UUID userId = userPrincipal.getUserId();
 
-        String userId = principal.getName();
-        RecommendationDto response = recommendationService.recommendation(UUID.fromString(userId), weatherId);
+        RecommendationDto response = recommendationService.recommendation(userId, weatherId);
         return ResponseEntity.ok(response);
     }
 }
