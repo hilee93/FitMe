@@ -60,8 +60,6 @@ class ClothesServiceTest {
 
     @MockitoBean
     private ImageStorage imageStorage;
-    @MockitoBean
-    private LogStorage logStorage;
 
     private User testUser;
     private Attribute colorAttribute;
