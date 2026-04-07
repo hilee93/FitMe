@@ -45,9 +45,6 @@ fitme:
       credentials:
         account-name: ${AZURE_STORAGE_ACCOUNT_NAME}
         account-key: ${AZURE_STORAGE_ACCOUNT_KEY}
-      log-credentials:
-        account-name: ${AZURE_LOG_STORAGE_ACCOUNT_NAME}
-        account-key: ${AZURE_LOG_STORAGE_ACCOUNT_KEY}
       region:
         static: koreacentral
       blob:
