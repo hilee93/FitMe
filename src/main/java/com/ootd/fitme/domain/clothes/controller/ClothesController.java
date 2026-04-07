@@ -2,6 +2,7 @@ package com.ootd.fitme.domain.clothes.controller;
 
 import com.ootd.fitme.domain.clothes.controller.docs.ClothesControllerDocs;
 import com.ootd.fitme.domain.clothes.dto.ClothesDto;
+import com.ootd.fitme.domain.clothes.dto.ExtractedClothesInfo;
 import com.ootd.fitme.domain.clothes.dto.request.ClothesCreateRequest;
 import com.ootd.fitme.domain.clothes.dto.request.ClothesDtoCursorRequest;
 import com.ootd.fitme.domain.clothes.dto.request.ClothesUpdateRequest;
@@ -32,9 +33,8 @@ public class ClothesController implements ClothesControllerDocs {
     @GetMapping
     public ResponseEntity<ClothesDtoCursorResponse> getClothes(
             @ModelAttribute ClothesDtoCursorRequest request,
-            @AuthenticationPrincipal CustomUserPrincipal principal
+            @AuthenticationPrincipal(expression = "userId") UUID loginUserId
     ) {
-        UUID loginUserId = principal.getUserId();
         ClothesDtoCursorResponse response = clothesService.getClothesList(request, loginUserId);
         return ResponseEntity.ok(response);
     }
@@ -43,24 +43,19 @@ public class ClothesController implements ClothesControllerDocs {
     public ResponseEntity<ClothesDto> createClothes(
             @RequestPart("request") ClothesCreateRequest request,
             @RequestPart(value = "image", required = false) MultipartFile image,
-            @AuthenticationPrincipal CustomUserPrincipal principal
+            @AuthenticationPrincipal(expression = "userId") UUID loginUserId
     ) {
-        UUID loginUserId = principal.getUserId();
-        if (!loginUserId.equals(request.ownerId())) {
-            log.warn("[ClothesController] 타인 명의로 옷 생성 시도 차단 - loginUser: {}, requestOwner: {}", loginUserId, request.ownerId());
-            throw new ClothesException(ErrorCode.AUTH_FORBIDDEN);
-        }
 
-        ClothesDto response = clothesService.createClothes(request, image);
+
+        ClothesDto response = clothesService.createClothes(request, image, loginUserId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @DeleteMapping("/{clothesId}")
     public ResponseEntity<Void> deleteClothes(
             @PathVariable UUID clothesId,
-            @AuthenticationPrincipal CustomUserPrincipal principal
+            @AuthenticationPrincipal(expression = "userId") UUID loginUserId
     ) {
-        UUID loginUserId = principal.getUserId();
         clothesService.deleteClothes(clothesId, loginUserId);
         return ResponseEntity.noContent().build();
     }
@@ -70,16 +65,18 @@ public class ClothesController implements ClothesControllerDocs {
             @PathVariable UUID clothesId,
             @ModelAttribute ClothesUpdateRequest request,
             @RequestPart(value = "image", required = false) MultipartFile image,
-            @AuthenticationPrincipal CustomUserPrincipal principal
+            @AuthenticationPrincipal(expression = "userId") UUID loginUserId
     ) {
-        UUID loginUserId = principal.getUserId();
         ClothesDto response = clothesService.updateClothes(clothesId, loginUserId, request, image);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/extractions")
-    public ResponseEntity<?> extractClothesInfo(@RequestParam String link) {
-        Object response = clothesService.extractInfoFromLink(link);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<ClothesDto> extractClothesInfo(@RequestParam String url
+    ) {
+
+        ClothesDto extractedInfo = clothesService.extractInfoFromLink(url);
+
+        return ResponseEntity.ok(extractedInfo);
     }
 }

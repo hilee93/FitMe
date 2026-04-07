@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.UUID;
 
 public record ClothesDto(
-        UUID Id,
+        UUID id,
         UUID ownerId,
         String name,
         String imageUrl,
