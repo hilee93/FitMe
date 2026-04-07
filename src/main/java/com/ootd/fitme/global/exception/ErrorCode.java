@@ -70,7 +70,16 @@ public enum ErrorCode {
     // recommendation
     RECOMMENDATION_USER_NOT_FOUND(HttpStatus.NOT_FOUND, "유저 정보를 찾을 수 없습니다.", "R-001"),
     RECOMMENDATION_WEATHER_NOT_FOUND(HttpStatus.NOT_FOUND, "날씨 정보를 찾을 수 없습니다.", "R-002"),
-    RECOMMENDATION_PROFILE_DATA_NOT_FOUND(HttpStatus.NOT_FOUND, "유저의 프로필 데이터를 찾을 수 없습니다.", "R-003");
+    RECOMMENDATION_PROFILE_DATA_NOT_FOUND(HttpStatus.NOT_FOUND, "유저의 프로필 데이터를 찾을 수 없습니다.", "R-003"),
+
+    // storage
+    INVALID_STORAGE_KEY(HttpStatus.INTERNAL_SERVER_ERROR, "스토리지 연결 키가 유효하지 않거나 설정되지 않았습니다.", "S-001"),
+    FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다.", "S-002"),
+    INVALID_FILE_FORMAT(HttpStatus.BAD_REQUEST, "지원하지 않는 파일 형식입니다.", "S-003"),
+    FILE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 삭제 실패했습니다.", "S-004"),
+
+    // scraper
+    SCRAP_FAILED(HttpStatus.INTERNAL_SERVER_ERROR,"해당 링크에 접근할 수 없거나 보안에 막혔습니다.","SCRAP-001");
 
     private final String message;
     private final HttpStatus status;

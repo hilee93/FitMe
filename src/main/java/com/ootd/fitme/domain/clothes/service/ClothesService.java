@@ -1,6 +1,7 @@
 package com.ootd.fitme.domain.clothes.service;
 
 import com.ootd.fitme.domain.clothes.dto.ClothesDto;
+import com.ootd.fitme.domain.clothes.dto.ExtractedClothesInfo;
 import com.ootd.fitme.domain.clothes.dto.request.ClothesCreateRequest;
 import com.ootd.fitme.domain.clothes.dto.request.ClothesDtoCursorRequest;
 import com.ootd.fitme.domain.clothes.dto.request.ClothesUpdateRequest;
@@ -11,8 +12,9 @@ import java.util.UUID;
 
 public interface ClothesService {
     ClothesDtoCursorResponse getClothesList(ClothesDtoCursorRequest request, UUID loginUserId);
-    ClothesDto createClothes(ClothesCreateRequest request, MultipartFile image);
+    ClothesDto createClothes(ClothesCreateRequest request, MultipartFile image, UUID loginUserId);
     void deleteClothes(UUID clothesId, UUID loginUserId);
     ClothesDto updateClothes(UUID clothesId, UUID loginUserId, ClothesUpdateRequest request, MultipartFile image);
-    Object extractInfoFromLink(String link);
+    ClothesDto extractInfoFromLink(String link);
+    ClothesDto createClothesFromExtracted(UUID loginUserId, ExtractedClothesInfo extractedInfo);
 }
