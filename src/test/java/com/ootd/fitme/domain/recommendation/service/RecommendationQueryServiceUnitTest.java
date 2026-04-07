@@ -52,9 +52,9 @@ class RecommendationQueryServiceUnitTest {
         UUID userId = UUID.randomUUID();
 
         List<RecommendationClothesSummaryDto> expectedClothes = List.of(
-                new RecommendationClothesSummaryDto(UUID.randomUUID(), "셔츠", ClothesType.TOP, "https://example.com/images/shirt1.jpg"),
-                new RecommendationClothesSummaryDto(UUID.randomUUID(), "바지", ClothesType.BOTTOM, "https://example.com/images/pants1.jpg"),
-                new RecommendationClothesSummaryDto(UUID.randomUUID(), "모자", ClothesType.ACCESSORY, "https://example.com/images/hat1.jpg")
+                new RecommendationClothesSummaryDto(UUID.randomUUID(), "셔츠", ClothesType.TOP, "https://example.com/images/shirt1.jpg", List.of()),
+                new RecommendationClothesSummaryDto(UUID.randomUUID(), "바지", ClothesType.BOTTOM, "https://example.com/images/pants1.jpg", List.of()),
+                new RecommendationClothesSummaryDto(UUID.randomUUID(), "모자", ClothesType.ACCESSORY, "https://example.com/images/hat1.jpg", List.of())
         );
 
         when(userRepository.findById(userId))

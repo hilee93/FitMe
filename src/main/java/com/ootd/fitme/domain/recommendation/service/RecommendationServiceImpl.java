@@ -41,7 +41,7 @@ public class RecommendationServiceImpl implements RecommendationService {
 
     // 성별에 따른 의상 필터링, 남성에게 드레스 추천 제한
     private boolean isGenderAppropriate(RecommendationClothesSummaryDto clothes, String gender) {
-        if (gender.equals("MALE") && clothes.type().equals(ClothesType.DRESS)) {
+        if (gender != null && gender.equals("MALE") && clothes.type().equals(ClothesType.DRESS)) {
             return false;
         }
         return true;

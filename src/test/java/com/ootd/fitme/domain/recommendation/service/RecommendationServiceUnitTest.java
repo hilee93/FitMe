@@ -46,11 +46,11 @@ class RecommendationServiceUnitTest {
                 new RecommendationProfileSummaryDto("MALE", 2);
 
         List<RecommendationClothesSummaryDto> mockClothes = List.of(
-                new RecommendationClothesSummaryDto(UUID.randomUUID(), "셔츠", ClothesType.TOP, "https://example.com/shirt.jpg"),
-                new RecommendationClothesSummaryDto(UUID.randomUUID(), "바지", ClothesType.BOTTOM, "https://example.com/pants.jpg"),
-                new RecommendationClothesSummaryDto(UUID.randomUUID(), "드레스", ClothesType.DRESS, "https://example.com/dress.jpg"),
-                new RecommendationClothesSummaryDto(UUID.randomUUID(), "자켓", ClothesType.OUTER, "https://example.com/jacket.jpg"),
-                new RecommendationClothesSummaryDto(UUID.randomUUID(), "모자", ClothesType.HAT, "https://example.com/hat.jpg")
+                new RecommendationClothesSummaryDto(UUID.randomUUID(), "셔츠", ClothesType.TOP, "https://example.com/shirt.jpg", List.of()),
+                new RecommendationClothesSummaryDto(UUID.randomUUID(), "바지", ClothesType.BOTTOM, "https://example.com/pants.jpg", List.of()),
+                new RecommendationClothesSummaryDto(UUID.randomUUID(), "드레스", ClothesType.DRESS, "https://example.com/dress.jpg", List.of()),
+                new RecommendationClothesSummaryDto(UUID.randomUUID(), "자켓", ClothesType.OUTER, "https://example.com/jacket.jpg", List.of()),
+                new RecommendationClothesSummaryDto(UUID.randomUUID(), "모자", ClothesType.HAT, "https://example.com/hat.jpg", List.of())
         );
 
         when(recommendationQueryService.getWeatherById(weatherId)).thenReturn(mockWeather);
