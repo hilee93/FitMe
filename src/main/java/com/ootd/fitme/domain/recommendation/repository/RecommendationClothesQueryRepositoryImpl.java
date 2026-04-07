@@ -4,6 +4,7 @@ import com.ootd.fitme.domain.clothes.entity.QClothes;
 import com.ootd.fitme.domain.recommendation.dto.response.RecommendationClothesSummaryDto;
 import com.ootd.fitme.domain.user.entity.QUser;
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -28,7 +29,8 @@ public class RecommendationClothesQueryRepositoryImpl implements RecommendationC
                         clothes.id,
                         clothes.name,
                         clothes.clothesType,
-                        clothes.imageUrl
+                        clothes.imageUrl,
+                        Expressions.constant(List.of())
                 ))
                 .from(clothes)
                 .join(clothes.user, user)
