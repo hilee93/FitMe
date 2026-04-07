@@ -67,6 +67,8 @@ management:
 fitme:
   storage:
     type: local
+    local:
+      root-path: ./storage
 
 server:
   port: 8080 # local의 경우 이제 도커 컴포즈로 기본 실행하면 8080을 사용하기때문에 충돌방지를 위해 Local은 8081, 추후 Nginx로 사용시 도커 8080 port안쓸때는 8080으로 수정

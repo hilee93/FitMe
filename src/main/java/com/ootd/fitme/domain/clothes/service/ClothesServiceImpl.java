@@ -204,12 +204,12 @@ public class ClothesServiceImpl implements ClothesService {
         log.info("[ClothesLinkService] 스크래핑 완료 - 상품명: {}", finalName);
 
         return new ClothesDto(
-                null,                      // clothesId (아직 DB에 없으므로 null)
-                null,                      // userId (마찬가지로 null)
-                finalName,                 // 스크래핑한 깔끔한 상품명
-                finalImageUrl,             // 스크래핑한 이미지 URL
                 null,
-                new ArrayList<>()          // 유저가 직접 고르도록 빈 리스트 세팅
+                null,
+                finalName,
+                finalImageUrl,
+                null,
+                new ArrayList<>()
         );
     }
 

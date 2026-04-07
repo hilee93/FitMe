@@ -60,6 +60,8 @@ management:
 fitme:
   storage:
     type: local
+    local:
+      root-path: ./storage
 
 server:
   port: 8080
