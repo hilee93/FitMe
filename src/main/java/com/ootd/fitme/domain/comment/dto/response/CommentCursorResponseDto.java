@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.UUID;
 
 public record CommentCursorResponseDto(
-        List<CommentResponseDto> comments,
+        List<CommentResponseDto> data,
         String nextCursor,
         UUID nextIdAfter,
         boolean hasNext,

@@ -103,10 +103,10 @@ class CommentServiceImplTest {
             CommentCursorResponseDto result = commentService.getFeedComments(condition);
 
             // then
-            assertThat(result.comments()).hasSize(20);
+            assertThat(result.data()).hasSize(20);
             assertThat(result.hasNext()).isTrue();
             assertThat(result.totalCount()).isEqualTo(30L);
-            assertThat(result.sortBy()).isEqualTo(CommentSortCriteria.CREATED_AT);
+            assertThat(result.sortBy()).isEqualTo(CommentSortCriteria.CREATED_AT.getValue());
             assertThat(result.sortDirection()).isEqualTo(SortDirection.DESCENDING);
         }
 
@@ -133,7 +133,7 @@ class CommentServiceImplTest {
             CommentCursorResponseDto result = commentService.getFeedComments(condition);
 
             // then
-            assertThat(result.comments()).hasSize(10);
+            assertThat(result.data()).hasSize(10);
             assertThat(result.hasNext()).isFalse();
             assertThat(result.totalCount()).isEqualTo(10L);
         }
@@ -171,10 +171,10 @@ class CommentServiceImplTest {
             CommentCursorResponseDto secondPage = commentService.getFeedComments(secondCondition);
 
             // then
-            assertThat(firstPage.comments()).hasSize(20);
+            assertThat(firstPage.data()).hasSize(20);
             assertThat(firstPage.hasNext()).isTrue();
 
-            assertThat(secondPage.comments()).hasSize(10);
+            assertThat(secondPage.data()).hasSize(10);
             assertThat(secondPage.hasNext()).isFalse();
             assertThat(secondPage.totalCount()).isEqualTo(30L);
         }
