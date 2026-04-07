@@ -40,6 +40,9 @@ public class WeatherForecastServiceUnitTest {
     @Mock
     private RegionService regionService;
 
+    @Mock
+    private WeatherForecastCollectService weatherForecastCollectService;
+
     @InjectMocks
     private WeatherForecastServiceImpl weatherForecastService;
 
@@ -73,23 +76,32 @@ public class WeatherForecastServiceUnitTest {
             verify(weatherForecastRepository).findUpcomingByRegionId(eq(regionId), any(Instant.class), pageableCaptor.capture());
             assertThat(pageableCaptor.getValue().getPageNumber()).isEqualTo(0);
             assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(5);
+            verify(weatherForecastCollectService, never()).collectAndStoreRegion(any());
         }
 
         @Test
-        @DisplayName("성공 - 조회 결과가 없으면 빈 리스트를 반환")
-        void getWeathers_empty() {
+        @DisplayName("성공 - 조회 결과가 없으면 즉시 수집 후 재조회한다")
+        void getWeathers_empty_thenCollectAndRetry() {
             UUID regionId = UUID.randomUUID();
             Region region = mock(Region.class);
             given(region.getId()).willReturn(regionId);
 
+            WeatherForecast wf1 = mock(WeatherForecast.class);
+            WeatherDto dto1 = weatherDto();
+
             given(regionService.resolveAndUpsert(126.9707, 37.5841)).willReturn(region);
             given(weatherForecastRepository.findUpcomingByRegionId(eq(regionId), any(Instant.class), any(Pageable.class)))
-                    .willReturn(List.of());
+                    .willReturn(List.of())
+                    .willReturn(List.of(wf1));
+
+            given(weatherForecastMapper.toDto(wf1)).willReturn(dto1);
 
             List<WeatherDto> result = weatherForecastService.getWeathers(126.9707, 37.5841);
 
-            assertThat(result).isEmpty();
-            verify(weatherForecastMapper, never()).toDto(any());
+            assertThat(result).containsExactly(dto1);
+            verify(weatherForecastCollectService).collectAndStoreRegion(region);
+            verify(weatherForecastRepository, times(2))
+                    .findUpcomingByRegionId(eq(regionId), any(Instant.class), any(Pageable.class));
         }
     }
 
