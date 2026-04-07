@@ -27,10 +27,6 @@ spring:
     job:
       enabled: false
 
-  # TODO: 추후 도커 redis 서버 연결시 redis 자동설정 무시했던 이부분 지울것
-#  autoconfigure:
-#    exclude: org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
-
   ai:
     openai:
       api-key: ${API_KEY:dummy-key}
@@ -44,7 +40,7 @@ spring:
 
 fitme:
   storage:
-    type: local
+    type: azure
     azure:
       credentials:
         account-name: ${AZURE_STORAGE_ACCOUNT_NAME}

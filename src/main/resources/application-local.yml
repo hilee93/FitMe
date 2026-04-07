@@ -21,18 +21,16 @@ spring:
     hibernate:
       ddl-auto: validate
 
-  kafka: # NOTE: 현재 카프카 사용은 안하지만 미리 세팅 추후 사용할때 참고
+  kafka:
     bootstrap-servers: localhost:9092
 
-  cache:
-    type: caffeine
+  data:
     redis:
-      enable-statistics: true
+      host: localhost
+      port: 6379
 
-  data: # TODO: 추후 redis로 연결할때 볼것
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
+    elasticsearch:
+      uris: http://localhost:9200
 
 logging:
   level:
@@ -58,3 +56,10 @@ management:
   observations:
     annotations:
       enabled: true
+
+fitme:
+  storage:
+    type: local
+
+server:
+  port: 8080
