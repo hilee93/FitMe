@@ -4,6 +4,7 @@ package com.ootd.fitme.domain.notification.service;
 import com.ootd.fitme.domain.follow.repository.FollowRepository;
 import com.ootd.fitme.domain.notification.dto.response.NotificationDto;
 import com.ootd.fitme.domain.notification.entity.Notification;
+import com.ootd.fitme.domain.notification.enums.AttributeAction;
 import com.ootd.fitme.domain.notification.enums.NotificationLevel;
 import com.ootd.fitme.domain.notification.entity.NotificationFactory;
 import com.ootd.fitme.domain.notification.repository.NotificationProfileRepository;
@@ -178,8 +179,8 @@ class NotificationServiceSseUnitTest {
             List<Notification> notifications = List.of(notification1, notification2);
 
             given(userRepository.findAll()).willReturn(users);
-            given(notificationFactory.attributeAdded(user1, attributeName)).willReturn(notification1);
-            given(notificationFactory.attributeAdded(user2, attributeName)).willReturn(notification2);
+            given(notificationFactory.attributeAdded(user1, attributeName, AttributeAction.ADDED)).willReturn(notification1);
+            given(notificationFactory.attributeAdded(user2, attributeName,AttributeAction.ADDED)).willReturn(notification2);
             given(notificationRepository.saveAll(notifications)).willReturn(notifications);
 
             // sendAll은 saved.get(0)을 dto로 바꾸므로 첫 번째 notification만 세팅하면 됨
@@ -192,14 +193,14 @@ class NotificationServiceSseUnitTest {
             given(notification1.getLevel()).willReturn(NotificationLevel.INFO);
 
             // when
-            List<Notification> result = notificationService.notifyAttributeAdded(attributeName);
+            List<Notification> result = notificationService.notifyAttributeAdded(attributeName,AttributeAction.ADDED);
 
             // then
             assertThat(result).containsExactly(notification1, notification2);
 
             verify(userRepository).findAll();
-            verify(notificationFactory).attributeAdded(user1, attributeName);
-            verify(notificationFactory).attributeAdded(user2, attributeName);
+            verify(notificationFactory).attributeAdded(user1, attributeName,AttributeAction.ADDED);
+            verify(notificationFactory).attributeAdded(user2, attributeName,AttributeAction.ADDED);
             verify(notificationRepository).saveAll(notifications);
             verify(notificationSseService).sendAll(any(NotificationDto.class));
         }
