@@ -2,7 +2,7 @@ name: CI-Image
 on:
   push:
     branches:
-      - infra/ci-setting-taeeon-atto
+      - main
 
 jobs:
   ci:
