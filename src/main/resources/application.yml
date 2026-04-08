@@ -80,7 +80,7 @@ admin:
   bootstrap:
     enabled: true
     email: admin@test.com
-    password: admin123!
+    password: admin123
     profile-name: admin
     reset-password: false
 
