@@ -7,6 +7,7 @@ import com.ootd.fitme.domain.notification.dto.response.NotificationDto;
 import com.ootd.fitme.domain.notification.dto.response.NotificationPageResponse;
 import com.ootd.fitme.domain.notification.entity.Notification;
 import com.ootd.fitme.domain.notification.entity.NotificationFactory;
+import com.ootd.fitme.domain.notification.enums.AttributeAction;
 import com.ootd.fitme.domain.notification.enums.NotificationLevel;
 import com.ootd.fitme.domain.notification.enums.NotificationType;
 import com.ootd.fitme.domain.notification.exception.NotificationBadRequestException;
@@ -157,17 +158,17 @@ class NotificationServiceUnitTest {
 
 
             given(userRepository.findAll()).willReturn(users);
-            given(notificationFactory.attributeAdded(user1, "color")).willReturn(notification1);
-            given(notificationFactory.attributeAdded(user2, "color")).willReturn(notification2);
+            given(notificationFactory.attributeAdded(user1, "color", AttributeAction.ADDED)).willReturn(notification1);
+            given(notificationFactory.attributeAdded(user2, "color",AttributeAction.ADDED)).willReturn(notification2);
             given(notificationRepository.saveAll(notifications)).willReturn(notifications);
 
-            List<Notification> result = notificationService.notifyAttributeAdded("color");
+            List<Notification> result = notificationService.notifyAttributeAdded("color",AttributeAction.ADDED);
 
             assertThat(result).isEqualTo(notifications);
 
             verify(userRepository).findAll();
-            verify(notificationFactory).attributeAdded(user1, "color");
-            verify(notificationFactory).attributeAdded(user2, "color");
+            verify(notificationFactory).attributeAdded(user1, "color",AttributeAction.ADDED);
+            verify(notificationFactory).attributeAdded(user2, "color",AttributeAction.ADDED);
             verify(notificationRepository).saveAll(notifications);
             verify(notificationSseService).sendAll(any(NotificationDto.class));
         }

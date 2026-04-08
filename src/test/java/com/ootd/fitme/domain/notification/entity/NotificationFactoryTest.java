@@ -1,5 +1,6 @@
 package com.ootd.fitme.domain.notification.entity;
 
+import com.ootd.fitme.domain.notification.enums.AttributeAction;
 import com.ootd.fitme.domain.notification.enums.NotificationLevel;
 import com.ootd.fitme.domain.notification.enums.NotificationType;
 import com.ootd.fitme.domain.user.entity.User;
@@ -111,11 +112,11 @@ class NotificationFactoryTest {
         @DisplayName("속성 추가 알림을 생성한다")
         void createAttributeAddedNotification() {
 
-            Notification notification = notificationFactory.attributeAdded(user, "사이즈");
+            Notification notification = notificationFactory.attributeAdded(user, "사이즈", AttributeAction.ADDED);
 
             assertThat(notification.getLevel()).isEqualTo(NotificationLevel.INFO);
-            assertThat(notification.getTitle()).isEqualTo("[사이즈] 속성이 추가되었습니다.");
-            assertThat(notification.getContent()).isEqualTo("속성을 확인해보세요");
+            assertThat(notification.getTitle()).isEqualTo("속성이 추가되었습니다.");
+            assertThat(notification.getContent()).isEqualTo("[사이즈]속성을 확인해보세요");
             assertThat(notification.getType()).isEqualTo(NotificationType.ATTRIBUTE_ADDED);
             assertThat(notification.getUser()).isEqualTo(user);
         }

@@ -6,6 +6,7 @@ import com.ootd.fitme.domain.directmessage.event.DirectMessageCreateEvent;
 import com.ootd.fitme.domain.feed.event.FeedCreateEvent;
 import com.ootd.fitme.domain.feedlike.event.FeedLikedCreateEvent;
 import com.ootd.fitme.domain.follow.event.FollowCreateEvent;
+import com.ootd.fitme.domain.notification.enums.AttributeAction;
 import com.ootd.fitme.domain.notification.service.NotificationService;
 import com.ootd.fitme.domain.weatherforecast.event.WeatherAlertEvent;
 import org.junit.jupiter.api.DisplayName;
@@ -118,12 +119,12 @@ class NotificationEventListenerUnitTest {
             UUID userId = UUID.randomUUID();
 
             AttributeAddedEvent event =
-                    new AttributeAddedEvent(attributeId,"color",Instant.now());
+                    new AttributeAddedEvent(attributeId,"color", AttributeAction.ADDED,Instant.now());
 
             listener.attributeAdded(event);
 
             verify(notificationService)
-                    .notifyAttributeAdded("color");
+                    .notifyAttributeAdded("color",AttributeAction.ADDED);
         }
 
         @Test
