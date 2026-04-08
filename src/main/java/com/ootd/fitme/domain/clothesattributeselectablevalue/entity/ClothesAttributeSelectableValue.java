@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
@@ -16,14 +17,26 @@ import org.hibernate.annotations.OnDeleteAction;
 @Table(name = "clothes_attributes_selectable_values")
 public class ClothesAttributeSelectableValue extends BaseEntity {
 
-
     @JoinColumn(name = "clothes_attr_id", nullable = false, unique = true)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
     private ClothesAttribute clothesAttribute;
 
     @JoinColumn(name = "value_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private SelectableValue selectableValue;
+
+    private ClothesAttributeSelectableValue(ClothesAttribute clothesAttribute, SelectableValue selectableValue) {
+        this.clothesAttribute = clothesAttribute;
+        this.selectableValue = selectableValue;
+    }
+
+    public static ClothesAttributeSelectableValue create(ClothesAttribute clothesAttribute, SelectableValue selectableValue) {
+        return new ClothesAttributeSelectableValue(clothesAttribute, selectableValue);
+    }
+
+    public void updateSelectableValue(SelectableValue newSelectableValue) {
+        this.selectableValue = newSelectableValue;
+    }
 }

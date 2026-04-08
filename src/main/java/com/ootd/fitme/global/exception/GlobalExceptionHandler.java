@@ -5,14 +5,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 
 import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
@@ -53,6 +57,31 @@ public class GlobalExceptionHandler {
                         LinkedHashMap::new
                 ));
         ErrorCode code = ErrorCode.INVALID_INPUT_VALUE;
+        return ResponseEntity.status(code.getStatus())
+                .body(new ErrorResponse(
+                        Instant.now(),
+                        code.getCode(),
+                        code.getMessage(),
+                        details,
+                        e.getClass().getSimpleName(),
+                        code.getStatus().value()
+                ));
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
+        log.error("[MethodArgumentNotValidException] = {}", e.getMessage());
+
+        Map<String, Object> details = e.getBindingResult().getFieldErrors().stream()
+                .collect(Collectors.toMap(
+                        FieldError::getField,
+                        fieldError -> fieldError.getDefaultMessage() != null ? fieldError.getDefaultMessage() : "Invalid input",
+                        (a, b) -> a,
+                        LinkedHashMap::new
+                ));
+
+        ErrorCode code = ErrorCode.INVALID_INPUT_VALUE;
+
         return ResponseEntity.status(code.getStatus())
                 .body(new ErrorResponse(
                         Instant.now(),
@@ -217,5 +246,21 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler({AccessDeniedException.class, AuthorizationDeniedException.class})
+    public ResponseEntity<ErrorResponse> handleAccessDenied(Exception e) {
+        ErrorCode code = ErrorCode.AUTH_FORBIDDEN;
+        return ResponseEntity.status(code.getStatus())
+                .body(new ErrorResponse(Instant.now(),
+                        code.getCode(),
+                        code.getMessage(),
+                        Map.of(),
+                        e.getClass().getSimpleName(),
+                        code.getStatus().value()
+                ));
+    }
+
+    @ExceptionHandler(AsyncRequestTimeoutException.class)
+    public void handleAsyncRequestTimeoutException(AsyncRequestTimeoutException e) {
+    }
 }
 

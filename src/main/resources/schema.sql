@@ -4,8 +4,8 @@ DROP TABLE IF EXISTS feeds_clothes CASCADE;
 DROP TABLE IF EXISTS comments CASCADE;
 DROP TABLE IF EXISTS notifications CASCADE;
 DROP TABLE IF EXISTS direct_messages CASCADE;
-DROP TABLE IF EXISTS user_weather_notification CASCADE;
-DROP TABLE IF EXISTS user_active_location CASCADE;
+DROP TABLE IF EXISTS user_weather_notifications CASCADE;
+DROP TABLE IF EXISTS user_active_locations CASCADE;
 DROP TABLE IF EXISTS follows CASCADE;
 DROP TABLE IF EXISTS clothes_attributes CASCADE;
 DROP TABLE IF EXISTS selectable_values CASCADE;
@@ -90,10 +90,13 @@ CREATE TABLE attributes
     updated_at TIMESTAMP WITH TIME ZONE NULL
 );
 
+CREATE INDEX idx_attributes_created_at ON attributes (created_at);
+
 CREATE TABLE selectable_values
 (
     id           UUID PRIMARY KEY,
     type         VARCHAR(100)             NOT NULL,
+    display_order INT                     NOT NULL,
     is_deleted   BOOLEAN                  NOT NULL DEFAULT false,
     created_at   TIMESTAMP WITH TIME ZONE NOT NULL,
     updated_at   TIMESTAMP WITH TIME ZONE NULL,
@@ -103,6 +106,8 @@ CREATE TABLE selectable_values
     CONSTRAINT uk_selectable_values_attribute_type
         UNIQUE (attribute_id, type)
 );
+
+CREATE INDEX idx_selectable_values_attribute_order ON selectable_values (attribute_id, display_order);
 
 CREATE TABLE weather_forecast
 (
@@ -141,8 +146,8 @@ CREATE TABLE weather_forecast
         CHECK (temperature_min <= temperature_max),
     CONSTRAINT chk_weather_forecast_wind_speed
         CHECK (wind_speed >= 0),
-    CONSTRAINT uk_weather_forecast_region_forecasted_at
-        UNIQUE (region_id, forecasted_at)
+    CONSTRAINT uk_weather_forecast_region_forecast_at
+        UNIQUE (region_id, forecast_at)
 );
 
 CREATE TABLE clothes
@@ -331,3 +336,4 @@ CREATE TABLE direct_messages
     CONSTRAINT chk_direct_messages_self
         CHECK (sender_id <> receiver_id)
 );
+

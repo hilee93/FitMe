@@ -62,4 +62,10 @@ public class Feed extends BaseUpdateEntity {
         );
     }
 
+    public void updateContent(String content) {
+        if (content == null || content.isBlank()) {
+            throw new IllegalArgumentException("content는 비어 있을 수 없습니다.");
+        }
+        this.content = content;
+    }
 }

@@ -21,9 +21,7 @@ spring:
         default_batch_fetch_size: 100 # (덮어쓰기) Prod는 성능 위해 100으로 증가
 
   cache:
-    type: redis
-    redis:
-      enable-statistics: true
+    type: caffeine # 운영서버에 redis생길시 변경
 
 logging:
   level:
@@ -39,3 +37,17 @@ management:
   endpoint:
     health:
       show-details: always # (보안) 운영서버지만 초기에 잘 뜨는지 확인하기위해 always설정 추후 when_authorized 변경 고려
+
+jwt:
+  secret-key: ${JWT_SECRET}
+  access-token-expiration-ms: 900000      # 15분
+  refresh-token-expiration-ms: 1209600000 # 2주
+  issuer: fitme
+
+admin:
+  bootstrap:
+    enabled: true
+    email: ${ADMIN_EMAIL}
+    password: ${ADMIN_PASSWORD}
+    profile-name: ${ADMIN_PROFILE_NAME}
+    reset-password: false

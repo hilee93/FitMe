@@ -96,5 +96,27 @@ public class Region extends BaseEntity {
         );
     }
 
+    public void update(
+            String regionFullName,
+            String region1depthName,
+            String region2depthName,
+            String region3depthName,
+            String region4depthName,
+            Double longitude,
+            Double latitude,
+            Integer x,
+            Integer y
+    ) {
+        this.regionFullName = regionFullName;
+        this.region1depthName = region1depthName;
+        this.region2depthName = region2depthName;
+        this.region3depthName = region3depthName;
+        this.region4depthName = region4depthName;
+        this.longitude = longitude;
+        this.latitude = latitude;
+        this.x = x;
+        this.y = y;
+    }
+
 
 }
