@@ -21,7 +21,15 @@ spring:
         default_batch_fetch_size: 100 # (덮어쓰기) Prod는 성능 위해 100으로 증가
 
   cache:
-    type: caffeine # 운영서버에 redis생길시 변경
+    type: redis
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
+      ssl:
+        enabled: true
 
 logging:
   level:
