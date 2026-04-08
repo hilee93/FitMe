@@ -17,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.Mockito.verify;
@@ -144,14 +145,15 @@ class NotificationEventListenerUnitTest {
         @DisplayName("날씨 이벤트 -> notifyWeatherAlert 호출")
         void weatherAlert() {
 
+            List<UUID> receiverIds = List.of(UUID.randomUUID(), UUID.randomUUID());
 
             WeatherAlertEvent event =
-                    new WeatherAlertEvent("지역1","지역2","비 온다",Instant.now());
+                    new WeatherAlertEvent(receiverIds,"지역1","지역2","비 온다",Instant.now());
 
             listener.weatherAlert(event);
 
             verify(notificationService)
-                    .notifyWeatherAlert("지역1","지역2","비 온다");
+                    .notifyWeatherAlert(receiverIds,"지역1","지역2","비 온다");
         }
     }
 }

@@ -117,8 +117,9 @@ public class NotificationEventListener {
     public void weatherAlert(WeatherAlertEvent event) {
         try {
             notificationService.notifyWeatherAlert(
-                    event.region_1(),
-                    event.region_2(),
+                    event.receiverIds(),
+                    event.region1DepthName(),
+                    event.region2DepthName(),
                     event.message()
             );
             log.info("[WEATHER_ALERT] 알림이벤트 처리 성공.");

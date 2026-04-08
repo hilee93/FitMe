@@ -2,6 +2,7 @@ package com.ootd.fitme.domain.weatherforecast.service;
 
 import com.ootd.fitme.domain.region.entity.Region;
 import com.ootd.fitme.domain.region.repository.RegionRepository;
+import com.ootd.fitme.domain.useractivelocation.service.UserActiveLocationService;
 import com.ootd.fitme.domain.weatherforecast.entity.WeatherForecast;
 import com.ootd.fitme.domain.weatherforecast.enums.PrecipitationType;
 import com.ootd.fitme.domain.weatherforecast.enums.SkyStatus;
@@ -44,6 +45,12 @@ public class WeatherForecastCollectServiceUnitTest {
     @Mock
     private OpenWeatherClient openWeatherClient;
 
+    @Mock
+    private WeatherAlertPublishService weatherAlertPublishService;
+
+    @Mock
+    private UserActiveLocationService userActiveLocationService;
+
     @InjectMocks
     private WeatherForecastCollectService collectService;
 
@@ -69,6 +76,7 @@ public class WeatherForecastCollectServiceUnitTest {
         then(weatherForecastRepository).should(times(5))
                 .findByRegionIdAndForecastAt(eq(regionId), forecastAtCaptor.capture());
         then(weatherForecastRepository).should(times(5)).save(any(WeatherForecast.class));
+        then(weatherAlertPublishService).should(times(5)).publishIfNeeded(eq(region), isNull(), isNull());
 
 
         List<LocalDate> actualDates = forecastAtCaptor.getAllValues().stream()
@@ -175,6 +183,8 @@ public class WeatherForecastCollectServiceUnitTest {
         collectService.collectAndStoreAllRegions();
 
         then(weatherForecastRepository).should(never()).save(any(WeatherForecast.class));
+        then(weatherAlertPublishService).should(times(1))
+                .publishIfNeeded(eq(region), eq(PrecipitationType.NONE), eq(existing));
         then(weatherForecastRepository).should().findByRegionIdAndForecastAt(regionId, forecastAt);
 
         assertThat(existing.getSkyStatus()).isEqualTo(SkyStatus.MOSTLY_CLOUDY);

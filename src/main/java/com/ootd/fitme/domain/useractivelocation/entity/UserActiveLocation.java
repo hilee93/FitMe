@@ -24,7 +24,7 @@ public class UserActiveLocation extends BaseUpdateEntity {
     private User user;
 
     @JoinColumn(name = "region_id", nullable = false)
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private Region region;
 
     private UserActiveLocation(Instant lastActiveAt, User user, Region region) {
@@ -35,6 +35,11 @@ public class UserActiveLocation extends BaseUpdateEntity {
 
     public static UserActiveLocation create(Instant lastActiveAt, User user, Region region) {
         return new UserActiveLocation(lastActiveAt, user, region);
+    }
+
+    public void update(Instant lastActiveAt, Region region) {
+        this.lastActiveAt = lastActiveAt;
+        this.region = region;
     }
 
 
