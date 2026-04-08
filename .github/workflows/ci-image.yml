@@ -1,0 +1,27 @@
+name: CI-Image
+on:
+  push:
+    branches:
+      - infra/ci-setting-taeeon-atto
+
+jobs:
+  ci:
+    name: Build & Push Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Build Image
+        run: |
+          docker build -t fitmeacrprod.azurecr.io/fitme-app:${{ github.sha }} .
+
+      - name: Push Image
+        run: |
+          az acr login --name fitmeacrprod
+          docker push fitmeacrprod.azurecr.io/fitme-app:${{ github.sha }}
