@@ -23,9 +23,11 @@ public class NotificationSseService {
     private final EmitterRepository emitterRepository;
 
     public SseEmitter subscribe(UUID userId) {
+
+        emitterRepository.deleteByUserId(userId);
         String emitterId = createEmitterId(userId);
 
-        SseEmitter emitter = new SseEmitter();
+        SseEmitter emitter = new SseEmitter(DEFAULT_TIMEOUT);
 
         emitter.onCompletion(() -> {
             log.debug("SSE completed userId={}, emitterId={}", userId, emitterId);

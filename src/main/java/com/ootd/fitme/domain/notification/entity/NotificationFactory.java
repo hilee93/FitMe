@@ -1,5 +1,6 @@
 package com.ootd.fitme.domain.notification.entity;
 
+import com.ootd.fitme.domain.notification.enums.AttributeAction;
 import com.ootd.fitme.domain.notification.enums.NotificationLevel;
 import com.ootd.fitme.domain.notification.enums.NotificationType;
 import com.ootd.fitme.domain.user.entity.User;
@@ -68,11 +69,11 @@ public class NotificationFactory {
         );
     }
 
-    public Notification attributeAdded(User user, String attributeName) {
+    public Notification attributeAdded(User user, String attributeName, AttributeAction attributeAction) {
         return Notification.create(
                 NotificationLevel.INFO,
-                "["+attributeName+"]"+ " 속성이 추가되었습니다.",
-                "속성을 확인해보세요",
+                attributeAction.getMessage(),
+                "["+attributeName+"]"+"속성을 확인해보세요",
                 NotificationType.ATTRIBUTE_ADDED,
                 user
         );
