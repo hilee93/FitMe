@@ -82,6 +82,9 @@ public class WeatherAlertFlowIntegrationTest {
         List<WeatherDto> result = weatherForecastService.getWeathers(126.9707, 37.5841);
         assertThat(result).isNotEmpty();
 
+        em.flush();
+        em.clear();
+
         UserWeatherNotification firstMarker = userWeatherNotificationRepository
                 .findByUserIdAndNoticeType(user.getId(), NoticeType.COLD_HEAT)
                 .orElseThrow();
