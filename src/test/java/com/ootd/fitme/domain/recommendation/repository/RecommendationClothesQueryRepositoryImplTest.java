@@ -1,8 +1,12 @@
 package com.ootd.fitme.domain.recommendation.repository;
 
+import com.ootd.fitme.domain.attribute.entity.Attribute;
 import com.ootd.fitme.domain.clothes.entity.Clothes;
 import com.ootd.fitme.domain.clothes.enums.ClothesType;
+import com.ootd.fitme.domain.clothesattribute.entity.ClothesAttribute;
+import com.ootd.fitme.domain.clothesattributeselectablevalue.entity.ClothesAttributeSelectableValue;
 import com.ootd.fitme.domain.recommendation.dto.response.RecommendationClothesSummaryDto;
+import com.ootd.fitme.domain.selectablevalue.entity.SelectableValue;
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.global.config.JpaAuditingConfig;
 import com.ootd.fitme.global.config.QuerydslConfig;
@@ -35,18 +39,17 @@ class RecommendationClothesQueryRepositoryImplTest {
     class FindClothesByUserIdTest {
 
         @Test
-        @DisplayName("userId로 조회 시 의상 목록을 반환")
-        void findClothesByUserId_returnsClothesSummaryDtoList_whenValidUserId() {
-            // given
+        @DisplayName("userId로 조회 시 의상 목록과 속성 포함 반환")
+        void findClothesByUserId_returnsClothesAndAttributes() {
+            // Given
             User user = em.persist(User.create("test_user@example.com", "password"));
 
             Clothes clothes1 = em.persist(Clothes.createWithImage(
                     "셔츠",
                     ClothesType.TOP,
                     user,
-                    "https://example.com/shirt.jpg" // imageUrl 포함
+                    "https://example.com/shirt.jpg"
             ));
-
             Clothes clothes2 = em.persist(Clothes.createWithImage(
                     "바지",
                     ClothesType.BOTTOM,
@@ -54,29 +57,31 @@ class RecommendationClothesQueryRepositoryImplTest {
                     "https://example.com/pants.jpg"
             ));
 
-            Clothes clothes3 = em.persist(Clothes.createWithImage(
-                    "자켓",
-                    ClothesType.OUTER,
-                    user,
-                    "https://example.com/jacket.jpg"
-            ));
+            Attribute colorAttribute = em.persist(Attribute.create("Color"));
+            ClothesAttribute clothesAttribute1 = em.persist(ClothesAttribute.create(clothes1, colorAttribute));
+
+            SelectableValue blueValue = em.persist(SelectableValue.create("Blue", 1, colorAttribute));
+            em.persist(ClothesAttributeSelectableValue.create(clothesAttribute1, blueValue));
 
             em.flush();
             em.clear();
 
-            // when
+            // When
             List<RecommendationClothesSummaryDto> result =
                     recommendationClothesQueryRepository.findClothesByUserId(user.getId());
 
-            // then
-            assertThat(result).hasSize(3);
+            // Then
+            assertThat(result).hasSize(2);
 
-            // 검증
             assertThat(result)
                     .anySatisfy(row -> {
                         assertThat(row.name()).isEqualTo("셔츠");
                         assertThat(row.type()).isEqualTo(ClothesType.TOP);
                         assertThat(row.imageUrl()).isEqualTo("https://example.com/shirt.jpg");
+                        assertThat(row.attributes()).hasSize(1);
+                        assertThat(row.attributes().get(0).definitionName()).isEqualTo("Color");
+                        assertThat(row.attributes().get(0).selectableValues()).containsExactly("Blue");
+                        assertThat(row.attributes().get(0).value()).isEqualTo("Blue");
                     });
 
             assertThat(result)
@@ -84,15 +89,11 @@ class RecommendationClothesQueryRepositoryImplTest {
                         assertThat(row.name()).isEqualTo("바지");
                         assertThat(row.type()).isEqualTo(ClothesType.BOTTOM);
                         assertThat(row.imageUrl()).isEqualTo("https://example.com/pants.jpg");
-                    });
-
-            assertThat(result)
-                    .anySatisfy(row -> {
-                        assertThat(row.name()).isEqualTo("자켓");
-                        assertThat(row.type()).isEqualTo(ClothesType.OUTER);
-                        assertThat(row.imageUrl()).isEqualTo("https://example.com/jacket.jpg");
+                        assertThat(row.attributes()).isEmpty();
                     });
         }
+    }
+
 
         @Test
         @DisplayName("사용자가 존재하지 않을 경우 빈 리스트 반환")
@@ -108,5 +109,4 @@ class RecommendationClothesQueryRepositoryImplTest {
             assertThat(result).isNotNull();
             assertThat(result).isEmpty();
         }
-    }
 }
