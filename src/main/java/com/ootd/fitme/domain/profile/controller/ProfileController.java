@@ -21,7 +21,7 @@ public class ProfileController {
     private final ProfileService profileService;
 
     @GetMapping
-    @PreAuthorize("#userId == principal.userId")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ProfileDto> getProfile(@PathVariable UUID userId) {
         return ResponseEntity.ok(profileService.getProfile(userId));
     }
