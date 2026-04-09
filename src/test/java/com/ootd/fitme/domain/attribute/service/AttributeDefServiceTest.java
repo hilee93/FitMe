@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.cache.CacheManager;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -27,13 +28,11 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@SpringBootTest(properties = {
-        "spring.cache.type=none"
-})
+@SpringBootTest
 @Transactional
 @DisplayName("AttributeDefService 통합 테스트 (DB 연동)")
-
 class AttributeDefServiceTest {
+
 
     @Autowired
     private AttributeDefServiceImpl service;
@@ -43,6 +42,9 @@ class AttributeDefServiceTest {
 
     @Autowired
     private EntityManager em;
+
+    @Autowired
+    private CacheManager cacheManager;
 
     @Nested
     @DisplayName("createClothesAttributeDef() 메서드는")
