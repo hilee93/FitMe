@@ -19,21 +19,49 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.cache.CacheManager;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
+import org.springframework.data.redis.cache.RedisCacheConfiguration;
+import org.springframework.data.redis.cache.RedisCacheManager;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
 import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.reset;
 
-@SpringBootTest(properties = {
-        "spring.cache.type=none"
-})
+@SpringBootTest
 @Transactional
+@Testcontainers
 @DisplayName("AttributeDefService 통합 테스트 (DB 연동)")
-
 class AttributeDefServiceTest {
+
+    @Container
+    @ServiceConnection
+    static GenericContainer<?> redisContainer = new GenericContainer<>(DockerImageName.parse("redis:7.0-alpine"))
+            .withExposedPorts(6379);
+
+//    @TestConfiguration
+//    static class OverrideCacheConfig {
+//        @Bean
+//        @Primary
+//        public CacheManager caffeineCacheManager(RedisConnectionFactory factory, RedisCacheConfiguration config) {
+//            return RedisCacheManager.builder(factory)
+//                    .cacheDefaults(config)
+//                    .build();
+//        }
+//
+//    }
 
     @Autowired
     private AttributeDefServiceImpl service;
@@ -43,6 +71,9 @@ class AttributeDefServiceTest {
 
     @Autowired
     private EntityManager em;
+
+    @Autowired
+    private CacheManager cacheManager;
 
     @Nested
     @DisplayName("createClothesAttributeDef() 메서드는")

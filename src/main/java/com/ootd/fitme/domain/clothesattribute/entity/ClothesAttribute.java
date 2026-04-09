@@ -48,7 +48,7 @@ public class ClothesAttribute extends BaseEntity {
         if (this.clothesAttributeSelectableValue == null) {
             this.clothesAttributeSelectableValue = ClothesAttributeSelectableValue.create(this, selectableValue);
         } else {
-            this.clothesAttributeSelectableValue.updateSelectableValue(selectableValue);
+            this.clothesAttributeSelectableValue.changeSelectableValue(selectableValue);
         }
     }
 }

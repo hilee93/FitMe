@@ -1,6 +1,7 @@
-package com.ootd.fitme.infrastructure.storage.image;
+package com.ootd.fitme.domain.clothes.listener;
 
 import com.ootd.fitme.domain.clothes.dto.ImageDeleteEvent;
+import com.ootd.fitme.infrastructure.storage.image.ImageStorage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
