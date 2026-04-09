@@ -11,6 +11,8 @@ import com.ootd.fitme.domain.clothes.entity.Clothes;
 import com.ootd.fitme.domain.clothes.exception.ClothesException;
 import com.ootd.fitme.domain.clothes.repository.ClothesRepository;
 import com.ootd.fitme.domain.clothesattribute.entity.ClothesAttribute;
+import com.ootd.fitme.domain.mediafile.enums.MediaPurpose;
+import com.ootd.fitme.domain.mediafile.service.MediaFileService;
 import com.ootd.fitme.domain.selectablevalue.entity.SelectableValue;
 import com.ootd.fitme.domain.selectablevalue.repository.SelectableValueRepository;
 import com.ootd.fitme.domain.user.entity.User;
@@ -19,7 +21,7 @@ import com.ootd.fitme.global.exception.ErrorCode;
 import com.ootd.fitme.infrastructure.scraper.PlaywrightScraper;
 import com.ootd.fitme.infrastructure.scraper.exception.ScraperException;
 import com.ootd.fitme.infrastructure.storage.image.ImageStorage;
-import com.ootd.fitme.infrastructure.storage.image.event.FileDeleteEvent;
+import com.ootd.fitme.domain.mediafile.event.FileDeleteEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -45,7 +47,7 @@ public class ClothesServiceImpl implements ClothesService {
     private final AttributeRepository attributeRepository;
     private final SelectableValueRepository selectableValueRepository;
 
-    private final ImageStorage imageStorage;
+    private final MediaFileService mediaFileService;
     private final ApplicationEventPublisher eventPublisher;
     private final PlaywrightScraper scraper;
 
@@ -67,8 +69,8 @@ public class ClothesServiceImpl implements ClothesService {
 
         String imageUrl = null;
         if (image != null && !image.isEmpty()) {
-            imageUrl = imageStorage.upload(image, "clothes");
-            log.info("[ClothesService] 이미지 업로드 완료 - uploadedUrl: {}", imageUrl);
+            imageUrl = mediaFileService.uploadAndRegister(image, MediaPurpose.CLOTHES, user);
+            log.info("[ClothesService] 미디어 서비스 통해 이미지 등록 완료 - URL: {}", imageUrl);
         }
 
         String safeName = HtmlUtils.htmlEscape(request.name());
@@ -94,7 +96,7 @@ public class ClothesServiceImpl implements ClothesService {
 
     @Override
     @Transactional
-    public ClothesDto updateClothes(UUID clothesId, UUID loginUserId, ClothesUpdateRequest request, MultipartFile image) {
+    public ClothesDto updateClothes(UUID clothesId, UUID loginUserId, ClothesUpdateRequest request, MultipartFile newImage) {
         log.info("[ClothesService] 옷 수정 요청 시작 - clothesId: {}, loginUserId: {}", clothesId, loginUserId);
 
         Clothes clothes = clothesRepository.findByIdWithDetails(clothesId)
@@ -102,30 +104,31 @@ public class ClothesServiceImpl implements ClothesService {
                     log.warn("[ClothesService] 옷 수정 실패: 존재하지 않는 옷 - clothesId: {}", clothesId);
                     return new ClothesException(ErrorCode.CLOTHES_NOT_FOUND);
                 });
+        User user = userRepository.findById(loginUserId)
+                .orElseThrow(() -> new ClothesException(ErrorCode.CLOTHES_OWNER_NOT_FOUND));
 
         if (!clothes.getUser().getId().equals(loginUserId)) {
-            log.warn("[ClothesService] 권한 없음: 타인의 옷 수정 시도 - clothesId: {}, loginUserId: {}, ownerId: {}", clothesId, loginUserId, clothes.getUser().getId());
+            log.warn("[ClothesService] 옷 수정 권한 없음 - clothesId: {}, loginUserId: {}", clothesId, loginUserId);
             throw new ClothesException(ErrorCode.AUTH_FORBIDDEN);
         }
 
         String oldImageUrl = clothes.getImageUrl();
-        String imageUrl = oldImageUrl;
+        String newImageUrl = oldImageUrl;
 
-        if (image != null && !image.isEmpty()) {
-            imageUrl = imageStorage.upload(image, "clothes");
-            log.info("[ClothesService] 새 이미지 업로드 완료 - newImageUrl: {}", imageUrl);
+        if (newImage != null && !newImage.isEmpty()) {
+            if (clothes.getImageUrl() != null) {
+                mediaFileService.deleteMedia(clothes.getImageUrl(), loginUserId);
+                log.info("[ClothesService] 기존 이미지 삭제 요청 완료 - oldUrl: {}", clothes.getImageUrl());
+            }
+
+            newImageUrl = mediaFileService.uploadAndRegister(newImage, MediaPurpose.CLOTHES, user);
         }
 
         String safeName = request.name() != null ? HtmlUtils.htmlEscape(request.name()) : clothes.getName();
-        clothes.updateClothesInfo(safeName, request.type(), imageUrl);
+        clothes.updateClothesInfo(safeName, request.type(), newImageUrl);
 
         List<ClothesAttribute> incomingAttributes = buildClothesAttributes(clothes, request.attributes());
         clothes.updateAttributes(incomingAttributes);
-
-        if (image != null && !image.isEmpty() && oldImageUrl != null && !oldImageUrl.isBlank()) {
-            log.info("[ClothesService] 기존 이미지 삭제 이벤트 발행 - oldImageUrl: {}", oldImageUrl);
-            eventPublisher.publishEvent(new FileDeleteEvent(oldImageUrl));
-        }
 
         log.info("[ClothesService] 옷 수정 완료 - clothesId: {}", clothesId);
 
@@ -159,13 +162,13 @@ public class ClothesServiceImpl implements ClothesService {
 
         String imageUrlToDelete = clothes.getImageUrl();
 
+        if (imageUrlToDelete != null) {
+            mediaFileService.deleteMedia(imageUrlToDelete, loginUserId);
+            log.info("[ClothesService] 연관 미디어 삭제 이벤트 발행 완료 - imageUrl: {}", imageUrlToDelete);
+        }
+
         clothesRepository.deleteByIdInBulk(clothesId);
         log.info("[ClothesService] 옷 DB 삭제 완료 - clothesId: {}", clothesId);
-
-        if (imageUrlToDelete != null && !imageUrlToDelete.isBlank()) {
-            log.info("[ClothesService] 삭제된 옷의 이미지 삭제 이벤트 발행 - imageUrl: {}", imageUrlToDelete);
-            eventPublisher.publishEvent(new FileDeleteEvent(imageUrlToDelete));
-        }
     }
 
     @Override

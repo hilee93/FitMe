@@ -79,7 +79,11 @@ public enum ErrorCode {
     FILE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 삭제 실패했습니다.", "S-004"),
 
     // scraper
-    SCRAP_FAILED(HttpStatus.INTERNAL_SERVER_ERROR,"해당 링크에 접근할 수 없거나 보안에 막혔습니다.","SCRAP-001");
+    SCRAP_FAILED(HttpStatus.INTERNAL_SERVER_ERROR,"해당 링크에 접근할 수 없거나 보안에 막혔습니다.","SCRAP-001"),
+
+    //mediafile
+    MEDIA_FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일을 찾을 수 없습니다.", "MEDIA-001"),
+    MEDIA_FILE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "해당 파일을 삭제할 권한이 없습니다.", "MEDIA-002");
 
     private final String message;
     private final HttpStatus status;
