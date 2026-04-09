@@ -18,7 +18,7 @@ spring:
       ddl-auto: validate # (중복 제거) 운영에선 validate 필수
     properties:
       hibernate:
-        default_batch_fetch_si  ze: 100 # (덮어쓰기) Prod는 성능 위해 100으로 증가
+        default_batch_fetch_size: 100 # (덮어쓰기) Prod는 성능 위해 100으로 증가
 
   cache:
     type: redis
