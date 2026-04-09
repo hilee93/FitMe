@@ -7,6 +7,7 @@ import com.ootd.fitme.domain.notification.dto.response.NotificationPageResponse;
 import com.ootd.fitme.domain.notification.dto.response.NotificationDto;
 import com.ootd.fitme.domain.notification.entity.Notification;
 import com.ootd.fitme.domain.notification.entity.NotificationFactory;
+import com.ootd.fitme.domain.notification.enums.AttributeAction;
 import com.ootd.fitme.domain.notification.exception.NotificationBadRequestException;
 import com.ootd.fitme.domain.notification.exception.NotificationException;
 import com.ootd.fitme.domain.notification.exception.NotificationNotFoundException;
@@ -159,12 +160,12 @@ public class NotificationService {
 
 
     @Transactional
-    public List<Notification> notifyAttributeAdded(String attributeName) {
+    public List<Notification> notifyAttributeAdded(String attributeName,AttributeAction action) {
 
         List<User> users = userRepository.findAll();
 
         List<Notification> notifications = users.stream()
-                .map(user -> notificationFactory.attributeAdded(user, attributeName))
+                .map(user -> notificationFactory.attributeAdded(user, attributeName, action))
                 .toList();
 
         List<Notification> saved = notificationRepository.saveAll(notifications);
