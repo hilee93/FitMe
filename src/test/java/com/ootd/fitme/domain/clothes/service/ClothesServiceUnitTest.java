@@ -4,7 +4,6 @@ import com.ootd.fitme.domain.attribute.entity.Attribute;
 import com.ootd.fitme.domain.attribute.repository.AttributeRepository;
 import com.ootd.fitme.domain.clothes.dto.ClothesAttributeDto;
 import com.ootd.fitme.domain.clothes.dto.ClothesDto;
-import com.ootd.fitme.domain.clothes.dto.ImageDeleteEvent;
 import com.ootd.fitme.domain.clothes.dto.request.ClothesCreateRequest;
 import com.ootd.fitme.domain.clothes.dto.request.ClothesDtoCursorRequest;
 import com.ootd.fitme.domain.clothes.dto.request.ClothesUpdateRequest;
@@ -21,6 +20,7 @@ import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.repository.UserRepository;
 import com.ootd.fitme.global.exception.ErrorCode;
 import com.ootd.fitme.infrastructure.storage.image.ImageStorage;
+import com.ootd.fitme.infrastructure.storage.image.event.FileDeleteEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -188,7 +188,15 @@ class ClothesServiceUnitTest {
             // then
             assertThat(result.name()).isEqualTo("청 자켓");
             then(imageStorage).should(times(1)).upload(mockNewImage, "clothes");
-            then(eventPublisher).should(times(1)).publishEvent(new ImageDeleteEvent(oldImageUrl));
+
+            ArgumentCaptor<Object> eventCaptor = ArgumentCaptor.forClass(Object.class);
+            then(eventPublisher).should(times(1)).publishEvent(eventCaptor.capture());
+
+            Object capturedEvent = eventCaptor.getValue();
+
+            assertThat(capturedEvent).isInstanceOf(FileDeleteEvent.class);
+
+            assertThat(((FileDeleteEvent) capturedEvent).fileUrl()).isEqualTo(oldImageUrl);
         }
 
         @Test
@@ -210,7 +218,15 @@ class ClothesServiceUnitTest {
 
             // then
             then(clothesRepository).should(times(1)).deleteByIdInBulk(clothesId);
-            then(eventPublisher).should(times(1)).publishEvent(new ImageDeleteEvent(imageUrlToDelete));
+
+            ArgumentCaptor<Object> eventCaptor = ArgumentCaptor.forClass(Object.class);
+
+            verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
+
+            Object capturedEvent = eventCaptor.getValue();
+
+            assertThat(capturedEvent).isInstanceOf(FileDeleteEvent.class);
+            assertThat(((FileDeleteEvent) capturedEvent).fileUrl()).isEqualTo("https://cdn.fitme.com/delete_me.jpg");
         }
     }
 
