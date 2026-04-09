@@ -25,20 +25,23 @@ public class PlaywrightScraper {
                  Page page = context.newPage()) {
 
                 page.navigate(url, new Page.NavigateOptions()
-                        .setTimeout(10000) // 동적 로딩을 고려해 20초로 약간 증가
-                        .setWaitUntil(WaitUntilState.NETWORKIDLE));
+                        .setTimeout(10000)
+                        .setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
 
                 page.evaluate("window.scrollTo(0, 500)");
-                page.waitForTimeout(500); // 0.5초 인간적인 대기
+                page.waitForTimeout(500);
 
-                // 데이터 추출 로직 (기존 회원님의 훌륭한 LD+JSON 파싱 로직 유지)
+                // 데이터 추출
                 String imageUrl = getAttributeSilently(page, "meta[property='og:image']", "content");
                 String exactProductName = extractTitleByJS(page);
+
+                log.info("[Playwright] 파싱 완료 - 상품명: {}, 이미지 URL: {}", exactProductName, imageUrl);
 
                 return new ScrapedData(exactProductName, imageUrl);
             }
 
         } catch (PlaywrightException e) {
+            log.error("[Playwright] 스크래핑 시간 초과 또는 실패 - URL: {}", url, e);
             throw new ScraperException(ErrorCode.SCRAP_FAILED);
         }
     }
@@ -63,7 +66,7 @@ public class PlaywrightScraper {
                     "   return titleText.split(/[-|]/)[0].trim();" +
                     "}");
         } catch (Exception e) {
-            return ""; // 파싱 에러 시 빈 문자열 반환
+            return "";
         }
     }
 

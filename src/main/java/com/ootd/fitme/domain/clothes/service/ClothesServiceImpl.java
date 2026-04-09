@@ -16,10 +16,10 @@ import com.ootd.fitme.domain.selectablevalue.repository.SelectableValueRepositor
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.repository.UserRepository;
 import com.ootd.fitme.global.exception.ErrorCode;
-import com.ootd.fitme.infrastructure.scraper.ImageDownloadUtil;
 import com.ootd.fitme.infrastructure.scraper.PlaywrightScraper;
 import com.ootd.fitme.infrastructure.scraper.exception.ScraperException;
 import com.ootd.fitme.infrastructure.storage.image.ImageStorage;
+import com.ootd.fitme.infrastructure.storage.image.event.FileDeleteEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -48,7 +48,6 @@ public class ClothesServiceImpl implements ClothesService {
     private final ImageStorage imageStorage;
     private final ApplicationEventPublisher eventPublisher;
     private final PlaywrightScraper scraper;
-    private final ImageDownloadUtil imageDownloadUtil;
 
     @Override
     @Transactional
@@ -125,7 +124,7 @@ public class ClothesServiceImpl implements ClothesService {
 
         if (image != null && !image.isEmpty() && oldImageUrl != null && !oldImageUrl.isBlank()) {
             log.info("[ClothesService] 기존 이미지 삭제 이벤트 발행 - oldImageUrl: {}", oldImageUrl);
-            eventPublisher.publishEvent(new ImageDeleteEvent(oldImageUrl));
+            eventPublisher.publishEvent(new FileDeleteEvent(oldImageUrl));
         }
 
         log.info("[ClothesService] 옷 수정 완료 - clothesId: {}", clothesId);
@@ -165,7 +164,7 @@ public class ClothesServiceImpl implements ClothesService {
 
         if (imageUrlToDelete != null && !imageUrlToDelete.isBlank()) {
             log.info("[ClothesService] 삭제된 옷의 이미지 삭제 이벤트 발행 - imageUrl: {}", imageUrlToDelete);
-            eventPublisher.publishEvent(new ImageDeleteEvent(imageUrlToDelete));
+            eventPublisher.publishEvent(new FileDeleteEvent(imageUrlToDelete));
         }
     }
 
@@ -214,21 +213,6 @@ public class ClothesServiceImpl implements ClothesService {
         try {
             PlaywrightScraper.ScrapedData scrapedData = scraper.scrape(link);
 
-            String base64Image = "";
-
-            if (scrapedData.imageUrl() != null && !scrapedData.imageUrl().isBlank()) {
-                log.info("[ClothesService] 외부 이미지 다운로드 및 Base64 변환 시도 - 원본 URL: {}", scrapedData.imageUrl());
-
-                base64Image = imageDownloadUtil.downloadImageAsBase64(scrapedData.imageUrl(), link);
-
-                if (base64Image != null && !base64Image.isBlank()) {
-                    log.info("[ClothesService] Base64 이미지 변환 성공 (프론트엔드 프리뷰용)");
-                } else {
-                    log.warn("[ClothesService] 외부 이미지 다운로드/변환 실패. 빈 이미지로 처리합니다.");
-                    base64Image = "";
-                }
-            }
-
             String finalName = (scrapedData.title() != null && !scrapedData.title().isBlank())
                     ? HtmlUtils.htmlEscape(scrapedData.title())
                     : "이름 없음";
@@ -237,13 +221,11 @@ public class ClothesServiceImpl implements ClothesService {
                 finalName = finalName.substring(0, 100);
             }
 
-            log.info("[ClothesService] 링크 스크래핑 성공 - 추출된 상품명: {}", finalName);
-
             return new ClothesDto(
                     null,
                     null,
                     finalName,
-                    base64Image,
+                    scrapedData.imageUrl(),
                     null,
                     new ArrayList<>()
             );
