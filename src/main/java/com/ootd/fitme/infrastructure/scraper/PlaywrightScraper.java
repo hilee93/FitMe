@@ -1,12 +1,9 @@
 package com.ootd.fitme.infrastructure.scraper;
 
-import com.microsoft.playwright.Browser;
-import com.microsoft.playwright.BrowserType;
-import com.microsoft.playwright.Page;
-import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.WaitUntilState;
 import com.ootd.fitme.global.exception.ErrorCode;
-import com.ootd.fitme.global.exception.FitmeException;
+import com.ootd.fitme.infrastructure.scraper.exception.ScraperException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -18,19 +15,37 @@ public class PlaywrightScraper {
 
     public ScrapedData scrape(String url) {
         try (Playwright playwright = Playwright.create();
-             Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(true));
-             Page page = browser.newPage()) {
+             Browser browser = playwright.chromium().launch(new BrowserType.LaunchOptions().setHeadless(true))) {
 
-            // DOM 로딩 완료 시점에 즉시 중단 (초고속)
-            page.navigate(url, new Page.NavigateOptions()
-                    .setTimeout(15000)
-                    .setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
+            Browser.NewContextOptions contextOptions = new Browser.NewContextOptions()
+                    .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                    .setViewportSize(1920, 1080);
 
-            // 1. 이미지 추출
-            String imageUrl = getAttributeSilently(page, "meta[property='og:image']", "content");
+            try (BrowserContext context = browser.newContext(contextOptions);
+                 Page page = context.newPage()) {
 
-            // 2. 브라우저 내부에서 JS를 실행하여 진짜 '상품명'만 정교하게 추출!
-            String exactProductName = (String) page.evaluate("() => {" +
+                page.navigate(url, new Page.NavigateOptions()
+                        .setTimeout(10000) // 동적 로딩을 고려해 20초로 약간 증가
+                        .setWaitUntil(WaitUntilState.NETWORKIDLE));
+
+                page.evaluate("window.scrollTo(0, 500)");
+                page.waitForTimeout(500); // 0.5초 인간적인 대기
+
+                // 데이터 추출 로직 (기존 회원님의 훌륭한 LD+JSON 파싱 로직 유지)
+                String imageUrl = getAttributeSilently(page, "meta[property='og:image']", "content");
+                String exactProductName = extractTitleByJS(page);
+
+                return new ScrapedData(exactProductName, imageUrl);
+            }
+
+        } catch (PlaywrightException e) {
+            throw new ScraperException(ErrorCode.SCRAP_FAILED);
+        }
+    }
+
+    private String extractTitleByJS(Page page) {
+        try {
+            return (String) page.evaluate("() => {" +
                     "   try {" +
                     "       let scripts = document.querySelectorAll('script[type=\"application/ld+json\"]');" +
                     "       for (let s of scripts) {" +
@@ -45,15 +60,10 @@ public class PlaywrightScraper {
                     "   } catch(e) {}" +
                     "   let ogTitle = document.querySelector('meta[property=\"og:title\"]');" +
                     "   let titleText = ogTitle ? ogTitle.content : document.title;" +
-                    "   " +
                     "   return titleText.split(/[-|]/)[0].trim();" +
                     "}");
-
-            return new ScrapedData(exactProductName, imageUrl);
-
         } catch (Exception e) {
-            log.error("[Playwright] 스크래핑 실패 - URL: {}", url, e);
-            throw new FitmeException(ErrorCode.SCRAP_FAILED);
+            return ""; // 파싱 에러 시 빈 문자열 반환
         }
     }
 
