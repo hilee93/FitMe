@@ -16,7 +16,6 @@ public class ImageDownloadUtil {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    // 🌟 원본 쇼핑몰 URL(originalUrl)을 추가로 받습니다.
     public String downloadImageAsBase64(String imageUrl, String originalUrl) {
         if (imageUrl == null || imageUrl.isBlank()) {
             return null;
@@ -48,7 +47,7 @@ public class ImageDownloadUtil {
             return "data:image/jpeg;base64," + base64String;
 
         } catch (Exception e) {
-            log.warn("[ImageDownloadUtil] 외부 이미지 다운로드 실패 (CDN 차단 가능성) - 이미지 URL: {}, 원본 URL: {}", imageUrl, originalUrl);
+            log.warn("[ImageDownloadUtilCheck] 외부 이미지 다운로드 실패 (CDN 차단 가능성) - 이미지 URL: {}, 원본 URL: {}", imageUrl, originalUrl);
             return null;
         }
     }
