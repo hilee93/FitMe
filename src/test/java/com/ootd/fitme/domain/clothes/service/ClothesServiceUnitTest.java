@@ -54,7 +54,6 @@ class ClothesServiceUnitTest {
     @Mock private AttributeRepository attributeRepository;
     @Mock private SelectableValueRepository selectableValueRepository;
 
-    // 🌟 변경점: ImageStorage, EventPublisher 제거 후 MediaFileService로 통합!
     @Mock private MediaFileService mediaFileService;
 
     @Nested
