@@ -3,7 +3,6 @@ package com.ootd.fitme.domain.mediafile.service;
 import com.ootd.fitme.domain.mediafile.entity.MediaFile;
 import com.ootd.fitme.domain.mediafile.enums.MediaPurpose;
 import com.ootd.fitme.domain.mediafile.enums.MediaStatus;
-import com.ootd.fitme.domain.mediafile.event.FileDeleteEvent;
 import com.ootd.fitme.domain.mediafile.exception.MediaFileException;
 import com.ootd.fitme.domain.mediafile.repository.MediaFileRepository;
 import com.ootd.fitme.domain.user.entity.User;
@@ -18,8 +17,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.event.ApplicationEvents;
-import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
@@ -32,7 +29,6 @@ import static org.mockito.BDDMockito.given;
 
 @SpringBootTest
 @Transactional
-@RecordApplicationEvents
 @DisplayName("MediaFileService 통합 테스트")
 class MediaFileServiceTest {
 
@@ -47,9 +43,6 @@ class MediaFileServiceTest {
 
     @MockitoBean
     private ImageStorage imageStorage;
-
-    @Autowired
-    private ApplicationEvents applicationEvents;
 
     private User testUser;
 
@@ -77,11 +70,46 @@ class MediaFileServiceTest {
             // then
             assertThat(resultUrl).isEqualTo(expectedUrl);
 
-            // DB 검증
             MediaFile savedMedia = mediaFileRepository.findByFileUrl(expectedUrl).orElseThrow();
             assertThat(savedMedia.getOriginalFileName()).isEqualTo("test.jpg");
             assertThat(savedMedia.getUser().getId()).isEqualTo(testUser.getId());
             assertThat(savedMedia.getStatus()).isEqualTo(MediaStatus.ACTIVE);
+        }
+
+        @Test
+        @DisplayName("실패: 파일이 비어있으면 INVALID_FILE_REQUEST 예외가 발생한다.")
+        void upload_Fail_EmptyFile() {
+            // given
+            MockMultipartFile emptyFile = new MockMultipartFile("image", "test.jpg", "image/jpeg", new byte[0]);
+
+            // when & then
+            assertThatThrownBy(() -> mediaFileService.uploadAndRegister(emptyFile, MediaPurpose.CLOTHES, testUser))
+                    .isInstanceOf(MediaFileException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_FILE_REQUEST);
+        }
+
+        @Test
+        @DisplayName("실패: 허용되지 않은 Content-Type이면 UNSUPPORTED_FILE_FORMAT 예외가 발생한다.")
+        void upload_Fail_InvalidContentType() {
+            // given
+            MockMultipartFile invalidContentTypeFile = new MockMultipartFile("image", "test.pdf", "application/pdf", "content".getBytes());
+
+            // when & then
+            assertThatThrownBy(() -> mediaFileService.uploadAndRegister(invalidContentTypeFile, MediaPurpose.CLOTHES, testUser))
+                    .isInstanceOf(MediaFileException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_FILE_FORMAT);
+        }
+
+        @Test
+        @DisplayName("실패: 허용되지 않은 확장자면 UNSUPPORTED_FILE_FORMAT 예외가 발생한다.")
+        void upload_Fail_InvalidExtension() {
+            // given
+            MockMultipartFile invalidExtensionFile = new MockMultipartFile("image", "test.exe", "image/jpeg", "content".getBytes());
+
+            // when & then
+            assertThatThrownBy(() -> mediaFileService.uploadAndRegister(invalidExtensionFile, MediaPurpose.CLOTHES, testUser))
+                    .isInstanceOf(MediaFileException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_FILE_FORMAT);
         }
     }
 
@@ -90,7 +118,7 @@ class MediaFileServiceTest {
     class DeleteMedia {
 
         @Test
-        @DisplayName("성공: 삭제 요청 시 FileDeleteEvent가 정상적으로 발행되어야 한다.")
+        @DisplayName("성공: 삭제 요청 시 상태가 PENDING_DELETE로 변경되어야 한다.")
         void delete_Success() {
             // given
             String fileUrl = "https://cdn.fitme.com/clothes/delete-me.jpg";
@@ -101,15 +129,12 @@ class MediaFileServiceTest {
             mediaFileService.deleteMedia(fileUrl, testUser.getId());
 
             // then
-            // 스프링 이벤트 발행 여부 검증
-            long eventCount = applicationEvents.stream(FileDeleteEvent.class)
-                    .filter(event -> event.fileUrl().equals(fileUrl))
-                    .count();
-            assertThat(eventCount).isEqualTo(1);
+            MediaFile deletedMedia = mediaFileRepository.findByFileUrl(fileUrl).orElseThrow();
+            assertThat(deletedMedia.getStatus()).isEqualTo(MediaStatus.PENDING_DELETE);
         }
 
         @Test
-        @DisplayName("실패: 타인의 파일을 삭제하려고 하면 예외가 발생하고 이벤트가 발행되지 않는다.")
+        @DisplayName("실패: 타인의 파일을 삭제하려고 하면 예외가 발생하고 상태가 변경되지 않는다.")
         void delete_Fail_AccessDenied() {
             // given
             String fileUrl = "https://cdn.fitme.com/clothes/others.jpg";
@@ -123,9 +148,8 @@ class MediaFileServiceTest {
                     .isInstanceOf(MediaFileException.class)
                     .hasFieldOrPropertyWithValue("errorCode", ErrorCode.MEDIA_FILE_ACCESS_DENIED);
 
-            // 이벤트가 발행되지 않았음을 확인
-            long eventCount = applicationEvents.stream(FileDeleteEvent.class).count();
-            assertThat(eventCount).isZero();
+            MediaFile intactMedia = mediaFileRepository.findByFileUrl(fileUrl).orElseThrow();
+            assertThat(intactMedia.getStatus()).isEqualTo(MediaStatus.ACTIVE);
         }
     }
 }

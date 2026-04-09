@@ -1,5 +1,8 @@
 package com.ootd.fitme.domain.profile.service;
 
+import com.ootd.fitme.domain.mediafile.entity.MediaFile;
+import com.ootd.fitme.domain.mediafile.enums.MediaPurpose;
+import com.ootd.fitme.domain.mediafile.service.MediaFileService;
 import com.ootd.fitme.domain.profile.dto.request.ProfileUpdateRequest;
 import com.ootd.fitme.domain.profile.dto.response.ProfileDto;
 import com.ootd.fitme.domain.profile.entity.Profile;
@@ -44,7 +47,8 @@ public class ProfileServiceImpl implements ProfileService {
     private final UserRepository userRepository;
     private final ProfileMapper profileMapper;
     private final RegionService regionService;
-    private final ImageStorage imageStorage;
+    private final MediaFileService mediaFileService;
+
 
     @Override
     public ProfileDto getProfile(UUID userId) {
@@ -75,42 +79,37 @@ public class ProfileServiceImpl implements ProfileService {
             String originalFilename = image.getOriginalFilename();
             if (originalFilename != null && !originalFilename.isBlank()) {
                 String oldImageUrl = profile.getProfileImageUrl();
-                String newImageUrl = uploadProfileImage(image);
+                String newImageUrl = uploadProfileImage(image, user);
                 profile.updateProfileImageUrl(newImageUrl);
-                deleteOldImageQuietly(oldImageUrl, newImageUrl);
+                deleteOldImageQuietly(oldImageUrl, newImageUrl, userId);
             }
         }
         return profileMapper.toDto(profile);
     }
 
-    private String uploadProfileImage(MultipartFile image) {
+    private String uploadProfileImage(MultipartFile image, User user) {
         validateImage(image);
+
         try {
-            String imageUrl = imageStorage.upload(image, "profile");
-            if (imageUrl == null || imageUrl.isBlank()) {
-                throw new StorageException(ErrorCode.FILE_UPLOAD_FAILED);
-            }
-            return imageUrl;
-        } catch (StorageException e) {
+            return mediaFileService.uploadAndRegister(image, MediaPurpose.PROFILE, user);
+
+        } catch (Exception e) {
             log.error("Failed to upload profile image. filename={}, contentType={}",
                     image.getOriginalFilename(), image.getContentType(), e);
             throw new ProfileException(ErrorCode.PROFILE_IMAGE_SAVE_FAILED);
         }
     }
 
-    private void deleteOldImageQuietly(String oldImageUrl, String newImageUrl) {
-        if (oldImageUrl == null || oldImageUrl.isBlank()) {
-            return;
-        }
-
-        if (oldImageUrl.equals(newImageUrl)) {
+    private void deleteOldImageQuietly(String oldImageUrl, String newImageUrl, UUID loginUserId) {
+        if (oldImageUrl == null || oldImageUrl.isBlank() || oldImageUrl.equals(newImageUrl)) {
             return;
         }
 
         try {
-            imageStorage.delete(oldImageUrl);
+            mediaFileService.deleteMedia(oldImageUrl, loginUserId);
+
         } catch (Exception e) {
-            log.warn("Old profile image delete failed: {}", oldImageUrl);
+            log.warn("Old profile image soft-delete failed: {}", oldImageUrl, e);
         }
     }
 

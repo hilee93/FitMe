@@ -27,7 +27,7 @@ public class MediaCleanupScheduler {
         List<MediaFile> pendingFiles = mediaFileRepository.findByStatus(MediaStatus.PENDING_DELETE);
 
         if (pendingFiles.isEmpty()) {
-            log.info("✅ [MediaCleanupBatch] 삭제할 파일이 없습니다. GC 종료");
+            log.info("[MediaCleanupBatch] 삭제할 파일이 없습니다. GC 종료");
             return;
         }
 
@@ -42,12 +42,12 @@ public class MediaCleanupScheduler {
                 successCount++;
 
             } catch (Exception e) {
-                log.error("❌ [MediaCleanupBatch] 물리 삭제 실패 (다음 달에 재시도) - URL: {}", file.getFileUrl(), e);
+                log.error("[MediaCleanupBatch] 물리 삭제 실패 (다음 달에 재시도) - URL: {}", file.getFileUrl(), e);
                 failCount++;
             }
         }
 
-        log.info("🏁 [MediaCleanupBatch] 가비지 컬렉션(GC) 종료. 대상: {}건 | 성공: {}건 | 실패: {}건",
+        log.info("[MediaCleanupBatch] 가비지 컬렉션(GC) 종료. 대상: {}건 | 성공: {}건 | 실패: {}건",
                 pendingFiles.size(), successCount, failCount);
     }
 }

@@ -20,8 +20,6 @@ import com.ootd.fitme.domain.user.repository.UserRepository;
 import com.ootd.fitme.global.exception.ErrorCode;
 import com.ootd.fitme.infrastructure.scraper.PlaywrightScraper;
 import com.ootd.fitme.infrastructure.scraper.exception.ScraperException;
-import com.ootd.fitme.infrastructure.storage.image.ImageStorage;
-import com.ootd.fitme.domain.mediafile.event.FileDeleteEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;

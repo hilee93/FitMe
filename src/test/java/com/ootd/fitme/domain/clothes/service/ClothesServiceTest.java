@@ -248,57 +248,6 @@ class ClothesServiceTest {
     }
 
     @Nested
-    @DisplayName("트랜잭션 정합성 및 비동기 이벤트 리스너 테스트")
-    class TransactionEventTest {
-
-        @Test
-        @DisplayName("정상 커밋: 옷이 정상적으로 삭제되면 ImageStorage 삭제 이벤트가 실행된다.")
-        void deleteClothes_Commit_TriggersImageDelete() {
-            // given
-            String testUrl = "https://cdn.fitme.com/to_delete.jpg";
-            given(imageStorage.upload(any(), anyString())).willReturn(testUrl);
-            ClothesCreateRequest createReq = new ClothesCreateRequest(testUser.getId(), "이벤트 테스트 옷", ClothesType.TOP, List.of());
-            MockMultipartFile validMockImage = new MockMultipartFile("image", "test.jpg", "image/jpeg", "dummy".getBytes());
-            ClothesDto createdDto = clothesService.createClothes(createReq, validMockImage, testUser.getId());
-            flushAndClear();
-
-            // when
-            clothesService.deleteClothes(createdDto.id(), testUser.getId());
-
-            TestTransaction.flagForCommit();
-            TestTransaction.end();
-
-            // then: 비동기(@Async) 처리를 고려하여 timeout 추가 검증
-            verify(imageStorage, timeout(2000).times(1)).delete(testUrl);
-        }
-
-        @Test
-        @DisplayName("롤백: 삭제 중 예외가 발생해 트랜잭션이 롤백되면, 이미지 삭제 이벤트는 실행되지 않는다.")
-        void deleteClothes_Rollback_PreventsImageDelete() {
-            // given
-            String testUrl = "https://cdn.fitme.com/rollback_test.jpg";
-            given(imageStorage.upload(any(), anyString())).willReturn(testUrl);
-            ClothesCreateRequest createReq = new ClothesCreateRequest(testUser.getId(), "롤백 테스트 옷", ClothesType.TOP, List.of());
-            MockMultipartFile validMockImage = new MockMultipartFile("image", "test.jpg", "image/jpeg", "dummy".getBytes());
-            ClothesDto createdDto = clothesService.createClothes(createReq, validMockImage, testUser.getId());
-            flushAndClear();
-
-            // 타인의 ID로 강제 예외 발생 유도 -> 롤백
-            User hacker = userRepository.save(User.create("hacker@test.com", "pass"));
-
-            // when
-            assertThatThrownBy(() -> clothesService.deleteClothes(createdDto.id(), hacker.getId()))
-                    .isInstanceOf(ClothesException.class);
-
-            TestTransaction.flagForRollback();
-            TestTransaction.end();
-
-            // then: 이벤트 리스너가 작동하지 않아 기존 이미지가 삭제되지 않았음을 증명
-            verify(imageStorage, never()).delete(anyString());
-        }
-    }
-
-    @Nested
     @DisplayName("보안 및 인가 (Security & Auth) 테스트")
     class SecurityTest {
 
