@@ -3,17 +3,17 @@ package com.ootd.fitme.domain.notification.service;
 import com.ootd.fitme.domain.follow.repository.FollowRepository;
 import com.ootd.fitme.domain.notification.dto.request.NotificationDeleteRequest;
 import com.ootd.fitme.domain.notification.dto.request.NotificationPageRequest;
-import com.ootd.fitme.domain.notification.dto.response.NotificationPageResponse;
 import com.ootd.fitme.domain.notification.dto.response.NotificationDto;
+import com.ootd.fitme.domain.notification.dto.response.NotificationPageResponse;
 import com.ootd.fitme.domain.notification.entity.Notification;
 import com.ootd.fitme.domain.notification.entity.NotificationFactory;
 import com.ootd.fitme.domain.notification.enums.AttributeAction;
 import com.ootd.fitme.domain.notification.exception.NotificationBadRequestException;
-import com.ootd.fitme.domain.notification.exception.NotificationException;
-import com.ootd.fitme.domain.notification.exception.NotificationNotFoundException;
 import com.ootd.fitme.domain.notification.mapper.NotificationMapper;
 import com.ootd.fitme.domain.notification.repository.NotificationProfileRepository;
 import com.ootd.fitme.domain.notification.repository.NotificationRepository;
+import com.ootd.fitme.domain.profile.entity.Profile;
+import com.ootd.fitme.domain.profile.exception.ProfileException;
 import com.ootd.fitme.domain.profile.repository.ProfileRepository;
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.exception.user.UserException;
@@ -21,14 +21,10 @@ import com.ootd.fitme.domain.user.repository.UserRepository;
 import com.ootd.fitme.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Slice;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -42,11 +38,11 @@ public class NotificationService {
     private final NotificationSseService notificationSseService;
     //private final ProfileRepository profileRepository; TODO : 나중에 추가하신다고 일단 내 레포로 대체
     private final NotificationProfileRepository notificationProfileRepository;
-
+    private final ProfileRepository profileRepository;
 
 
     @Transactional
-    public Notification  notifyDirectMessage(UUID receiverId, String senderName,String message) {
+    public Notification notifyDirectMessage(UUID receiverId, String senderName, String message) {
 
         User receiver = userRepository.findById(receiverId)
                 .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
@@ -81,7 +77,7 @@ public class NotificationService {
     }
 
     @Transactional
-    public List<Notification> notifyWeatherAlert(List<UUID> receiverIds, String region1, String region2 , String weatherAlert) {
+    public List<Notification> notifyWeatherAlert(List<UUID> receiverIds, String region1, String region2, String weatherAlert) {
         if (receiverIds == null || receiverIds.isEmpty()) {
             return List.of();
         }
@@ -94,7 +90,7 @@ public class NotificationService {
         }
 
         List<Notification> notifications = users.stream()
-                .map(user -> notificationFactory.weatherAlert(user,region1,region2, weatherAlert))
+                .map(user -> notificationFactory.weatherAlert(user, region1, region2, weatherAlert))
                 .toList();
 
         List<Notification> saveds = notificationRepository.saveAll(notifications);
@@ -108,31 +104,32 @@ public class NotificationService {
     }
 
     @Transactional
-    public Notification notifyFeedLiked(UUID likedId,String feedName, String likerName) {
+    public Notification notifyFeedLiked(UUID targetUserId, String content, UUID likerId) {
 
-        User user = userRepository.findById(likedId)
+        User targetUser = userRepository.findById(targetUserId)
                 .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
 
+        Profile likerProfile = profileRepository.findByUserId(likerId).orElseThrow(() -> new ProfileException(ErrorCode.PROFILE_NOT_FOUND));
 
-        Notification notification = notificationFactory.feedLiked(user,feedName, likerName);
+        Notification notification = notificationFactory.feedLiked(targetUser, content, likerProfile.getName());
 
         Notification saved = notificationRepository.save(notification);
 
         NotificationDto notificationDto = NotificationMapper.toDto(saved);
 
-        notificationSseService.send(likedId, notificationDto);
+        notificationSseService.send(targetUserId, notificationDto);
 
         return saved;
     }
 
     @Transactional
-    public Notification notifyFeedCommented(UUID feedOwnerId,String feedName, String commenterName, String comment) {
+    public Notification notifyFeedCommented(UUID feedOwnerId, String feedName, String commenterName, String comment) {
 
         User user = userRepository.findById(feedOwnerId)
                 .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
 
 
-        Notification notification = notificationFactory.feedCommented(user,feedName, commenterName,comment);
+        Notification notification = notificationFactory.feedCommented(user, feedName, commenterName, comment);
 
         Notification saved = notificationRepository.save(notification);
 
@@ -144,15 +141,17 @@ public class NotificationService {
     }
 
     @Transactional
-    public List<Notification> notifyFollowerNewFeed(UUID followeeId, String writerName, String feedName
+    public List<Notification> notifyFollowerNewFeed(UUID followeeId, String content
     ) {
 
         List<UUID> followerIds = followRepository.findFollowerIdsByFolloweeId(followeeId);
 
         List<User> followers = userRepository.findAllById(followerIds);
 
+        Profile profile = profileRepository.findByUserId(followeeId).orElseThrow();
+
         List<Notification> notifications = followers.stream()
-                .map(user -> notificationFactory.followerNewFeed(user, writerName, feedName))
+                .map(user -> notificationFactory.followerNewFeed(user, profile.getName(), content))
                 .toList();
 
         List<Notification> saved = notificationRepository.saveAll(notifications);
@@ -169,7 +168,7 @@ public class NotificationService {
 
 
     @Transactional
-    public List<Notification> notifyAttributeAdded(String attributeName,AttributeAction action) {
+    public List<Notification> notifyAttributeAdded(String attributeName, AttributeAction action) {
 
         List<User> users = userRepository.findAll();
 

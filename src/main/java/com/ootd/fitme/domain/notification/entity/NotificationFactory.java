@@ -39,11 +39,11 @@ public class NotificationFactory {
         );
     }
 
-    public Notification feedLiked(User user,String feedName, String likerName) {
+    public Notification feedLiked(User user,String content, String likerName) {
         return Notification.create(
                 NotificationLevel.INFO,
                 "["+likerName +"]"+ "님이 회원님의 피드에 좋아요를 눌렀습니다.",
-                "피드: "+feedName,
+                "피드: "+content,
                 NotificationType.FEED_LIKED,
                 user
         );
@@ -59,11 +59,11 @@ public class NotificationFactory {
         );
     }
 
-    public Notification followerNewFeed(User user, String followerName, String feedName) {
+    public Notification followerNewFeed(User user, String followerName, String content) {
         return Notification.create(
                 NotificationLevel.INFO,
                 "["+followerName+"]"+ "님이 새로운 피드를 등록했습니다.",
-                feedName,
+                content,
                 NotificationType.FOLLOWER_NEW_FEED,
                 user
         );

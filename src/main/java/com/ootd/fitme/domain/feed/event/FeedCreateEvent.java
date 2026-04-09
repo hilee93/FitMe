@@ -6,8 +6,7 @@ import java.util.UUID;
 public record FeedCreateEvent(
         UUID feedId,
         UUID userId,
-        String writerName,
-        String feedName,
+        String content,
         Instant createdAt
 ) {
 }
