@@ -4,6 +4,7 @@ import com.ootd.fitme.global.exception.ErrorCode;
 import com.ootd.fitme.infrastructure.storage.exception.StorageException;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -18,6 +19,7 @@ import java.nio.file.Paths;
 import java.util.UUID;
 
 @Component
+@Slf4j
 @ConditionalOnProperty(name = "fitme.storage.type", havingValue = "local", matchIfMissing = true)
 public class LocalImageStorage implements ImageStorage {
 
@@ -61,11 +63,12 @@ public class LocalImageStorage implements ImageStorage {
 
         try {
             Files.createDirectories(targetPath.getParent());
-            file.transferTo(targetPath.toFile());
+            file.transferTo(targetPath.toAbsolutePath().toFile());
 
             return localDomain + relativePath;
 
         } catch (IOException e) {
+            log.error("[LocalImageStorage] 파일 저장 중 오류 발생 - targetPath: {}", targetPath.toAbsolutePath(), e);
             throw new StorageException(ErrorCode.FILE_UPLOAD_FAILED);
         }
     }

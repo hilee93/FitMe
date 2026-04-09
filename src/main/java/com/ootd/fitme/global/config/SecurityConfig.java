@@ -80,6 +80,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/clothes/attribute-defs/**").hasAnyRole("ADMIN", "USER")
                         .requestMatchers("/api/clothes/attribute-defs/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+                        .requestMatchers("/storage/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .headers(headers -> headers
