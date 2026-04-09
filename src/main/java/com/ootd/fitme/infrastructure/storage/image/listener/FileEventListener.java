@@ -17,15 +17,8 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @RequiredArgsConstructor
 public class FileEventListener {
 
-    // 🌟 인프라 기술인 ImageStorage는 여기서만 주입받습니다!
     private final ImageStorage imageStorage;
 
-    /**
-     * @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-     * DB 트랜잭션이 '성공적으로 커밋된 직후'에만 실행됩니다.
-     * DB 롤백이 일어나면 물리 파일 삭제도 취소되는 우아한 처리입니다.
-     * @Async 를 붙여서 메인 스레드 응답 속도에 영향을 주지 않고 백그라운드에서 지웁니다.
-     */
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Retryable(
