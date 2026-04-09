@@ -29,7 +29,7 @@ import static org.mockito.Mockito.verify;
 class MediaCleanupSchedulerTest {
 
     @Autowired
-    private MediaCleanupScheduler mediaCleanupScheduler; // 🌟 이름 변경 적용
+    private MediaCleanupScheduler mediaCleanupScheduler;
 
     @Autowired
     private MediaFileRepository mediaFileRepository;
