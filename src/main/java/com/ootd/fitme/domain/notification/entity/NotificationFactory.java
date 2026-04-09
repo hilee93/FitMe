@@ -49,10 +49,10 @@ public class NotificationFactory {
         );
     }
 
-    public Notification feedCommented(User user,String feedName, String commenterName, String comment) {
+    public Notification feedCommented(User user, String commenterName, String comment) {
         return Notification.create(
                 NotificationLevel.INFO,
-                "["+feedName+"]피드에 "+"["+commenterName+"]"+ "님이 댓글을 남겼습니다.",
+                "["+commenterName+"]"+ "님이 댓글을 남겼습니다.",  // NOTE: 프로토타입 형식으로 변경 제원님 추후 체크 by 태언
                 comment,
                 NotificationType.FEED_COMMENTED,
                 user

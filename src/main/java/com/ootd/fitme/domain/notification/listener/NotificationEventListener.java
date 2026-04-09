@@ -76,8 +76,7 @@ public class NotificationEventListener {
         try {
             notificationService.notifyFeedCommented(
                     event.feedOwnerId(),
-                    event.feedName(),
-                    event.commenterName(),
+                    event.commenterId(),
                     event.comment()
             );
             log.info("[COMMENT] 알림이벤트 처리 성공. commentId={}", event.commentId());
