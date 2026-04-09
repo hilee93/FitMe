@@ -23,7 +23,10 @@ public class AttributeDefController implements AttributeDefControllerDocs {
 
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     @Override
-    public ResponseEntity<List<ClothesAttributeDefDto>> getClothesAttributeDefs(String sortBy, String sortDirection, String keywordLike) {
+    public ResponseEntity<List<ClothesAttributeDefDto>> getClothesAttributeDefs(
+            String sortBy,
+            String sortDirection,
+            String keywordLike) {
         List<ClothesAttributeDefDto> response = service.getClothesAttributeDefs(sortBy, sortDirection, keywordLike);
         return ResponseEntity.ok(response);
     }

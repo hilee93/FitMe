@@ -169,6 +169,9 @@ CREATE TABLE clothes
             ))
 );
 
+CREATE INDEX idx_clothes_cursor_pagination
+    ON clothes (user_id, created_at DESC, name ASC, id ASC);
+
 CREATE TABLE clothes_attributes
 (
     id           UUID PRIMARY KEY,
