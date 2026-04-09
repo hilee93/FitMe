@@ -1,4 +1,4 @@
-package com.ootd.fitme.infrastructure.storage.image.event;
+package com.ootd.fitme.domain.mediafile.event;
 
 public record FileDeleteEvent(
         String fileUrl
