@@ -1,5 +1,7 @@
 package com.ootd.fitme.domain.userweathernotification.enums;
 
 public enum NoticeType {
-    RAIN
+    PRECIPITATION_START,
+    TEMPERATURE_SWING,
+    COLD_HEAT
 }

@@ -24,7 +24,7 @@ public class WeatherForecastCollectScheduler {
         this.weatherForecastCollectJob = weatherForecastCollectJob;
     }
 
-    @Scheduled(cron = "0 5 * * * *", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 5 */3 * * *", zone = "Asia/Seoul")
     public void run() {
         JobParameters params = new JobParametersBuilder()
                 .addLong("triggerTime", System.currentTimeMillis())

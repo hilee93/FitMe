@@ -22,7 +22,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -116,8 +115,9 @@ class NotificationServiceSseUnitTest {
 
             List<User> users = List.of(user1, user2);
             List<Notification> notifications = List.of(notification1, notification2);
+            List<UUID> receiverIds = List.of(userId1, userId2);
 
-            given(notificationProfileRepository.findUsersByRegion1AndRegion2(region1, region2)).willReturn(users);
+            given(userRepository.findAllById(receiverIds)).willReturn(users);
 
             given(notificationFactory.weatherAlert(user1, region1, region2, weatherAlert))
                     .willReturn(notification1);
@@ -143,12 +143,12 @@ class NotificationServiceSseUnitTest {
             given(notification2.getLevel()).willReturn(NotificationLevel.WARN);
 
             // when
-            List<Notification> result = notificationService.notifyWeatherAlert(region1, region2, weatherAlert);
+            List<Notification> result = notificationService.notifyWeatherAlert(receiverIds, region1, region2, weatherAlert);
 
             // then
             assertThat(result).containsExactly(notification1, notification2);
 
-            verify(notificationProfileRepository).findUsersByRegion1AndRegion2(region1, region2);
+            verify(userRepository).findAllById(receiverIds);
             verify(notificationFactory).weatherAlert(user1, region1, region2, weatherAlert);
             verify(notificationFactory).weatherAlert(user2, region1, region2, weatherAlert);
             verify(notificationRepository).saveAll(notifications);

@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -80,9 +81,17 @@ public class NotificationService {
     }
 
     @Transactional
-    public List<Notification> notifyWeatherAlert(String region1, String region2 , String weatherAlert) {
+    public List<Notification> notifyWeatherAlert(List<UUID> receiverIds, String region1, String region2 , String weatherAlert) {
+        if (receiverIds == null || receiverIds.isEmpty()) {
+            return List.of();
+        }
 
-        List<User> users = notificationProfileRepository.findUsersByRegion1AndRegion2(region1, region2);
+        List<UUID> uniqueReceiverIds = receiverIds.stream().distinct().toList();
+        List<User> users = userRepository.findAllById(uniqueReceiverIds);
+
+        if (users.isEmpty()) {
+            return List.of();
+        }
 
         List<Notification> notifications = users.stream()
                 .map(user -> notificationFactory.weatherAlert(user,region1,region2, weatherAlert))

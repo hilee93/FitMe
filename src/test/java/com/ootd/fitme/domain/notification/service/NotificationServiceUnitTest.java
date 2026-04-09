@@ -219,12 +219,7 @@ class NotificationServiceUnitTest {
 
             List<User> users = List.of(user);
             List<Notification> notifications = List.of(notification);
-
-            given(notificationProfileRepository.findUsersByRegion1AndRegion2(region1, region2))
-                    .willReturn(users);
-
-            given(notificationFactory.weatherAlert(user,region1, region2, weatherAlert))
-                    .willReturn(notification);
+            List<UUID> receiverIds = List.of(userId);
 
             given(notificationRepository.saveAll(notifications))
                     .willReturn(notifications);
@@ -237,14 +232,16 @@ class NotificationServiceUnitTest {
             given(notification.getTitle()).willReturn("날씨 알림");
             given(notification.getContent()).willReturn(weatherAlert);
             given(notification.getLevel()).willReturn(NotificationLevel.INFO);
+            given(userRepository.findAllById(receiverIds)).willReturn(users);
+            given(notificationFactory.weatherAlert(user,region1,region2, weatherAlert)).willReturn(notification);
 
             // when
-            List<Notification> result = notificationService.notifyWeatherAlert(region1, region2, weatherAlert);
+            List<Notification> result = notificationService.notifyWeatherAlert(receiverIds,region1, region2, weatherAlert);
 
             // then
             assertThat(result).containsExactly(notification);
 
-            verify(notificationProfileRepository).findUsersByRegion1AndRegion2(region1, region2);
+            verify(userRepository).findAllById(receiverIds);
             verify(notificationFactory).weatherAlert(user,region1,region2, weatherAlert);
             verify(notificationRepository).saveAll(notifications);
             verify(notificationSseService).send(eq(userId), any(NotificationDto.class));

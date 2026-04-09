@@ -301,7 +301,9 @@ CREATE TABLE user_weather_notifications
     CONSTRAINT fk_user_weather_notifications_user
         FOREIGN KEY (user_id) REFERENCES users (id),
     CONSTRAINT chk_user_weather_notifications_notice_type
-        CHECK (notice_type IN ('RAIN'))
+        CHECK (notice_type IN ('PRECIPITATION_START', 'TEMPERATURE_SWING', 'COLD_HEAT')),
+    CONSTRAINT uk_user_weather_notifications_user_type
+        UNIQUE (user_id, notice_type)
 );
 
 CREATE TABLE notifications
