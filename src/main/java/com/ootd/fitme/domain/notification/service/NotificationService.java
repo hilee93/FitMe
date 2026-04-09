@@ -21,6 +21,7 @@ import com.ootd.fitme.domain.user.exception.user.UserException;
 import com.ootd.fitme.domain.user.repository.UserRepository;
 import com.ootd.fitme.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Slice;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -33,6 +34,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class NotificationService {
@@ -41,14 +43,13 @@ public class NotificationService {
     private final NotificationFactory notificationFactory;
     private final UserRepository userRepository;
     private final FollowRepository followRepository;
-    private final NotificationSseService notificationSseService;
     private final ApplicationEventPublisher eventPublisher;
 
 
 
 
     @Transactional
-    public Notification notifyDirectMessage(UUID receiverId, String senderName, String message) {
+    public Notification  notifyDirectMessage(UUID receiverId, String senderName,String message) {
 
         User receiver = userRepository.findById(receiverId)
                 .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
@@ -70,82 +71,70 @@ public class NotificationService {
     }
 
     @Transactional
-    public List<Notification> notifyWeatherAlert(List<UUID> receiverIds, String region1, String region2 , String weatherAlert) {
-        if (receiverIds == null || receiverIds.isEmpty()) {
-            return List.of();
-        }
-
-        List<UUID> uniqueReceiverIds = receiverIds.stream().distinct().toList();
-        List<User> users = userRepository.findAllById(uniqueReceiverIds);
-
-        if (users.isEmpty()) {
-            return List.of();
-        }
-
-        List<Notification> notifications = users.stream()
-                .map(user -> notificationFactory.weatherAlert(user,region1,region2, weatherAlert))
-                .toList();
-
-        List<Notification> saveds = notificationRepository.saveAll(notifications);
-
-        for (Notification saved : saveds) {
-            NotificationDto dto = NotificationMapper.toDto(saved);
-            notificationSseService.send(saved.getUser().getId(), dto);
-        }
-
-        return saveds;
-    }
-
-    @Transactional
-    public Notification notifyFeedLiked(UUID targetUserId, String content, UUID likerId) {
+    public Notification notifyFeedLiked(UUID likedId,String feedName, String likerName) {
 
         User user = userRepository.findById(likedId)
                 .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
 
-        Profile likerProfile = profileRepository.findByUserId(likerId).orElseThrow(() -> new ProfileException(ErrorCode.PROFILE_NOT_FOUND));
-
-        Notification notification = notificationFactory.feedLiked(targetUser, content, likerProfile.getName());
+        Notification notification = notificationFactory.feedLiked(user,feedName, likerName);
 
         return saveAndPublish(notification);
     }
 
     @Transactional
-    public Notification notifyFeedCommented(UUID feedOwnerId, String content, UUID commenterId, String comment) {
+    public Notification notifyFeedCommented(UUID feedOwnerId,String feedName, String commenterName, String comment) {
 
         User user = userRepository.findById(feedOwnerId)
                 .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
 
-        Profile commenterProfile = profileRepository.findByUserId(commenterId).orElseThrow(() -> new ProfileException(ErrorCode.PROFILE_NOT_FOUND));
-
-
-        Notification notification = notificationFactory.feedCommented(user, content, commenterProfile.getName(), comment);
+        Notification notification = notificationFactory.feedCommented(user,feedName, commenterName,comment);
 
         return saveAndPublish(notification);
     }
 
     @Transactional
-    public List<Notification> notifyFollowerNewFeed(UUID followeeId, String content
-    ) {
+    public List<Notification> notifyWeatherAlert(List<UUID> receiverIds, String region1, String region2 , String weatherAlert) {
+        //user id 리스트를  이미 줌
+        if (receiverIds == null || receiverIds.isEmpty()) {
+            return List.of();
+        }
 
-        List<UUID> followerIds = followRepository.findFollowerIdsByFolloweeId(followeeId);
-
-        List<User> followers = userRepository.findAllById(followerIds);
-
-        Profile profile = profileRepository.findByUserId(followeeId).orElseThrow();
-
-        List<Notification> notifications = followers.stream()
-                .map(user -> notificationFactory.followerNewFeed(user, writerName, feedName))
+        List<Notification> notifications = receiverIds.stream()
+                .distinct()
+                .map(userRepository::getReferenceById)
+                .map(user -> notificationFactory.weatherAlert(user, region1, region2, weatherAlert))
                 .toList();
-
 
         return saveAllAndPublish(notifications);
     }
 
+    @Transactional
+    public List<Notification> notifyFollowerNewFeed(UUID followeeId, String writerName, String feedName
+    ) {
+
+        List<UUID> followerIds = followRepository.findFollowerIdsByFolloweeId(followeeId);
+
+        if (followerIds == null || followerIds.isEmpty()) {
+            return List.of();
+        }
+
+        List<Notification> notifications = followerIds.stream()
+                .distinct()
+                .map(userRepository::getReferenceById)
+                .map(user -> notificationFactory.followerNewFeed(user, writerName, feedName))
+                .toList();
+
+        return saveAllAndPublish(notifications);
+    }
 
     @Transactional
     public List<Notification> notifyAttributeAdded(String attributeName,AttributeAction action) {
 
         List<User> users = userRepository.findAll();
+
+        if (users.isEmpty()) {
+            return List.of();
+        }
 
         List<Notification> notifications = users.stream()
                 .map(user -> notificationFactory.attributeAdded(user, attributeName, action))
@@ -153,6 +142,7 @@ public class NotificationService {
 
         return saveAllAndPublish(notifications);
     }
+
 
 
     @Transactional(readOnly = true)
@@ -168,7 +158,6 @@ public class NotificationService {
     @Transactional
     public void delete(NotificationDeleteRequest request) {
 
-
         // 해당유저의 알림ID 유무 판별
         boolean exists = notificationRepository
                 .existsByIdAndUserId(request.notificationId(), request.userId());
@@ -180,23 +169,32 @@ public class NotificationService {
             );
         }
 
-
         notificationRepository.deleteById(request.notificationId());
     }
 
     //단건
     private Notification saveAndPublish(Notification notification) {
+
         Notification saved = notificationRepository.save(notification);
+
+        log.info("Notification saved type : {} id: {}", saved.getType(),saved.getId());
+
         eventPublisher.publishEvent(NotificationCreatedEvent.from(saved));
+
+        log.info("Notification publish CreateEvent type : {} id: {}", saved.getType(),saved.getId());
         return saved;
     }
     //다건
     private List<Notification> saveAllAndPublish(List<Notification> notifications) {
-        List<Notification> saved = notificationRepository.saveAll(notifications);
-        saved.forEach(notification ->
+        List<Notification> savedAll = notificationRepository.saveAll(notifications);
+
+        log.info("Notifications savedAll count={}", savedAll.size());
+
+        savedAll.forEach(notification ->
                 eventPublisher.publishEvent(NotificationCreatedEvent.from(notification))
         );
-        return saved;
+        log.info("Publishing notification events count={}", savedAll.size());
+        return savedAll;
     }
 
 
