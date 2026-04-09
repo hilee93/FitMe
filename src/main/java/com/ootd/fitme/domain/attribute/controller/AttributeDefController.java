@@ -27,8 +27,6 @@ public class AttributeDefController implements AttributeDefControllerDocs {
             String sortBy,
             String sortDirection,
             String keywordLike) {
-        System.out.println("sortBy = " + sortBy);
-        System.out.println("sortDirection = " + sortDirection);
         List<ClothesAttributeDefDto> response = service.getClothesAttributeDefs(sortBy, sortDirection, keywordLike);
         return ResponseEntity.ok(response);
     }
