@@ -108,7 +108,7 @@ services:
       - discovery.type=single-node
       - xpack.security.enabled=false # 운영에서는 무조건 true, 그게아니면 누구나 데이터 조회/삭제 가능
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
-      - network.host=0.0.0.0 # 공식 이미지 기본설정은 이미 yml에 들어가있어서 굳이 안써도되지만 까먹을수있기때문에 명시해놓고 추후 익숙해지면 제거
+      - network.host=0.0.0.0 # 공식 이미지 기본설정은 이미 yml에 들어가있어서 굳이 안써도되지만 까먹을수있기때문에 명시해놓고 추후 익숙해지면 제거, 이 컨테이너/서버가 가진 모든 네트워크 인터페이스에서 요청 받기
 #      - bootstrap.memory_lock=true # 추후 swap 되는 상황 예를들어 부하테스트 또는 달느상황으로 elasticsearch 일부를 디스크로 빼버려서 성능이 저하되는 상황을 볼때 킬것(트러블슈팅)
 #    ulimits: # memory_lock = true 옵션을 실제로 동작하기 위한 필요한 설정, OS 수준에서 메모리 lock 제한을 해제하여 ES가 메모리 swap으로 내려가는 것 방지
 #      memlock:
