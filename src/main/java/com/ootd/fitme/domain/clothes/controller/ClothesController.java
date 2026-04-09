@@ -63,7 +63,7 @@ public class ClothesController implements ClothesControllerDocs {
     @PatchMapping(value = "/{clothesId}", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     public ResponseEntity<ClothesDto> updateClothes(
             @PathVariable UUID clothesId,
-            @ModelAttribute ClothesUpdateRequest request,
+            @RequestPart("request") ClothesUpdateRequest request,
             @RequestPart(value = "image", required = false) MultipartFile image,
             @AuthenticationPrincipal(expression = "userId") UUID loginUserId
     ) {

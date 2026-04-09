@@ -24,7 +24,7 @@ public class AttributeRepositoryImpl implements AttributeRepositoryCustom {
                 .selectFrom(attribute).distinct()
                 .leftJoin(attribute.selectableValues, selectableValue).fetchJoin()
                 .where(containsKeyword(keywordLike))
-                .orderBy(createOrderSpecifier(sortBy, sortDirection))
+                .orderBy(createOrderSpecifiers(sortBy, sortDirection))
                 .fetch();
     }
 
@@ -34,13 +34,19 @@ public class AttributeRepositoryImpl implements AttributeRepositoryCustom {
         }
         return attribute.name.containsIgnoreCase(keywordLike);
     }
-    private OrderSpecifier<?> createOrderSpecifier(String sortBy, String sortDirection) {
-        boolean isAsc = "ASC".equalsIgnoreCase(sortDirection);
+
+    private OrderSpecifier<?>[] createOrderSpecifiers(String sortBy, String sortDirection) {
+        boolean isAsc = "ASCENDING".equalsIgnoreCase(sortDirection);
+
+        OrderSpecifier<?> nameOrder = isAsc ? attribute.name.asc() : attribute.name.desc();
+        OrderSpecifier<?> timeOrder = isAsc ? attribute.createdAt.asc() : attribute.createdAt.desc();
+        OrderSpecifier<?> idOrder = attribute.id.asc();
+        OrderSpecifier<?> childOrder = selectableValue.displayOrder.asc();
 
         if ("name".equalsIgnoreCase(sortBy)) {
-            return isAsc ? attribute.name.asc() : attribute.name.desc();
+            return new OrderSpecifier[]{ nameOrder, timeOrder, idOrder, childOrder };
         }
 
-        return isAsc ? attribute.createdAt.asc() : attribute.createdAt.desc();
+        return new OrderSpecifier[]{ timeOrder, nameOrder, idOrder, childOrder };
     }
 }

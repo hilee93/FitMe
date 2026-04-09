@@ -76,6 +76,9 @@ dependencies {
     runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
+//    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+//    testImplementation 'org.testcontainers:junit-jupiter'
+
     // 인프라 관련 도커 컨테이너 테스트코드시 자동 생성 관련 라이브러리 추후 필요하면 써볼것(필수아님)
 //    testImplementation 'org.testcontainers:junit-jupiter'
 //    testImplementation 'org.testcontainers:mysql'

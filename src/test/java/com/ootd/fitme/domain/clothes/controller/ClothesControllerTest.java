@@ -31,6 +31,7 @@ import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 
@@ -196,9 +197,20 @@ class ClothesControllerTest {
             given(clothesService.updateClothes(eq(clothesId), eq(loginUserId), any(), any()))
                     .willReturn(mockResponse);
 
+            String requestJson = "{\"name\": \"수정된 자켓\", \"type\": \"OUTER\", \"attributes\": []}";
+            MockMultipartFile requestPart = new MockMultipartFile(
+                    "request",
+                    "",
+                    MediaType.APPLICATION_JSON_VALUE,
+                    requestJson.getBytes(StandardCharsets.UTF_8)
+            );
+
+            MockMultipartFile imagePart = new MockMultipartFile("image", "test.jpg", "image/jpeg", "dummy image content".getBytes());
+
             // when & then
             mockMvc.perform(multipart("/api/clothes/{clothesId}", clothesId)
-                            .param("name", "수정된 자켓")
+                            .file(requestPart)
+                             .file(imagePart)
                             .with(request -> {
                                 request.setMethod(HttpMethod.PATCH.name());
                                 return request;
@@ -276,8 +288,18 @@ class ClothesControllerTest {
             given(clothesService.updateClothes(eq(clothesId), eq(loginUserId), any(ClothesUpdateRequest.class), any()))
                     .willReturn(new ClothesDto(clothesId, loginUserId, "안전한이름", null, ClothesType.TOP, List.of()));
 
+            String requestJson = String.format("{\"name\": \"%s\", \"type\": \"TOP\", \"attributes\": []}", maliciousXssPayload);
+
+            MockMultipartFile requestPart = new MockMultipartFile(
+                    "request",
+                    "",
+                    MediaType.APPLICATION_JSON_VALUE,
+                    requestJson.getBytes(StandardCharsets.UTF_8)
+            );
+
             // when & then
             mockMvc.perform(multipart("/api/clothes/{clothesId}", clothesId)
+                            .file(requestPart)
                             .param("name", maliciousXssPayload) // XSS 페이로드 전송
                             .with(request -> {
                                 request.setMethod(HttpMethod.PATCH.name());
