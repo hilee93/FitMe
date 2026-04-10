@@ -15,4 +15,9 @@ public interface FeedRepository extends JpaRepository<Feed, UUID> {
     @Modifying
     @Query("update Feed f set f.likeCount = f.likeCount - 1 where f.id = :feedId and f.likeCount > 0")
     int decreaseLike(UUID feedId);
+
+    @Modifying
+    @Query("update Feed f set f.commentCount = f.commentCount + 1 where f.id = :feedId")
+    int increaseCommentCount(UUID feedId);
+
 }
