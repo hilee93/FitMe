@@ -46,7 +46,6 @@ public class ClothesServiceImpl implements ClothesService {
     private final SelectableValueRepository selectableValueRepository;
 
     private final MediaFileService mediaFileService;
-    private final ApplicationEventPublisher eventPublisher;
     private final PlaywrightScraper scraper;
 
     @Override
@@ -307,12 +306,14 @@ public class ClothesServiceImpl implements ClothesService {
             String compositeKey = dto.definitionId() + "_" + dto.value();
             SelectableValue selectedValue = valueMap.get(compositeKey);
 
+
             if (selectedValue == null) {
                 log.warn("[ClothesService] 옷 속성 매핑 실패: 속성에 존재하지 않는 옵션 값 - definitionId: {}, value: {}", dto.definitionId(), dto.value());
                 throw new ClothesException(ErrorCode.OPTION_NOT_FOUND);
             }
 
             ClothesAttribute newAttribute = ClothesAttribute.create(clothes, attributeDef);
+
             newAttribute.assignOption(selectedValue);
 
             attributes.add(newAttribute);
@@ -324,6 +325,8 @@ public class ClothesServiceImpl implements ClothesService {
 
     private List<ClothesAttributeWithDefDto> buildAttributeDtos(List<ClothesAttribute> attributes) {
         return attributes.stream()
+                .filter(attr -> attr.getClothesAttributeSelectableValue() != null &&
+                        attr.getClothesAttributeSelectableValue().getSelectableValue() != null)
                 .map(attr -> {
                     List<String> selectableOptions = attr.getAttribute().getSelectableValues().stream()
                             .map(SelectableValue::getType)
