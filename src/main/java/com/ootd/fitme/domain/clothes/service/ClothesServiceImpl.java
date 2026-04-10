@@ -95,6 +95,7 @@ public class ClothesServiceImpl implements ClothesService {
     @Override
     @Transactional
     public ClothesDto updateClothes(UUID clothesId, UUID loginUserId, ClothesUpdateRequest request, MultipartFile newImage) {
+        log.info("📡 [디버깅] 프론트엔드 요청 속성 데이터: {}", request.attributes());
         log.info("[ClothesService] 옷 수정 요청 시작 - clothesId: {}, loginUserId: {}", clothesId, loginUserId);
 
         Clothes clothes = clothesRepository.findByIdWithDetails(clothesId)
@@ -307,12 +308,16 @@ public class ClothesServiceImpl implements ClothesService {
             String compositeKey = dto.definitionId() + "_" + dto.value();
             SelectableValue selectedValue = valueMap.get(compositeKey);
 
+
             if (selectedValue == null) {
                 log.warn("[ClothesService] 옷 속성 매핑 실패: 속성에 존재하지 않는 옵션 값 - definitionId: {}, value: {}", dto.definitionId(), dto.value());
                 throw new ClothesException(ErrorCode.OPTION_NOT_FOUND);
             }
 
             ClothesAttribute newAttribute = ClothesAttribute.create(clothes, attributeDef);
+
+            newAttribute.assignOption(selectedValue);
+
             newAttribute.assignOption(selectedValue);
 
             attributes.add(newAttribute);
@@ -324,6 +329,8 @@ public class ClothesServiceImpl implements ClothesService {
 
     private List<ClothesAttributeWithDefDto> buildAttributeDtos(List<ClothesAttribute> attributes) {
         return attributes.stream()
+                .filter(attr -> attr.getClothesAttributeSelectableValue() != null &&
+                        attr.getClothesAttributeSelectableValue().getSelectableValue() != null)
                 .map(attr -> {
                     List<String> selectableOptions = attr.getAttribute().getSelectableValues().stream()
                             .map(SelectableValue::getType)

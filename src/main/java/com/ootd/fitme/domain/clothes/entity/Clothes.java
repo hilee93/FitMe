@@ -94,9 +94,7 @@ public class Clothes extends BaseUpdateEntity {
                 ClothesAttribute existing = existingOpt.get();
                 SelectableValue incomingOption = incoming.getClothesAttributeSelectableValue().getSelectableValue();
 
-                if (!existing.getClothesAttributeSelectableValue().getSelectableValue().getId().equals(incomingOption.getId())) {
-                    existing.getClothesAttributeSelectableValue().changeSelectableValue(incomingOption);
-                }
+                existing.assignOption(incomingOption);
             } else {
                 this.attributes.add(incoming);
             }
