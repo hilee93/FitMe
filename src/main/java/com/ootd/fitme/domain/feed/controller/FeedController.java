@@ -11,7 +11,9 @@ import com.ootd.fitme.domain.feed.dto.request.FeedSearchCondition;
 import com.ootd.fitme.domain.feed.dto.request.FeedUpdateRequestDto;
 import com.ootd.fitme.domain.feed.dto.response.FeedCursorResponseDto;
 import com.ootd.fitme.domain.feed.dto.response.FeedResponseDto;
+import com.ootd.fitme.domain.feed.exception.FeedAccessDeniedException;
 import com.ootd.fitme.domain.feed.service.FeedService;
+import com.ootd.fitme.global.exception.ErrorCode;
 import com.ootd.fitme.global.security.auth.CustomUserPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +42,10 @@ public class FeedController implements FeedControllerDocs {
 
     @Override
     @PostMapping
-    public ResponseEntity<FeedResponseDto> createFeed(@RequestBody @Valid FeedCreateRequest feedCreateRequest) {
+    public ResponseEntity<FeedResponseDto> createFeed(@RequestBody @Valid FeedCreateRequest feedCreateRequest, @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        if (!feedCreateRequest.authorId().equals(userPrincipal.getUserId())) {
+            throw new FeedAccessDeniedException(ErrorCode.FEED_ACCESS_DENIED);
+        }
         FeedResponseDto responseDto = feedService.createFeed(feedCreateRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
     }
@@ -58,8 +63,9 @@ public class FeedController implements FeedControllerDocs {
 
     @Override
     @DeleteMapping("/{feedId}")
-    public ResponseEntity<Void> deleteFeed(@PathVariable UUID feedId) {
-        feedService.deleteFeed(feedId);
+    public ResponseEntity<Void> deleteFeed(@PathVariable UUID feedId, @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        UUID userId = userPrincipal.getUserId();
+        feedService.deleteFeed(feedId, userId);
         return ResponseEntity.noContent().build();
     }
 
