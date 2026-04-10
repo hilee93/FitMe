@@ -7,9 +7,8 @@ public record FeedCommentCreateEvent(
         UUID commentId,
         UUID feedId,
         UUID feedOwnerId,
+        String content,
         UUID commenterId,
-        String feedName,
-        String commenterName,
         String comment,
         Instant createdAt
 ) {
