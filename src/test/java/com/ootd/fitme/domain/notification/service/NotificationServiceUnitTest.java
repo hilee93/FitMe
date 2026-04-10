@@ -14,6 +14,7 @@ import com.ootd.fitme.domain.notification.event.NotificationCreatedEvent;
 import com.ootd.fitme.domain.notification.exception.NotificationBadRequestException;
 import com.ootd.fitme.domain.notification.repository.NotificationProfileRepository;
 import com.ootd.fitme.domain.notification.repository.NotificationRepository;
+import com.ootd.fitme.domain.profile.entity.Profile;
 import com.ootd.fitme.domain.profile.repository.ProfileRepository;
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.repository.UserRepository;
@@ -64,6 +65,10 @@ class NotificationServiceUnitTest {
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
+
+    @Mock
+    private ProfileRepository profileRepository;
+
 
 
     @Nested
@@ -117,8 +122,13 @@ class NotificationServiceUnitTest {
         @DisplayName("좋아요 알림이 정상적으로 생성된다")
         void shouldCreateNotification_whenFeedLiked() {
             UUID userId = UUID.randomUUID();
+            UUID likerId = UUID.randomUUID();
             User user = mock(User.class);
             Notification notification = mock(Notification.class);
+            Profile profile = mock(Profile.class);
+
+            given(profileRepository.findByUserId(likerId)).willReturn(Optional.of(profile));
+            given(profile.getName()).willReturn("liker");
 
             given(userRepository.findById(userId)).willReturn(Optional.of(user));
             given(notificationFactory.feedLiked(user, "feedName", "liker")).willReturn(notification);
@@ -128,7 +138,7 @@ class NotificationServiceUnitTest {
             given(notification.getUser()).willReturn(user);
             given(user.getId()).willReturn(userId);
 
-            notificationService.notifyFeedLiked(userId, "feedName", "liker");
+            notificationService.notifyFeedLiked(userId, "feedName", likerId);
 
             verify(notificationRepository).save(notification);
         }
@@ -137,9 +147,13 @@ class NotificationServiceUnitTest {
         @DisplayName("댓글 알림이 정상적으로 생성된다")
         void shouldCreateNotification_whenFeedCommented() {
             UUID userId = UUID.randomUUID();
+            UUID commenterId = UUID.randomUUID();
+            Profile profile = mock(Profile.class);
             User user = mock(User.class);
             Notification notification = mock(Notification.class);
 
+            given(profileRepository.findByUserId(commenterId)).willReturn(Optional.of(profile));
+            given(profile.getName()).willReturn("commenter");
             given(userRepository.findById(userId)).willReturn(Optional.of(user));
             given(notificationFactory.feedCommented(user, "feedName", "commenter", "nice"))
                     .willReturn(notification);
@@ -149,7 +163,7 @@ class NotificationServiceUnitTest {
             given(notification.getUser()).willReturn(user);
             given(user.getId()).willReturn(userId);
 
-            notificationService.notifyFeedCommented(userId, "feedName", "commenter", "nice");
+            notificationService.notifyFeedCommented(userId, "feedName", commenterId, "nice");
 
             verify(notificationRepository).save(notification);
         }
@@ -211,6 +225,10 @@ class NotificationServiceUnitTest {
         void shouldCreateNotification_whenFollowerNewFeed() {
             UUID followeeId = UUID.randomUUID();
             UUID followerId = UUID.randomUUID();
+            Profile profile = mock(Profile.class);
+
+            given(profileRepository.findByUserId(followeeId)).willReturn(Optional.of(profile));
+            given(profile.getName()).willReturn("writer");
 
             User follower = mock(User.class);
             Notification notification = mock(Notification.class);
@@ -224,7 +242,7 @@ class NotificationServiceUnitTest {
             given(notificationRepository.saveAll(notifications)).willReturn(notifications);
             given(notification.getUser()).willReturn(follower);
 
-            List<Notification> result = notificationService.notifyFollowerNewFeed(followeeId, "writer", "feed");
+            List<Notification> result = notificationService.notifyFollowerNewFeed(followeeId, "feed");
 
             assertThat(result).containsExactly(notification);
 

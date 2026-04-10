@@ -15,6 +15,8 @@ import com.ootd.fitme.domain.notification.exception.NotificationNotFoundExceptio
 import com.ootd.fitme.domain.notification.mapper.NotificationMapper;
 import com.ootd.fitme.domain.notification.repository.NotificationProfileRepository;
 import com.ootd.fitme.domain.notification.repository.NotificationRepository;
+import com.ootd.fitme.domain.profile.entity.Profile;
+import com.ootd.fitme.domain.profile.exception.ProfileException;
 import com.ootd.fitme.domain.profile.repository.ProfileRepository;
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.exception.user.UserException;
@@ -44,6 +46,7 @@ public class NotificationService {
     private final UserRepository userRepository;
     private final FollowRepository followRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final ProfileRepository profileRepository;
 
 
 
@@ -71,23 +74,29 @@ public class NotificationService {
     }
 
     @Transactional
-    public Notification notifyFeedLiked(UUID likedId,String feedName, String likerName) {
+    public Notification notifyFeedLiked(UUID targetUserId, String content, UUID likerId) {
 
-        User user = userRepository.findById(likedId)
+        User targetUser = userRepository.findById(targetUserId)
                 .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
 
-        Notification notification = notificationFactory.feedLiked(user,feedName, likerName);
+        Profile likerProfile = profileRepository.findByUserId(likerId)
+                .orElseThrow(() -> new ProfileException(ErrorCode.PROFILE_NOT_FOUND));
+
+        Notification notification = notificationFactory.feedLiked(targetUser, content, likerProfile.getName());
 
         return saveAndPublish(notification);
     }
 
     @Transactional
-    public Notification notifyFeedCommented(UUID feedOwnerId,String feedName, String commenterName, String comment) {
+    public Notification notifyFeedCommented(UUID feedOwnerId, String content, UUID commenterId, String comment) {
 
         User user = userRepository.findById(feedOwnerId)
                 .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
 
-        Notification notification = notificationFactory.feedCommented(user,feedName, commenterName,comment);
+        Profile commenterProfile = profileRepository
+                .findByUserId(commenterId).orElseThrow(() -> new ProfileException(ErrorCode.PROFILE_NOT_FOUND));
+
+        Notification notification = notificationFactory.feedCommented(user, content, commenterProfile.getName(), comment);
 
         return saveAndPublish(notification);
     }
@@ -109,7 +118,7 @@ public class NotificationService {
     }
 
     @Transactional
-    public List<Notification> notifyFollowerNewFeed(UUID followeeId, String writerName, String feedName
+    public List<Notification> notifyFollowerNewFeed(UUID followeeId, String content
     ) {
 
         List<UUID> followerIds = followRepository.findFollowerIdsByFolloweeId(followeeId);
@@ -117,11 +126,13 @@ public class NotificationService {
         if (followerIds == null || followerIds.isEmpty()) {
             return List.of();
         }
+        Profile commenterProfile = profileRepository.findByUserId(followeeId)
+                .orElseThrow(() -> new ProfileException(ErrorCode.PROFILE_NOT_FOUND));
 
         List<Notification> notifications = followerIds.stream()
                 .distinct()
                 .map(userRepository::getReferenceById)
-                .map(user -> notificationFactory.followerNewFeed(user, writerName, feedName))
+                .map(user -> notificationFactory.followerNewFeed(user, commenterProfile.getName(), content))
                 .toList();
 
         return saveAllAndPublish(notifications);
