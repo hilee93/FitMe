@@ -68,10 +68,10 @@ public class DirectMessageServiceImpl implements DirectMessageService {
     }
 
     @Override
-    public DirectMessageDtoCursorResponse getDirectMessages(UUID userId, String cursor, UUID idAfter, int limit) {
+    public DirectMessageDtoCursorResponse getDirectMessages(UUID myId, UUID targetId, String cursor, UUID idAfter, int limit) {
 
         List<DirectMessageDto> directMessages =
-                directMessageRepository.findDirectMessages(userId, cursor, idAfter, limit);
+                directMessageRepository.findDirectMessages(myId, targetId, cursor, idAfter, limit);
 
         boolean hasNext = directMessages.size() > limit;
         List<DirectMessageDto> messages = hasNext ? directMessages.subList(0, limit) : directMessages;
@@ -85,7 +85,7 @@ public class DirectMessageServiceImpl implements DirectMessageService {
             nextIdAfter = lastItem.id();
         }
 
-        long totalCount = directMessageRepository.countBySenderIdOrReceiverId(userId, userId);
+        long totalCount = directMessageRepository.countByConversation(myId, targetId);
 
         return new DirectMessageDtoCursorResponse(
                 messages, nextCursor, nextIdAfter, hasNext, totalCount, SortBy.createdAt, SortDirection.DESCENDING);
