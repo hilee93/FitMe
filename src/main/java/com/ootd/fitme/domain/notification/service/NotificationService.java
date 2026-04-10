@@ -144,7 +144,6 @@ public class NotificationService {
     }
 
 
-
     @Transactional(readOnly = true)
     public NotificationPageResponse getNotifications(NotificationPageRequest request) {
 
