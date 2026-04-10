@@ -3,12 +3,15 @@ package com.ootd.fitme.domain.notification.service;
 import com.ootd.fitme.domain.follow.repository.FollowRepository;
 import com.ootd.fitme.domain.notification.dto.request.NotificationDeleteRequest;
 import com.ootd.fitme.domain.notification.dto.request.NotificationPageRequest;
-import com.ootd.fitme.domain.notification.dto.response.NotificationDto;
 import com.ootd.fitme.domain.notification.dto.response.NotificationPageResponse;
+import com.ootd.fitme.domain.notification.dto.response.NotificationDto;
 import com.ootd.fitme.domain.notification.entity.Notification;
 import com.ootd.fitme.domain.notification.entity.NotificationFactory;
 import com.ootd.fitme.domain.notification.enums.AttributeAction;
+import com.ootd.fitme.domain.notification.event.NotificationCreatedEvent;
 import com.ootd.fitme.domain.notification.exception.NotificationBadRequestException;
+import com.ootd.fitme.domain.notification.exception.NotificationException;
+import com.ootd.fitme.domain.notification.exception.NotificationNotFoundException;
 import com.ootd.fitme.domain.notification.mapper.NotificationMapper;
 import com.ootd.fitme.domain.notification.repository.NotificationProfileRepository;
 import com.ootd.fitme.domain.notification.repository.NotificationRepository;
@@ -20,13 +23,20 @@ import com.ootd.fitme.domain.user.exception.user.UserException;
 import com.ootd.fitme.domain.user.repository.UserRepository;
 import com.ootd.fitme.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Slice;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class NotificationService {
@@ -35,27 +45,21 @@ public class NotificationService {
     private final NotificationFactory notificationFactory;
     private final UserRepository userRepository;
     private final FollowRepository followRepository;
-    private final NotificationSseService notificationSseService;
-    //private final ProfileRepository profileRepository; TODO : 나중에 추가하신다고 일단 내 레포로 대체
-    private final NotificationProfileRepository notificationProfileRepository;
+    private final ApplicationEventPublisher eventPublisher;
     private final ProfileRepository profileRepository;
 
 
+
+
     @Transactional
-    public Notification notifyDirectMessage(UUID receiverId, String senderName, String message) {
+    public Notification  notifyDirectMessage(UUID receiverId, String senderName,String message) {
 
         User receiver = userRepository.findById(receiverId)
                 .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
 
         Notification notification = notificationFactory.dm(receiver, senderName, message);
 
-        Notification saved = notificationRepository.save(notification);
-
-        NotificationDto notificationDto = NotificationMapper.toDto(saved);
-
-        notificationSseService.send(receiverId, notificationDto);
-
-        return saved;
+        return saveAndPublish(notification);
     }
 
     @Transactional
@@ -64,43 +68,9 @@ public class NotificationService {
         User user = userRepository.findById(followeeId)
                 .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
 
-
         Notification notification = notificationFactory.followed(user, followerName);
 
-        Notification saved = notificationRepository.save(notification);
-
-        NotificationDto notificationDto = NotificationMapper.toDto(saved);
-
-        notificationSseService.send(followeeId, notificationDto);
-
-        return saved;
-    }
-
-    @Transactional
-    public List<Notification> notifyWeatherAlert(List<UUID> receiverIds, String region1, String region2, String weatherAlert) {
-        if (receiverIds == null || receiverIds.isEmpty()) {
-            return List.of();
-        }
-
-        List<UUID> uniqueReceiverIds = receiverIds.stream().distinct().toList();
-        List<User> users = userRepository.findAllById(uniqueReceiverIds);
-
-        if (users.isEmpty()) {
-            return List.of();
-        }
-
-        List<Notification> notifications = users.stream()
-                .map(user -> notificationFactory.weatherAlert(user, region1, region2, weatherAlert))
-                .toList();
-
-        List<Notification> saveds = notificationRepository.saveAll(notifications);
-
-        for (Notification saved : saveds) {
-            NotificationDto dto = NotificationMapper.toDto(saved);
-            notificationSseService.send(saved.getUser().getId(), dto);
-        }
-
-        return saveds;
+        return saveAndPublish(notification);
     }
 
     @Transactional
@@ -109,17 +79,12 @@ public class NotificationService {
         User targetUser = userRepository.findById(targetUserId)
                 .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
 
-        Profile likerProfile = profileRepository.findByUserId(likerId).orElseThrow(() -> new ProfileException(ErrorCode.PROFILE_NOT_FOUND));
+        Profile likerProfile = profileRepository.findByUserId(likerId)
+                .orElseThrow(() -> new ProfileException(ErrorCode.PROFILE_NOT_FOUND));
 
         Notification notification = notificationFactory.feedLiked(targetUser, content, likerProfile.getName());
 
-        Notification saved = notificationRepository.save(notification);
-
-        NotificationDto notificationDto = NotificationMapper.toDto(saved);
-
-        notificationSseService.send(targetUserId, notificationDto);
-
-        return saved;
+        return saveAndPublish(notification);
     }
 
     @Transactional
@@ -128,18 +93,28 @@ public class NotificationService {
         User user = userRepository.findById(feedOwnerId)
                 .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
 
-        Profile commenterProfile = profileRepository.findByUserId(commenterId).orElseThrow(() -> new ProfileException(ErrorCode.PROFILE_NOT_FOUND));
-
+        Profile commenterProfile = profileRepository
+                .findByUserId(commenterId).orElseThrow(() -> new ProfileException(ErrorCode.PROFILE_NOT_FOUND));
 
         Notification notification = notificationFactory.feedCommented(user, content, commenterProfile.getName(), comment);
 
-        Notification saved = notificationRepository.save(notification);
+        return saveAndPublish(notification);
+    }
 
-        NotificationDto notificationDto = NotificationMapper.toDto(saved);
+    @Transactional
+    public List<Notification> notifyWeatherAlert(List<UUID> receiverIds, String region1, String region2 , String weatherAlert) {
+        //user id 리스트를  이미 줌
+        if (receiverIds == null || receiverIds.isEmpty()) {
+            return List.of();
+        }
 
-        notificationSseService.send(feedOwnerId, notificationDto);
+        List<Notification> notifications = receiverIds.stream()
+                .distinct()
+                .map(userRepository::getReferenceById)
+                .map(user -> notificationFactory.weatherAlert(user, region1, region2, weatherAlert))
+                .toList();
 
-        return saved;
+        return saveAllAndPublish(notifications);
     }
 
     @Transactional
@@ -148,44 +123,35 @@ public class NotificationService {
 
         List<UUID> followerIds = followRepository.findFollowerIdsByFolloweeId(followeeId);
 
-        List<User> followers = userRepository.findAllById(followerIds);
+        if (followerIds == null || followerIds.isEmpty()) {
+            return List.of();
+        }
+        Profile commenterProfile = profileRepository.findByUserId(followeeId)
+                .orElseThrow(() -> new ProfileException(ErrorCode.PROFILE_NOT_FOUND));
 
-        Profile profile = profileRepository.findByUserId(followeeId).orElseThrow();
-
-        List<Notification> notifications = followers.stream()
-                .map(user -> notificationFactory.followerNewFeed(user, profile.getName(), content))
+        List<Notification> notifications = followerIds.stream()
+                .distinct()
+                .map(userRepository::getReferenceById)
+                .map(user -> notificationFactory.followerNewFeed(user, commenterProfile.getName(), content))
                 .toList();
 
-        List<Notification> saved = notificationRepository.saveAll(notifications);
-
-        saved.forEach(notification ->
-                notificationSseService.send(
-                        notification.getUser().getId(),
-                        NotificationMapper.toDto(notification)
-                )
-        );
-
-        return saved;
+        return saveAllAndPublish(notifications);
     }
 
-
     @Transactional
-    public List<Notification> notifyAttributeAdded(String attributeName, AttributeAction action) {
+    public List<Notification> notifyAttributeAdded(String attributeName,AttributeAction action) {
 
         List<User> users = userRepository.findAll();
+
+        if (users.isEmpty()) {
+            return List.of();
+        }
 
         List<Notification> notifications = users.stream()
                 .map(user -> notificationFactory.attributeAdded(user, attributeName, action))
                 .toList();
 
-        List<Notification> saved = notificationRepository.saveAll(notifications);
-
-
-        NotificationDto notificationDto = NotificationMapper.toDto(saved.get(0));
-
-        notificationSseService.sendAll(notificationDto);
-
-        return saved;
+        return saveAllAndPublish(notifications);
     }
 
 
@@ -202,7 +168,6 @@ public class NotificationService {
     @Transactional
     public void delete(NotificationDeleteRequest request) {
 
-
         // 해당유저의 알림ID 유무 판별
         boolean exists = notificationRepository
                 .existsByIdAndUserId(request.notificationId(), request.userId());
@@ -214,9 +179,34 @@ public class NotificationService {
             );
         }
 
-
         notificationRepository.deleteById(request.notificationId());
     }
+
+    //단건
+    private Notification saveAndPublish(Notification notification) {
+
+        Notification saved = notificationRepository.save(notification);
+
+        log.info("Notification saved type : {} id: {}", saved.getType(),saved.getId());
+
+        eventPublisher.publishEvent(NotificationCreatedEvent.from(saved));
+
+        log.info("Notification publish CreateEvent type : {} id: {}", saved.getType(),saved.getId());
+        return saved;
+    }
+    //다건
+    private List<Notification> saveAllAndPublish(List<Notification> notifications) {
+        List<Notification> savedAll = notificationRepository.saveAll(notifications);
+
+        log.info("Notifications savedAll count={}", savedAll.size());
+
+        savedAll.forEach(notification ->
+                eventPublisher.publishEvent(NotificationCreatedEvent.from(notification))
+        );
+        log.info("Publishing notification events count={}", savedAll.size());
+        return savedAll;
+    }
+
 
 
 }
