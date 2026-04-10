@@ -56,7 +56,6 @@ public class FeedServiceImpl implements FeedService {
 
     @Override
     @Transactional
-    @PreAuthorize("#feedCreateRequest.authorId == authentication.principal.id") // NOTE: 원래면 로그인 인증된 principal값을 컨트롤러에서 넘겨줘야하지만 프론트엔드 요구 계약상 request를 작성자로 하기떄문에 보안을위해 차선으로 authentication과 비교
     public FeedResponseDto createFeed(FeedCreateRequest feedCreateRequest) {
         WeatherForecast weatherForecast = weatherForecastRepository.findById(feedCreateRequest.weatherId()).orElseThrow();  // TODO: 세부 exception 추후 진행
         User user = userRepository.findById(feedCreateRequest.authorId()).orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));

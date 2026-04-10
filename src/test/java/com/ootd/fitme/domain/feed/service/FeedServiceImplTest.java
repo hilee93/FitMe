@@ -203,9 +203,10 @@ class FeedServiceImplTest {
         void deleteFeed_success_when_valid_request() {
             // given
             FeedFixture feedFixture = feedFixtureBuilder.createFeedFixture();
+            User user = feedFixture.user();
 
             // when
-            feedService.deleteFeed(feedFixture.feed().getId());
+            feedService.deleteFeed(feedFixture.feed().getId(), user.getId());
 
             em.flush();
             em.clear(); // NOTE: feedClothes는 DB에서 CASCADE처리라 JPA 영속성은 모르기때문에 DB반영후 아래진행
@@ -219,7 +220,7 @@ class FeedServiceImplTest {
         @Test
         @DisplayName("[Negative] 피드삭제 - 없는 Id로 삭제시 FeedNotFoundException 예외발생")
         void deleteFeed_fail_when_feed_not_found() {
-            assertThatThrownBy(() -> feedService.deleteFeed(UUID.randomUUID()))
+            assertThatThrownBy(() -> feedService.deleteFeed(UUID.randomUUID(), UUID.randomUUID()))
                     .isExactlyInstanceOf(FeedNotFoundException.class)
                     .hasMessage(ErrorCode.FEED_NOT_FOUND.getMessage());
         }

@@ -18,7 +18,7 @@ public interface FeedControllerDocs {
 
     ResponseEntity<FeedCursorResponseDto> getAllFeeds(FeedSearchCondition feedSearchCondition, @Parameter(hidden = true) CustomUserPrincipal userPrincipal);
 
-    ResponseEntity<FeedResponseDto> createFeed(FeedCreateRequest feedCreateRequest);
+    ResponseEntity<FeedResponseDto> createFeed(FeedCreateRequest feedCreateRequest, @Parameter(hidden = true) CustomUserPrincipal userPrincipal);
 
     ResponseEntity<FeedResponseDto> updateFeed(UUID feedId, FeedUpdateRequestDto feedUpdateRequestDto, @Parameter(hidden = true) CustomUserPrincipal userPrincipal);
 
