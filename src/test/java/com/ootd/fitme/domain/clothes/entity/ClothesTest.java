@@ -128,10 +128,8 @@ class ClothesTest {
             // 추가 검증
             assertThat(resultAttributes).contains(incomingNew);
 
-            var mockCasv = existingToUpdate.getClothesAttributeSelectableValue();
             var incomingOption = incomingUpdate.getClothesAttributeSelectableValue().getSelectableValue();
-
-            verify(mockCasv, times(1)).changeSelectableValue(incomingOption);
+            verify(existingToUpdate, times(1)).assignOption(incomingOption);
         }
 
         @Nested
