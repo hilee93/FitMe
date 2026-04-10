@@ -20,8 +20,8 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 40s
+      retries: 15
+      start_period: 90s
     depends_on:
       postgres: # postgres라는 동작에 의존하고 이게 될때까지 위의서비스는 대기
         condition: service_healthy # 해당 서비스(postgres)가 healthy해야만 동작하도록 조건 추가 및 대기
@@ -119,10 +119,11 @@ services:
     volumes:
       - fitme-elasticsearch-data:/usr/share/elasticsearch/data
     healthcheck:
-      test: [ "CMD-SHELL", "curl -fsS http://localhost:9200 >/dev/null || exit 1" ]
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s >/dev/null || exit 1" ]
       interval: 15s
       timeout: 10s
-      retries: 10
+      retries: 15
+      start_period: 90s
     networks:
       - fitme-backend-network
 
@@ -131,7 +132,7 @@ services:
     ports:
       - "80:80" # 외부 요청(80)을 nginx로 받고 → 내부 app:8080으로 프록시
     volumes:
-      - ./nginx/nginx.conf.local:/etc/nginx/nginx.conf.local:ro
+      - ./nginx/nginx.conf.local:/etc/nginx/nginx.conf:ro
     depends_on:
       app:
         condition: service_healthy
