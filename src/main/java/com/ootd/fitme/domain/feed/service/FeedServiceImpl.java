@@ -28,6 +28,7 @@ import com.ootd.fitme.domain.weatherforecast.repository.WeatherForecastRepositor
 import com.ootd.fitme.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,7 +56,6 @@ public class FeedServiceImpl implements FeedService {
 
     @Override
     @Transactional
-    // TODO:PreAuthorized() 추가하여 자기작성인지 체크 추가
     public FeedResponseDto createFeed(FeedCreateRequest feedCreateRequest) {
         WeatherForecast weatherForecast = weatherForecastRepository.findById(feedCreateRequest.weatherId()).orElseThrow();  // TODO: 세부 exception 추후 진행
         User user = userRepository.findById(feedCreateRequest.authorId()).orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
@@ -92,10 +92,13 @@ public class FeedServiceImpl implements FeedService {
 
     @Override
     @Transactional
-    public void deleteFeed(UUID feedId) {
+    public void deleteFeed(UUID feedId, UUID userId) {
         Feed feed = feedRepository.findById(feedId)
                 .orElseThrow(() -> new FeedNotFoundException(ErrorCode.FEED_NOT_FOUND));
-        // TODO: principal userId와 feed의 authorId 비교 자기자신인지 체크
+
+        if (!feed.getUser().getId().equals(userId)) {
+            throw new FeedAccessDeniedException(ErrorCode.FEED_ACCESS_DENIED);
+        }
         feedRepository.delete(feed);
     }
 

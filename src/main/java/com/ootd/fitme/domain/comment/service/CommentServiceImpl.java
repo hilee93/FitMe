@@ -52,6 +52,8 @@ public class CommentServiceImpl implements CommentService {
                 )
         );
 
+        feedRepository.increaseCommentCount(feed.getId());
+
         return commentQueryService.getFeedComment(savedComment.getId());
     }
 
