@@ -316,8 +316,6 @@ public class ClothesServiceImpl implements ClothesService {
 
             newAttribute.assignOption(selectedValue);
 
-            newAttribute.assignOption(selectedValue);
-
             attributes.add(newAttribute);
         }
 
