@@ -7,6 +7,7 @@ import com.ootd.fitme.domain.directmessage.event.DirectMessageCreateEvent;
 import com.ootd.fitme.domain.directmessage.exception.DirectMessageSenderMisMatchException;
 import com.ootd.fitme.domain.directmessage.repository.DirectMessageRepository;
 import com.ootd.fitme.domain.profile.entity.Profile;
+import com.ootd.fitme.domain.profile.exception.ProfileException;
 import com.ootd.fitme.domain.profile.repository.ProfileRepository;
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.exception.user.UserException;
@@ -126,7 +127,7 @@ class DirectMessageServiceUnitTest {
 
             //when & then
             assertThatThrownBy(() -> directMessageServiceImpl.sendDirectMessage(request, senderId))
-                    .isInstanceOf(UserException.class);
+                    .isInstanceOf(ProfileException.class);
         }
 
         @Test
@@ -143,7 +144,7 @@ class DirectMessageServiceUnitTest {
 
             //when & then
             assertThatThrownBy(() -> directMessageServiceImpl.sendDirectMessage(request, senderId))
-                    .isInstanceOf(UserException.class);
+                    .isInstanceOf(ProfileException.class);
         }
 
         @Test
