@@ -11,6 +11,18 @@ services:
       AZURE_STORAGE_ACCOUNT_NAME: ${AZURE_STORAGE_ACCOUNT_NAME}
       AZURE_STORAGE_ACCOUNT_KEY: ${AZURE_STORAGE_ACCOUNT_KEY}
       JAVA_OPTS: -Xms256m -Xmx512m
+
+      # 임시 비밀번호 메일 기능 ON
+      FITME_USER_TEMP_PASSWORD_MAIL_ENABLED: "true"
+      FITME_USER_TEMP_PASSWORD_MAIL_FROM: "no-reply@fitme.com"
+      FITME_USER_TEMP_PASSWORD_MAIL_SUBJECT: "[FitMe] 임시 비밀번호 안내"
+
+      # docker에 spring.mail.* 주입
+      SPRING_MAIL_HOST: "mailhog"
+      SPRING_MAIL_PORT: "1025"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: "false"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "false"
+
     volumes:
       - fitme-storage:/app/storage
       - fitme-logs:/app/.logs
@@ -31,6 +43,8 @@ services:
         condition: service_healthy
       elasticsearch:
         condition: service_healthy
+      mailhog:
+        condition: service_started
     networks:
       - fitme-backend-network
 
@@ -138,6 +152,14 @@ services:
         condition: service_healthy
     networks:
       - fitme-backend-network
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    ports:
+      - "8025:8025" # 메일 확인 UI
+    networks:
+      - fitme-backend-network
+    platform: linux/amd64
 
 
 

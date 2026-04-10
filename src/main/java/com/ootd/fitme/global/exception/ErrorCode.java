@@ -14,6 +14,7 @@ public enum ErrorCode {
     USER_ACCOUNT_LOCKED(HttpStatus.LOCKED, "유저 계정이 잠겨있습니다.", "U-006"),
     USER_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "유저가 이미 존재합니다.", "U-007"),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다.", "U-008"),
+    USER_TEMP_PASSWORD_MAIL_SEND_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "임시 비밀번호 메일 발송에 실패했습니다.", "U-009"),
 
     // profile
     PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "프로필을 찾을 수 없습니다.", "P-001"),
@@ -86,6 +87,7 @@ public enum ErrorCode {
     MEDIA_FILE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "해당 파일에 대한 접근 권한이 없습니다.", "MEDIA-002"),
     INVALID_FILE_REQUEST(HttpStatus.BAD_REQUEST, "파일이 비어있거나 잘못된 요청입니다.", "MEDIA-003"),
     UNSUPPORTED_FILE_FORMAT(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "지원하지 않는 이미지 파일 형식입니다.", "MEDIA-004");
+
 
     private final String message;
     private final HttpStatus status;

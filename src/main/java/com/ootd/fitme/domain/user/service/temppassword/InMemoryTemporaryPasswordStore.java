@@ -1,4 +1,4 @@
-package com.ootd.fitme.domain.user.service;
+package com.ootd.fitme.domain.user.service.temppassword;
 
 import org.springframework.stereotype.Service;
 
