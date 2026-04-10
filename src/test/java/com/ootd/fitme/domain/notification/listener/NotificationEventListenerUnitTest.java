@@ -44,8 +44,8 @@ class NotificationEventListenerUnitTest {
             Instant now = Instant.now();
 
             DirectMessageCreateEvent event =
-                    new DirectMessageCreateEvent(null,userId,senderId, "sender",
-                            null, null, null,"msg",now );
+                    new DirectMessageCreateEvent(null, userId, senderId, "sender",
+                            null, null, null, "msg", now);
 
             listener.directMessage(event);
 
@@ -61,7 +61,7 @@ class NotificationEventListenerUnitTest {
             UUID followerId = UUID.randomUUID();
 
             FollowCreateEvent event =
-                    new FollowCreateEvent(followedId,followeeId,followerId, "follower",Instant.now());
+                    new FollowCreateEvent(followedId, followeeId, followerId, "follower", Instant.now());
 
             listener.followed(event);
 
@@ -72,19 +72,19 @@ class NotificationEventListenerUnitTest {
         @Test
         @DisplayName("좋아요 이벤트 -> notifyFeedLiked 호출")
         void feedLiked() {
+            UUID feedLikeId = UUID.randomUUID();
             UUID feedId = UUID.randomUUID();
-            UUID likeId = UUID.randomUUID();
-            UUID likedId = UUID.randomUUID();
+            UUID targetUserId = UUID.randomUUID();
             UUID likerId = UUID.randomUUID();
-
+            Instant now = Instant.now();
 
             FeedLikedCreateEvent event =
-                    new FeedLikedCreateEvent(feedId,likeId,likedId,likerId,"feedName", "liker", Instant.now());
+                    new FeedLikedCreateEvent(feedLikeId, feedId, targetUserId, likerId, "content", now);
 
             listener.feedLiked(event);
 
             verify(notificationService)
-                    .notifyFeedLiked(likedId, "feedName","liker");
+                    .notifyFeedLiked(targetUserId, "content", likerId);
         }
 
         @Test
@@ -94,6 +94,7 @@ class NotificationEventListenerUnitTest {
             UUID feedId = UUID.randomUUID();
             UUID feedOwnerId = UUID.randomUUID();
             UUID commenterId = UUID.randomUUID();
+            Instant now = Instant.now();
 
             FeedCommentCreateEvent event =
                     new FeedCommentCreateEvent(
@@ -101,15 +102,14 @@ class NotificationEventListenerUnitTest {
                             feedId,
                             feedOwnerId,
                             commenterId,
-                            "feedName",
-                            "commenter",
-                             "nice",
-                            Instant.now());
+                            "comment",
+                            now
+                    );
 
             listener.feedCommented(event);
 
             verify(notificationService)
-                    .notifyFeedCommented(feedOwnerId,"feedName", "commenter", "nice");
+                    .notifyFeedCommented(feedOwnerId, commenterId, "comment");
         }
 
         @Test
@@ -119,12 +119,12 @@ class NotificationEventListenerUnitTest {
             UUID userId = UUID.randomUUID();
 
             AttributeAddedEvent event =
-                    new AttributeAddedEvent(attributeId,"color", AttributeAction.ADDED,Instant.now());
+                    new AttributeAddedEvent(attributeId, "color", AttributeAction.ADDED, Instant.now());
 
             listener.attributeAdded(event);
 
             verify(notificationService)
-                    .notifyAttributeAdded("color",AttributeAction.ADDED);
+                    .notifyAttributeAdded("color", AttributeAction.ADDED);
         }
 
         @Test
@@ -134,12 +134,12 @@ class NotificationEventListenerUnitTest {
             UUID userId = UUID.randomUUID();
 
             FeedCreateEvent event =
-                    new FeedCreateEvent(feedId,userId, "writer", "feed", Instant.now());
+                    new FeedCreateEvent(feedId, userId, "content", Instant.now());
 
             listener.followerNewFeed(event);
 
             verify(notificationService)
-                    .notifyFollowerNewFeed(userId, "writer", "feed");
+                    .notifyFollowerNewFeed(userId, "content");
         }
 
         @Test
@@ -149,12 +149,12 @@ class NotificationEventListenerUnitTest {
             List<UUID> receiverIds = List.of(UUID.randomUUID(), UUID.randomUUID());
 
             WeatherAlertEvent event =
-                    new WeatherAlertEvent(receiverIds,"지역1","지역2","비 온다",Instant.now());
+                    new WeatherAlertEvent(receiverIds, "지역1", "지역2", "비 온다", Instant.now());
 
             listener.weatherAlert(event);
 
             verify(notificationService)
-                    .notifyWeatherAlert(receiverIds,"지역1","지역2","비 온다");
+                    .notifyWeatherAlert(receiverIds, "지역1", "지역2", "비 온다");
         }
     }
 }

@@ -85,10 +85,10 @@ class NotificationFactoryTest {
         @DisplayName("피드 댓글 알림을 생성한다")
         void create_FeedCommented_Notification() {
 
-            Notification notification = notificationFactory.feedCommented(user, "피드이름","제원","좋은 글이네요!");
+            Notification notification = notificationFactory.feedCommented(user, "제원","좋은 글이네요!");
 
             assertThat(notification.getLevel()).isEqualTo(NotificationLevel.INFO);
-            assertThat(notification.getTitle()).isEqualTo("[피드이름]피드에 [제원]님이 댓글을 남겼습니다.");
+            assertThat(notification.getTitle()).isEqualTo("[제원]님이 댓글을 남겼습니다.");
             assertThat(notification.getContent()).isEqualTo("좋은 글이네요!");
             assertThat(notification.getType()).isEqualTo(NotificationType.FEED_COMMENTED);
             assertThat(notification.getUser()).isEqualTo(user);
