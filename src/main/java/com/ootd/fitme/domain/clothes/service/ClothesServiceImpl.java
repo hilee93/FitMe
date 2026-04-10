@@ -94,7 +94,6 @@ public class ClothesServiceImpl implements ClothesService {
     @Override
     @Transactional
     public ClothesDto updateClothes(UUID clothesId, UUID loginUserId, ClothesUpdateRequest request, MultipartFile newImage) {
-        log.info("📡 [디버깅] 프론트엔드 요청 속성 데이터: {}", request.attributes());
         log.info("[ClothesService] 옷 수정 요청 시작 - clothesId: {}, loginUserId: {}", clothesId, loginUserId);
 
         Clothes clothes = clothesRepository.findByIdWithDetails(clothesId)
