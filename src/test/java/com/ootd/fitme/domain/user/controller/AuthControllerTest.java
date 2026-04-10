@@ -7,6 +7,7 @@ import com.ootd.fitme.domain.user.dto.response.JwtDto;
 import com.ootd.fitme.domain.user.dto.response.SignInResult;
 import com.ootd.fitme.domain.user.dto.response.UserDto;
 import com.ootd.fitme.domain.user.enums.Role;
+import com.ootd.fitme.domain.user.service.AuthService;
 import com.ootd.fitme.domain.user.service.UserService;
 import com.ootd.fitme.global.security.jwt.JwtAuthenticationFilter;
 import com.ootd.fitme.global.security.jwt.JwtProperties;
@@ -57,6 +58,9 @@ class AuthControllerTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
+    private AuthService authService;
+
+    @MockitoBean
     private UserService userService;
 
     @MockitoBean
@@ -81,7 +85,7 @@ class AuthControllerTest {
             JwtDto jwtDto = new JwtDto(userDto, "access-token-value");
             SignInResult result = new SignInResult(jwtDto, "refresh-token-value");
 
-            given(userService.signIn(any(SignInRequest.class))).willReturn(result);
+            given(authService.signIn(any(SignInRequest.class))).willReturn(result);
             given(jwtProperties.refreshTokenExpirationMs()).willReturn(604800000L);
 
             mockMvc.perform(post("/api/auth/sign-in")
@@ -99,7 +103,7 @@ class AuthControllerTest {
                     .andExpect(header().string("Set-Cookie", containsString("HttpOnly")))
                     .andExpect(header().string("Set-Cookie", containsString("Max-Age=604800")));
 
-            then(userService).should().signIn(any(SignInRequest.class));
+            then(authService).should().signIn(any(SignInRequest.class));
         }
 
         @Test
@@ -115,7 +119,7 @@ class AuthControllerTest {
                                     """))
                     .andExpect(status().isBadRequest());
 
-            then(userService).should(never()).signIn(any(SignInRequest.class));
+            then(authService).should(never()).signIn(any(SignInRequest.class));
         }
 
         @Test
@@ -133,7 +137,7 @@ class AuthControllerTest {
             JwtDto jwtDto = new JwtDto(userDto, "access-token");
             SignInResult result = new SignInResult(jwtDto, "refresh-token");
 
-            given(userService.signIn(any(SignInRequest.class))).willReturn(result);
+            given(authService.signIn(any(SignInRequest.class))).willReturn(result);
 
             mockMvc.perform(multipart("/api/auth/sign-in")
                     .param("username", "tester@fitme.com")
@@ -146,7 +150,7 @@ class AuthControllerTest {
                     .andExpect(jsonPath("$.accessToken").value("access-token"))
                     .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("refreshToken=")));
 
-            then(userService).should().signIn(any(SignInRequest.class));
+            then(authService).should().signIn(any(SignInRequest.class));
         }
     }
 
@@ -167,14 +171,14 @@ class AuthControllerTest {
                     false
             );
             JwtDto jwtDto = new JwtDto(userDto, "new-access-token");
-            given(userService.refresh("refresh-token-value")).willReturn(jwtDto);
+            given(authService.refresh("refresh-token-value")).willReturn(jwtDto);
 
             mockMvc.perform(post("/api/auth/refresh")
                             .cookie(new Cookie("refreshToken", "refresh-token-value")))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.accessToken").value("new-access-token"));
 
-            then(userService).should().refresh("refresh-token-value");
+            then(authService).should().refresh("refresh-token-value");
         }
     }
 
@@ -192,7 +196,7 @@ class AuthControllerTest {
                     .andExpect(header().string("Set-Cookie", containsString("refreshToken=")))
                     .andExpect(header().string("Set-Cookie", containsString("Max-Age=0")));
 
-            then(userService).should().signOut(eq("access-token-value"), eq("refresh-token-value"));
+            then(authService).should().signOut(eq("access-token-value"), eq("refresh-token-value"));
         }
     }
 

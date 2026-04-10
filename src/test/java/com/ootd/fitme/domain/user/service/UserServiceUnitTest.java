@@ -3,17 +3,15 @@ package com.ootd.fitme.domain.user.service;
 import com.ootd.fitme.domain.profile.entity.Profile;
 import com.ootd.fitme.domain.profile.repository.ProfileRepository;
 import com.ootd.fitme.domain.user.dto.request.*;
-import com.ootd.fitme.domain.user.dto.response.JwtDto;
-import com.ootd.fitme.domain.user.dto.response.SignInResult;
-import com.ootd.fitme.domain.user.dto.response.UserDto;
+import com.ootd.fitme.domain.user.dto.response.*;
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.enums.Role;
-import com.ootd.fitme.domain.user.exception.auth.AuthException;
+import com.ootd.fitme.domain.user.enums.SortDirection;
+import com.ootd.fitme.domain.user.enums.UserSortBy;
 import com.ootd.fitme.domain.user.exception.user.UserException;
 import com.ootd.fitme.domain.user.mapper.UserMapper;
 import com.ootd.fitme.domain.user.repository.UserRepository;
 import com.ootd.fitme.global.exception.ErrorCode;
-import com.ootd.fitme.global.security.jwt.JwtProvider;
 import com.ootd.fitme.global.security.jwt.TokenBlacklistService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -27,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -46,9 +45,6 @@ public class UserServiceUnitTest {
 
     @Mock
     private UserMapper userMapper;
-
-    @Mock
-    private JwtProvider jwtProvider;
 
     @Mock
     private TokenBlacklistService tokenBlacklistService;
@@ -145,176 +141,6 @@ public class UserServiceUnitTest {
     }
 
     @Nested
-    @DisplayName("signIn")
-    class SignInTest {
-        @Test
-        @DisplayName("성공 - 일반 비밀번호로 로그인")
-        void signIn_normalPassword_success() {
-            User user = mock(User.class);
-            Profile profile = mockProfile("tester");
-
-            given(user.getId()).willReturn(userId);
-            given(user.getPassword()).willReturn(encodedPassword);
-            given(user.getRole()).willReturn(Role.USER);
-            given(userRepository.findByEmail(email)).willReturn(Optional.of(user));
-            given(passwordEncoder.matches(rawPassword, encodedPassword)).willReturn(true);
-            given(jwtProvider.generateAccessToken(userId, "USER")).willReturn("access-token");
-            given(jwtProvider.generateRefreshToken(userId, "USER")).willReturn("refresh-token");
-            given(profileRepository.findByUserId(any())).willReturn(Optional.of(profile));
-            given(userMapper.toDto(any(User.class), anyString())).willReturn(userDto);
-
-            SignInResult result = userService.signIn(new SignInRequest(email, rawPassword));
-
-            assertThat(result.jwtDto().accessToken()).isEqualTo("access-token");
-            assertThat(result.refreshToken()).isEqualTo("refresh-token");
-            verify(tokenBlacklistService).setRevokeAllBefore(eq(userId), any(Instant.class));
-        }
-
-        @Test
-        @DisplayName("실패 - 잠긴 계정은 USER_ACCOUNT_LOCKED 예외")
-        void signIn_lockedAccount_fail() {
-            User user = mock(User.class);
-
-            given(user.isLocked()).willReturn(true);
-            given(userRepository.findByEmail(email)).willReturn(Optional.of(user));
-
-            assertThatThrownBy(() -> userService.signIn(new SignInRequest(email, rawPassword)))
-                    .isInstanceOf(UserException.class)
-                    .extracting(ex -> ((UserException) ex).getErrorCode())
-                    .isEqualTo(ErrorCode.USER_ACCOUNT_LOCKED);
-        }
-
-        @Test
-        @DisplayName("성공 - 임시 비밀번호(만료 전) 로그인")
-        void signIn_temporaryPassword_success() {
-            User user = mock(User.class);
-            Profile profile = mockProfile("tester");
-
-            given(user.getId()).willReturn(userId);
-            given(user.getPassword()).willReturn(encodedPassword);
-            given(user.getRole()).willReturn(Role.USER);
-            given(userRepository.findByEmail(email)).willReturn(Optional.of(user));
-            given(passwordEncoder.matches(rawPassword, encodedPassword)).willReturn(false);
-            given(temporaryPasswordStore.findValidEncodedPassword(userId)).willReturn(Optional.of("encoded-temp"));
-            given(passwordEncoder.matches(rawPassword, "encoded-temp")).willReturn(true);
-            given(jwtProvider.generateAccessToken(userId, "USER")).willReturn("access-token");
-            given(jwtProvider.generateRefreshToken(userId, "USER")).willReturn("refresh-token");
-            given(profileRepository.findByUserId(any())).willReturn(Optional.of(profile));
-            given(userMapper.toDto(any(User.class), anyString())).willReturn(userDto);
-
-            SignInResult result = userService.signIn(new SignInRequest(email, rawPassword));
-
-            assertThat(result.jwtDto().accessToken()).isEqualTo("access-token");
-            verify(tokenBlacklistService).setRevokeAllBefore(eq(userId), any(Instant.class));
-        }
-
-        @Test
-        @DisplayName("실패 - 임시 비밀번호 만료/불일치 시 AUTH_INVALID_CREDENTIALS")
-        void signIn_temporaryPasswordInvalid_fail() {
-            User user = mock(User.class);
-
-            given(user.getId()).willReturn(userId);
-            given(user.getPassword()).willReturn(encodedPassword);
-            given(userRepository.findByEmail(email)).willReturn(Optional.of(user));
-            given(passwordEncoder.matches(rawPassword, encodedPassword)).willReturn(false);
-            given(temporaryPasswordStore.findValidEncodedPassword(userId)).willReturn(Optional.empty());
-
-            assertThatThrownBy(() -> userService.signIn(new SignInRequest(email, rawPassword)))
-                    .isInstanceOf(AuthException.class)
-                    .extracting(ex -> ((AuthException) ex).getErrorCode())
-                    .isEqualTo(ErrorCode.AUTH_INVALID_CREDENTIALS);
-        }
-    }
-
-    @Nested
-    @DisplayName("refresh")
-    class RefreshTest {
-        @Test
-        @DisplayName("성공 - 유효한 refresh token이면 새 access token 발급")
-        void refresh_success() {
-            User user = mock(User.class);
-            Instant iat = Instant.now();
-            Profile profile = mockProfile("tester");
-
-            given(user.getRole()).willReturn(Role.USER);
-            given(jwtProvider.validateToken("refresh-token")).willReturn(true);
-            given(jwtProvider.isRefreshToken("refresh-token")).willReturn(true);
-            given(jwtProvider.getUserId("refresh-token")).willReturn(userId);
-            given(jwtProvider.getTokenId("refresh-token")).willReturn("jti-1");
-            given(jwtProvider.getIssuedAt("refresh-token")).willReturn(iat);
-            given(tokenBlacklistService.isBlacklisted("jti-1")).willReturn(false);
-            given(tokenBlacklistService.getRevokeAllBefore(userId)).willReturn(iat.minusSeconds(1));
-            given(userRepository.findById(userId)).willReturn(Optional.of(user));
-            given(jwtProvider.generateAccessToken(userId, "USER")).willReturn("new-access-token");
-            given(profileRepository.findByUserId(any())).willReturn(Optional.of(profile));
-            given(userMapper.toDto(any(User.class), anyString())).willReturn(userDto);
-
-            JwtDto result = userService.refresh("refresh-token");
-
-            assertThat(result.accessToken()).isEqualTo("new-access-token");
-        }
-
-        @Test
-        @DisplayName("실패 - 블랙리스트 토큰이면 AUTH_INVALID_TOKEN")
-        void refresh_blacklisted_fail() {
-            Instant iat = Instant.now();
-
-            given(jwtProvider.validateToken("refresh-token")).willReturn(true);
-            given(jwtProvider.isRefreshToken("refresh-token")).willReturn(true);
-            given(jwtProvider.getUserId("refresh-token")).willReturn(userId);
-            given(jwtProvider.getTokenId("refresh-token")).willReturn("jti-1");
-            given(jwtProvider.getIssuedAt("refresh-token")).willReturn(iat);
-            given(tokenBlacklistService.isBlacklisted("jti-1")).willReturn(true);
-
-            assertThatThrownBy(() -> userService.refresh("refresh-token"))
-                    .isInstanceOf(AuthException.class)
-                    .extracting(ex -> ((AuthException) ex).getErrorCode())
-                    .isEqualTo(ErrorCode.AUTH_INVALID_TOKEN);
-        }
-
-        @Test
-        @DisplayName("실패 - cutoff 이전 발급 토큰이면 AUTH_INVALID_TOKEN")
-        void refresh_cutoff_fail() {
-            Instant iat = Instant.now();
-
-            given(jwtProvider.validateToken("refresh-token")).willReturn(true);
-            given(jwtProvider.isRefreshToken("refresh-token")).willReturn(true);
-            given(jwtProvider.getUserId("refresh-token")).willReturn(userId);
-            given(jwtProvider.getTokenId("refresh-token")).willReturn("jti-1");
-            given(jwtProvider.getIssuedAt("refresh-token")).willReturn(iat);
-            given(tokenBlacklistService.isBlacklisted("jti-1")).willReturn(false);
-            given(tokenBlacklistService.getRevokeAllBefore(userId)).willReturn(iat.plusSeconds(1));
-
-            assertThatThrownBy(() -> userService.refresh("refresh-token"))
-                    .isInstanceOf(AuthException.class)
-                    .extracting(ex -> ((AuthException) ex).getErrorCode())
-                    .isEqualTo(ErrorCode.AUTH_INVALID_TOKEN);
-        }
-    }
-
-    @Nested
-    @DisplayName("signOut")
-    class SignOutTest {
-        @Test
-        @DisplayName("성공 - access/refresh 토큰을 블랙리스트에 등록")
-        void signOut_success() {
-            Instant exp = Instant.now().plusSeconds(60);
-
-            given(jwtProvider.validateToken("access-token")).willReturn(true);
-            given(jwtProvider.validateToken("refresh-token")).willReturn(true);
-            given(jwtProvider.getTokenId("access-token")).willReturn("jti-access");
-            given(jwtProvider.getTokenId("refresh-token")).willReturn("jti-refresh");
-            given(jwtProvider.getExpiration("access-token")).willReturn(exp);
-            given(jwtProvider.getExpiration("refresh-token")).willReturn(exp);
-
-            userService.signOut("access-token", "refresh-token");
-
-            verify(tokenBlacklistService).blacklist("jti-access", exp);
-            verify(tokenBlacklistService).blacklist("jti-refresh", exp);
-        }
-    }
-
-    @Nested
     @DisplayName("관리자 계정관리")
     class AdminAccountTest {
         @Test
@@ -390,6 +216,70 @@ public class UserServiceUnitTest {
             verify(user).updatePassword("encoded-new");
             verify(temporaryPasswordStore).delete(userId);
             verify(tokenBlacklistService).setRevokeAllBefore(eq(userId), any(Instant.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("getUsers")
+    class GetUsers {
+        @Test
+        @DisplayName("성공 - 기본값/정규화 적용 후 커서 응답 반환")
+        void getUsers_success_withNormalization() {
+            CursorSlice<UserDto> slice = new CursorSlice<>(
+                    List.of(userDto),
+                    null,
+                    null,
+                    false,
+                    1L
+            );
+
+            given(userRepository.findUsersByCondition(any(UserSearchCondition.class))).willReturn(slice);
+
+            UserSearchCondition request = new UserSearchCondition(
+                    "   ",
+                    null,
+                    null,
+                    null,
+                    null,
+                    "   test@fitme.com",
+                    null,
+                    null
+            );
+
+            UserDtoCursorResponse result = userService.getUsers(request);
+
+            ArgumentCaptor<UserSearchCondition> captor = ArgumentCaptor.forClass(UserSearchCondition.class);
+            verify(userRepository).findUsersByCondition(captor.capture());
+
+            UserSearchCondition applied = captor.getValue();
+            assertThat(applied.cursor()).isNull();
+            assertThat(applied.limit()).isEqualTo(20);
+            assertThat(applied.sortBy()).isEqualTo(UserSortBy.CREATED_AT);
+            assertThat(applied.sortDirection()).isEqualTo(SortDirection.DESCENDING);
+            assertThat(applied.emailLike()).isEqualTo("test@fitme.com");
+
+            assertThat(result.data()).hasSize(1);
+            assertThat(result.totalCount()).isEqualTo(1L);
+        }
+
+        @Test
+        @DisplayName("실패 - cursor/idAfter 짝이 맞지 않으면 INVALID_INPUT_VALUE")
+        void getUsers_fail_invalidCursorPair() {
+            UserSearchCondition bad = new UserSearchCondition(
+                    null,
+                    UUID.randomUUID(),
+                    20,
+                    UserSortBy.CREATED_AT,
+                    SortDirection.DESCENDING,
+                    null,
+                    null,
+                    null
+            );
+
+            assertThatThrownBy(() -> userService.getUsers(bad))
+                    .isInstanceOf(UserException.class)
+                    .extracting(ex -> ((UserException) ex).getErrorCode())
+                    .isEqualTo(ErrorCode.INVALID_INPUT_VALUE);
         }
     }
 

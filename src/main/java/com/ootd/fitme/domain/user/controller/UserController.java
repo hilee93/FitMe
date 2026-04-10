@@ -1,10 +1,8 @@
 package com.ootd.fitme.domain.user.controller;
 
-import com.ootd.fitme.domain.user.dto.request.ChangePasswordRequest;
-import com.ootd.fitme.domain.user.dto.request.UserCreateRequest;
-import com.ootd.fitme.domain.user.dto.request.UserLockUpdateRequest;
-import com.ootd.fitme.domain.user.dto.request.UserRoleUpdateRequest;
+import com.ootd.fitme.domain.user.dto.request.*;
 import com.ootd.fitme.domain.user.dto.response.UserDto;
+import com.ootd.fitme.domain.user.dto.response.UserDtoCursorResponse;
 import com.ootd.fitme.domain.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -49,6 +47,13 @@ public class UserController {
                                                @Valid @RequestBody ChangePasswordRequest changePasswordRequest) {
         userService.changePassword(userId, changePasswordRequest);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserDtoCursorResponse> getUsers(@Valid UserSearchCondition condition) {
+        UserDtoCursorResponse response = userService.getUsers(condition);
+        return ResponseEntity.ok(response);
     }
 
 }
