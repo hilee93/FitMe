@@ -1,17 +1,17 @@
 package com.ootd.fitme.domain.user.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ootd.fitme.domain.user.dto.request.ChangePasswordRequest;
-import com.ootd.fitme.domain.user.dto.request.UserCreateRequest;
-import com.ootd.fitme.domain.user.dto.request.UserLockUpdateRequest;
-import com.ootd.fitme.domain.user.dto.request.UserRoleUpdateRequest;
+import com.ootd.fitme.domain.user.dto.request.*;
 import com.ootd.fitme.domain.user.dto.response.UserDto;
+import com.ootd.fitme.domain.user.dto.response.UserDtoCursorResponse;
 import com.ootd.fitme.domain.user.enums.Role;
+import com.ootd.fitme.domain.user.enums.SortDirection;
 import com.ootd.fitme.domain.user.service.UserService;
 import com.ootd.fitme.global.security.jwt.JwtAuthenticationFilter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -22,8 +22,10 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -31,6 +33,7 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -211,6 +214,47 @@ public class UserControllerTest {
                     .andExpect(status().isBadRequest());
 
             then(userService).should(never()).changePassword(any(UUID.class), any(ChangePasswordRequest.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /api/users")
+    class GetUsers {
+        @Test
+        @DisplayName("성공 - 사용자 목록 조회 시 200 반환")
+        void getUsers_success() throws Exception {
+            UUID userId = UUID.randomUUID();
+
+            UserDtoCursorResponse response = new UserDtoCursorResponse(
+                    List.of(savedUser(userId, Role.USER, false)),
+                    "2026-04-09T00:00:00Z",
+                    userId,
+                    true,
+                    10L,
+                    "createdAt",
+                    SortDirection.DESCENDING
+            );
+
+            given(userService.getUsers(any(UserSearchCondition.class))).willReturn(response);
+
+            mockMvc.perform(get("/api/users")
+                    .param("limit", "20")
+                    .param("sortBy", "createdAt")
+                    .param("sortDirection", "DESCENDING")
+                    .param("emailLike", "tester"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[0].id").value(userId.toString()))
+                    .andExpect(jsonPath("$.hasNext").value(true))
+                    .andExpect(jsonPath("$.totalCount").value(10))
+                    .andExpect(jsonPath("$.sortBy").value("createdAt"))
+                    .andExpect(jsonPath("$.sortDirection").value("DESCENDING"));
+
+            ArgumentCaptor<UserSearchCondition> captor = ArgumentCaptor.forClass(UserSearchCondition.class);
+            then(userService).should().getUsers(captor.capture());
+
+            UserSearchCondition captured = captor.getValue();
+            assertThat(captured.limit()).isEqualTo(20);
+            assertThat(captured.emailLike()).isEqualTo("tester");
         }
     }
 }

@@ -6,7 +6,7 @@ import com.ootd.fitme.domain.user.dto.response.JwtDto;
 import com.ootd.fitme.domain.user.dto.response.SignInResult;
 import com.ootd.fitme.domain.user.dto.response.UserDto;
 import com.ootd.fitme.domain.user.enums.Role;
-import com.ootd.fitme.domain.user.service.UserService;
+import com.ootd.fitme.domain.user.service.AuthService;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,7 +36,7 @@ public class AuthSecurityIntegrationTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private UserService userService;
+    private AuthService authService;
 
     @Test
     @DisplayName("성공 - CSRF 없이 로그인 요청해도 200 (API CSRF 예외 경로)")
@@ -51,7 +51,7 @@ public class AuthSecurityIntegrationTest {
         );
 
         JwtDto jwtDto = new JwtDto(userDto, "access-token");
-        given(userService.signIn(any(SignInRequest.class)))
+        given(authService.signIn(any(SignInRequest.class)))
                 .willReturn(new SignInResult(jwtDto, "refresh-token"));
 
         mockMvc.perform(post("/api/auth/sign-in")
@@ -78,7 +78,7 @@ public class AuthSecurityIntegrationTest {
         );
 
         JwtDto jwtDto = new JwtDto(userDto, "access-token");
-        given(userService.signIn(any(SignInRequest.class)))
+        given(authService.signIn(any(SignInRequest.class)))
                 .willReturn(new SignInResult(jwtDto, "refresh-token"));
 
         MvcResult csrfResult = mockMvc.perform(get("/api/auth/csrf-token"))
