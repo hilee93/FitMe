@@ -9,22 +9,16 @@ import com.ootd.fitme.domain.directmessage.enums.SortBy;
 import com.ootd.fitme.domain.directmessage.enums.SortDirection;
 import com.ootd.fitme.domain.directmessage.event.DirectMessageCreateEvent;
 import com.ootd.fitme.domain.directmessage.exception.DirectMessageSenderMisMatchException;
-import com.ootd.fitme.domain.directmessage.mapper.DirectMessageMapper;
 import com.ootd.fitme.domain.directmessage.repository.DirectMessageRepository;
 import com.ootd.fitme.domain.profile.entity.Profile;
+import com.ootd.fitme.domain.profile.exception.ProfileException;
 import com.ootd.fitme.domain.profile.repository.ProfileRepository;
-import com.ootd.fitme.domain.user.exception.auth.AuthException;
-import com.ootd.fitme.domain.user.exception.user.UserException;
 import com.ootd.fitme.global.exception.ErrorCode;
-import com.ootd.fitme.global.security.auth.CustomUserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.security.Principal;
 import java.util.List;
 import java.util.UUID;
 
@@ -93,7 +87,7 @@ public class DirectMessageServiceImpl implements DirectMessageService {
 
     private UserSummary getUserSummary(UUID userId){
         Profile profile = profileRepository.findByUserId(userId)
-                .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
+                .orElseThrow(() -> new ProfileException(ErrorCode.PROFILE_NOT_FOUND));
         return new UserSummary(
                 profile.getUser().getId(),
                 profile.getName(),
