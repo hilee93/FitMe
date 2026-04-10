@@ -131,7 +131,7 @@ services:
     ports:
       - "80:80" # 외부 요청(80)을 nginx로 받고 → 내부 app:8080으로 프록시
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/nginx.conf.local:/etc/nginx/nginx.conf.local:ro
     depends_on:
       app:
         condition: service_healthy

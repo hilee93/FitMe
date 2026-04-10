@@ -12,6 +12,7 @@ DROP TABLE IF EXISTS selectable_values CASCADE;
 DROP TABLE IF EXISTS feeds CASCADE;
 DROP TABLE IF EXISTS clothes CASCADE;
 DROP TABLE IF EXISTS weather_forecast CASCADE;
+DROP TABLE IF EXISTS media_files CASCADE;
 DROP TABLE IF EXISTS profiles CASCADE;
 DROP TABLE IF EXISTS attributes CASCADE;
 DROP TABLE IF EXISTS regions CASCADE;
@@ -341,4 +342,28 @@ CREATE TABLE direct_messages
     CONSTRAINT chk_direct_messages_self
         CHECK (sender_id <> receiver_id)
 );
+
+CREATE TABLE media_files
+(
+    id                 UUID PRIMARY KEY,
+    file_url           VARCHAR(1000)            NOT NULL UNIQUE,
+    original_file_name VARCHAR(255)             NOT NULL,
+    purpose            VARCHAR(50)              NOT NULL,
+    status             VARCHAR(50)              NOT NULL DEFAULT 'ACTIVE',
+    created_at         TIMESTAMP WITH TIME ZONE NOT NULL,
+    updated_at         TIMESTAMP WITH TIME ZONE NULL,
+    user_id            UUID                     NOT NULL,
+
+    CONSTRAINT fk_media_files_user
+        FOREIGN KEY (user_id) REFERENCES users (id),
+
+    CONSTRAINT chk_media_files_purpose
+        CHECK (purpose IN ('CLOTHES', 'PROFILE')),
+
+    CONSTRAINT chk_media_files_status
+        CHECK (status IN ('ACTIVE', 'PENDING_DELETE'))
+);
+
+CREATE INDEX idx_media_files_status ON media_files (status);
+CREATE INDEX idx_media_files_user_id ON media_files (user_id);
 
