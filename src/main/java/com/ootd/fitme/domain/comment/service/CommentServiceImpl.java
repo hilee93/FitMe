@@ -4,6 +4,7 @@ import com.ootd.fitme.domain.comment.dto.request.CommentSearchCondition;
 import com.ootd.fitme.domain.comment.dto.response.CommentCursorResponseDto;
 import com.ootd.fitme.domain.comment.dto.response.CommentResponseDto;
 import com.ootd.fitme.domain.comment.entity.Comment;
+import com.ootd.fitme.domain.comment.event.FeedCommentCreateEvent;
 import com.ootd.fitme.domain.comment.repository.CommentRepository;
 import com.ootd.fitme.domain.feed.dto.request.FeedCommentCreateRequest;
 import com.ootd.fitme.domain.feed.entity.Feed;
@@ -13,6 +14,7 @@ import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.repository.UserRepository;
 import com.ootd.fitme.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +28,7 @@ public class CommentServiceImpl implements CommentService {
     private final UserRepository userRepository;
     private final CommentRepository commentRepository;
     private final CommentQueryService commentQueryService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -35,6 +38,19 @@ public class CommentServiceImpl implements CommentService {
         Comment comment = Comment.create(feedCommentCreateRequest.content(), feed, user);
 
         Comment savedComment = commentRepository.save(comment);
+
+        eventPublisher.publishEvent(
+                new FeedCommentCreateEvent(
+                        savedComment.getId(),
+                        feed.getId(),
+                        feed.getUser().getId(),
+                        feed.getContent(),
+                        comment.getUser().getId(),
+                        comment.getContent(),
+                        savedComment.getCreatedAt()
+
+                )
+        );
 
         return commentQueryService.getFeedComment(savedComment.getId());
     }

@@ -60,9 +60,9 @@ public class NotificationEventListener {
     public void feedLiked(FeedLikedCreateEvent event) {
         try {
             notificationService.notifyFeedLiked(
-                    event.likedId(),
-                    event.feedName(),
-                    event.likerName()
+                    event.targetUserId(),
+                    event.content(),
+                    event.likerId()
             );
             log.info("[LIKE] 알림이벤트 처리 성공. likeId={}", event.feedLikeId());
         } catch (Exception e) {
@@ -76,8 +76,8 @@ public class NotificationEventListener {
         try {
             notificationService.notifyFeedCommented(
                     event.feedOwnerId(),
-                    event.feedName(),
-                    event.commenterName(),
+                    event.content(),
+                    event.commenterId(),
                     event.comment()
             );
             log.info("[COMMENT] 알림이벤트 처리 성공. commentId={}", event.commentId());
@@ -134,8 +134,7 @@ public class NotificationEventListener {
         try {
             notificationService.notifyFollowerNewFeed(
                     event.userId(),
-                    event.writerName(),
-                    event.feedName()
+                    event.content()
             );
             log.info("[FOLLOWER_FEED] 알림이벤트 처리 성공. feedId={}", event.feedId());
         } catch (Exception e) {

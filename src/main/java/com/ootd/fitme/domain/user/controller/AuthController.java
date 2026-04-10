@@ -4,6 +4,7 @@ import com.ootd.fitme.domain.user.dto.request.ResetPasswordRequest;
 import com.ootd.fitme.domain.user.dto.request.SignInRequest;
 import com.ootd.fitme.domain.user.dto.response.JwtDto;
 import com.ootd.fitme.domain.user.dto.response.SignInResult;
+import com.ootd.fitme.domain.user.service.AuthService;
 import com.ootd.fitme.domain.user.service.UserService;
 import com.ootd.fitme.global.security.jwt.JwtProperties;
 import jakarta.servlet.http.HttpServletResponse;
@@ -25,13 +26,14 @@ import java.util.Map;
 public class AuthController {
     private static final String REFRESH_COOKIE = "refreshToken";
 
+    private final AuthService authService;
     private final UserService userService;
     private final JwtProperties jwtProperties;
 
     @PostMapping(value = "/sign-in", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<JwtDto> signInJson(@Valid @RequestBody SignInRequest signInRequest,
                                              HttpServletResponse response) {
-        SignInResult result = userService.signIn(signInRequest);
+        SignInResult result = authService.signIn(signInRequest);
         addRefreshCookie(response, result.refreshToken());
         return ResponseEntity.ok(result.jwtDto());
     }
@@ -42,7 +44,7 @@ public class AuthController {
             @RequestParam String password,
             HttpServletResponse response
     ) {
-        SignInResult result = userService.signIn(new SignInRequest(username, password));
+        SignInResult result = authService.signIn(new SignInRequest(username, password));
         addRefreshCookie(response, result.refreshToken());
         return ResponseEntity.ok(result.jwtDto());
     }
@@ -51,7 +53,7 @@ public class AuthController {
     public ResponseEntity<JwtDto> refresh(
             @CookieValue(value = REFRESH_COOKIE, required = false) String refreshToken
     ) {
-        JwtDto body = userService.refresh(refreshToken);
+        JwtDto body = authService.refresh(refreshToken);
         return ResponseEntity.ok(body);
     }
 
@@ -60,7 +62,7 @@ public class AuthController {
             @RequestHeader(value = "Authorization", required = false) String authorization,
             @CookieValue(value = REFRESH_COOKIE, required = false) String refreshToken,
             HttpServletResponse response) {
-        userService.signOut(extractBearer(authorization), refreshToken);
+        authService.signOut(extractBearer(authorization), refreshToken);
         expireRefreshCookie(response);
         return ResponseEntity.noContent().build();
     }
