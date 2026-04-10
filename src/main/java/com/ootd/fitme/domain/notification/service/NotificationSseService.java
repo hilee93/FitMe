@@ -109,4 +109,6 @@ public class NotificationSseService {
     private String createEmitterId(UUID userId) {
         return userId + "_" + System.currentTimeMillis();
     }
+
+
 }
