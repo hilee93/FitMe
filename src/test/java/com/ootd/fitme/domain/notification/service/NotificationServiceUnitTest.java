@@ -13,6 +13,7 @@ import com.ootd.fitme.domain.notification.enums.NotificationType;
 import com.ootd.fitme.domain.notification.exception.NotificationBadRequestException;
 import com.ootd.fitme.domain.notification.repository.NotificationProfileRepository;
 import com.ootd.fitme.domain.notification.repository.NotificationRepository;
+import com.ootd.fitme.domain.profile.entity.Profile;
 import com.ootd.fitme.domain.profile.repository.ProfileRepository;
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.repository.UserRepository;
@@ -106,13 +107,19 @@ class NotificationServiceUnitTest {
             UUID userId = UUID.randomUUID();
             User user = mock(User.class);
             Notification notification = mock(Notification.class);
+            UUID likerId = UUID.randomUUID();
+            Profile profile = mock(Profile.class);
 
+            given(notification.getUser()).willReturn(user);
+            given(user.getId()).willReturn(userId);
             given(userRepository.findById(userId)).willReturn(Optional.of(user));
-            given(notificationFactory.feedLiked(user,"feedName", "liker")).willReturn(notification);
-
-            notificationService.notifyFeedLiked(userId,"feedName", "liker");
-
+            given(notificationFactory.feedLiked(user, "content", "liker")).willReturn(notification);
+            given(profileRepository.findByUserId(likerId)).willReturn(Optional.of(profile));
+            given(profile.getName()).willReturn("liker");
+            given(notificationRepository.save(notification)).willReturn(notification);
+            notificationService.notifyFeedLiked(userId, "content", likerId);
             verify(notificationRepository).save(notification);
+
         }
 
         @Test
@@ -121,12 +128,20 @@ class NotificationServiceUnitTest {
             UUID userId = UUID.randomUUID();
             User user = mock(User.class);
             Notification notification = mock(Notification.class);
+            Profile profile = mock(Profile.class);
+            UUID commenterId = UUID.randomUUID();
+            given(profileRepository.findByUserId(commenterId)).willReturn(Optional.of(profile));
+            given(profile.getName()).willReturn("commenter");
 
             given(userRepository.findById(userId)).willReturn(Optional.of(user));
-            given(notificationFactory.feedCommented(user,"feedName", "commenter", "nice")).willReturn(notification);
+            given(notificationFactory.feedCommented(user, "content", "commenter", "nice")).willReturn(notification);
 
-            notificationService.notifyFeedCommented(userId,"feedName", "commenter", "nice");
+            notificationService.notifyFeedCommented(userId, "content", commenterId, "nice");
 
+            verify(userRepository).findById(userId);
+            verify(profileRepository).findByUserId(commenterId);
+            verify(profile).getName();
+            verify(notificationFactory).feedCommented(user, "content", "commenter", "nice");
             verify(notificationRepository).save(notification);
         }
 
@@ -159,16 +174,16 @@ class NotificationServiceUnitTest {
 
             given(userRepository.findAll()).willReturn(users);
             given(notificationFactory.attributeAdded(user1, "color", AttributeAction.ADDED)).willReturn(notification1);
-            given(notificationFactory.attributeAdded(user2, "color",AttributeAction.ADDED)).willReturn(notification2);
+            given(notificationFactory.attributeAdded(user2, "color", AttributeAction.ADDED)).willReturn(notification2);
             given(notificationRepository.saveAll(notifications)).willReturn(notifications);
 
-            List<Notification> result = notificationService.notifyAttributeAdded("color",AttributeAction.ADDED);
+            List<Notification> result = notificationService.notifyAttributeAdded("color", AttributeAction.ADDED);
 
             assertThat(result).isEqualTo(notifications);
 
             verify(userRepository).findAll();
-            verify(notificationFactory).attributeAdded(user1, "color",AttributeAction.ADDED);
-            verify(notificationFactory).attributeAdded(user2, "color",AttributeAction.ADDED);
+            verify(notificationFactory).attributeAdded(user1, "color", AttributeAction.ADDED);
+            verify(notificationFactory).attributeAdded(user2, "color", AttributeAction.ADDED);
             verify(notificationRepository).saveAll(notifications);
             verify(notificationSseService).sendAll(any(NotificationDto.class));
         }
@@ -181,6 +196,7 @@ class NotificationServiceUnitTest {
 
             User follower = mock(User.class);
             Notification notification = mock(Notification.class);
+            Profile profile = mock(Profile.class);
 
             List<UUID> followerIds = List.of(followerId);
             List<User> followers = List.of(follower);
@@ -192,8 +208,10 @@ class NotificationServiceUnitTest {
             given(userRepository.findAllById(followerIds)).willReturn(followers);
             given(notificationFactory.followerNewFeed(follower, "writer", "feed")).willReturn(notification);
             given(notificationRepository.saveAll(notifications)).willReturn(notifications);
+            given(profileRepository.findByUserId(followeeId)).willReturn(Optional.of(profile));
+            given(profile.getName()).willReturn("writer");
 
-            List<Notification> result = notificationService.notifyFollowerNewFeed(followeeId, "writer", "feed");
+            List<Notification> result = notificationService.notifyFollowerNewFeed(followeeId, "feed");
 
             assertThat(result).containsExactly(notification);
 
@@ -233,20 +251,21 @@ class NotificationServiceUnitTest {
             given(notification.getContent()).willReturn(weatherAlert);
             given(notification.getLevel()).willReturn(NotificationLevel.INFO);
             given(userRepository.findAllById(receiverIds)).willReturn(users);
-            given(notificationFactory.weatherAlert(user,region1,region2, weatherAlert)).willReturn(notification);
+            given(notificationFactory.weatherAlert(user, region1, region2, weatherAlert)).willReturn(notification);
 
             // when
-            List<Notification> result = notificationService.notifyWeatherAlert(receiverIds,region1, region2, weatherAlert);
+            List<Notification> result = notificationService.notifyWeatherAlert(receiverIds, region1, region2, weatherAlert);
 
             // then
             assertThat(result).containsExactly(notification);
 
             verify(userRepository).findAllById(receiverIds);
-            verify(notificationFactory).weatherAlert(user,region1,region2, weatherAlert);
+            verify(notificationFactory).weatherAlert(user, region1, region2, weatherAlert);
             verify(notificationRepository).saveAll(notifications);
             verify(notificationSseService).send(eq(userId), any(NotificationDto.class));
         }
     }
+
     @Nested
     @DisplayName("알림 목록조회")
     class SearchNotificationTest {
@@ -331,7 +350,7 @@ class NotificationServiceUnitTest {
 
     @Nested
     @DisplayName("알림 삭제")
-    class DeleteNotificationTest{
+    class DeleteNotificationTest {
 
         @Test
         @DisplayName("성공 - 본인 알림이면 삭제한다")

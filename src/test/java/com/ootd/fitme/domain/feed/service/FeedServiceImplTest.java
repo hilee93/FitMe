@@ -33,6 +33,7 @@ import com.ootd.fitme.domain.profile.repository.ProfileRepository;
 import com.ootd.fitme.domain.region.repository.RegionRepository;
 import com.ootd.fitme.domain.selectablevalue.repository.SelectableValueRepository;
 import com.ootd.fitme.domain.user.entity.User;
+import com.ootd.fitme.domain.user.exception.user.UserException;
 import com.ootd.fitme.domain.user.repository.UserRepository;
 import com.ootd.fitme.domain.weatherforecast.entity.WeatherForecast;
 import com.ootd.fitme.domain.weatherforecast.enums.PrecipitationType;
@@ -188,7 +189,7 @@ class FeedServiceImplTest {
             );
 
             assertThatThrownBy(() -> feedService.createFeed(request))
-                    .isInstanceOf(NoSuchElementException.class);
+                    .isInstanceOf(UserException.class);
         }
 
     }
