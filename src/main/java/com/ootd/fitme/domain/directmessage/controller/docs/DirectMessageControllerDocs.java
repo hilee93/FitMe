@@ -2,11 +2,13 @@ package com.ootd.fitme.domain.directmessage.controller.docs;
 
 import com.ootd.fitme.domain.directmessage.dto.request.DirectMessageSearchCondition;
 import com.ootd.fitme.domain.directmessage.dto.response.DirectMessageDtoCursorResponse;
+import com.ootd.fitme.global.security.auth.CustomUserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import java.util.UUID;
 
@@ -18,5 +20,6 @@ public interface DirectMessageControllerDocs {
     @ApiResponse(responseCode = "400", description = "DM 목록 조회 실패")
     ResponseEntity<DirectMessageDtoCursorResponse> getDirectMessages(
             @Parameter(description = "조회할 사용자의 UUID", required = true) UUID userId,
+            @Parameter(hidden = true) @AuthenticationPrincipal CustomUserPrincipal principal,
             DirectMessageSearchCondition condition);
 }
