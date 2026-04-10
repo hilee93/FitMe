@@ -11,7 +11,7 @@ public interface FeedService {
 
     FeedResponseDto createFeed(FeedCreateRequest feedCreateRequest);
 
-    void deleteFeed(UUID feedId);
+    void deleteFeed(UUID feedId, UUID userId);
 
     FeedResponseDto updateFeed(UUID feedId, UUID userId, FeedUpdateRequestDto feedUpdateRequestDto);
 

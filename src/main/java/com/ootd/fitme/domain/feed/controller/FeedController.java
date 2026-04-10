@@ -58,8 +58,9 @@ public class FeedController implements FeedControllerDocs {
 
     @Override
     @DeleteMapping("/{feedId}")
-    public ResponseEntity<Void> deleteFeed(@PathVariable UUID feedId) {
-        feedService.deleteFeed(feedId);
+    public ResponseEntity<Void> deleteFeed(@PathVariable UUID feedId, @AuthenticationPrincipal CustomUserPrincipal userPrincipal) {
+        UUID userId = userPrincipal.getUserId();
+        feedService.deleteFeed(feedId, userId);
         return ResponseEntity.noContent().build();
     }
 

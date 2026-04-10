@@ -22,7 +22,7 @@ public interface FeedControllerDocs {
 
     ResponseEntity<FeedResponseDto> updateFeed(UUID feedId, FeedUpdateRequestDto feedUpdateRequestDto, @Parameter(hidden = true) CustomUserPrincipal userPrincipal);
 
-    ResponseEntity<Void> deleteFeed(UUID feedId);
+    ResponseEntity<Void> deleteFeed(UUID feedId, @Parameter(hidden = true) CustomUserPrincipal userPrincipal);
 
     ResponseEntity<Void> addLike(UUID feedId, @Parameter(hidden = true) CustomUserPrincipal userPrincipal);
 

@@ -93,10 +93,13 @@ public class FeedServiceImpl implements FeedService {
 
     @Override
     @Transactional
-    public void deleteFeed(UUID feedId) {
+    public void deleteFeed(UUID feedId, UUID userId) {
         Feed feed = feedRepository.findById(feedId)
                 .orElseThrow(() -> new FeedNotFoundException(ErrorCode.FEED_NOT_FOUND));
-        // TODO: principal userId와 feed의 authorId 비교 자기자신인지 체크
+
+        if (!feed.getUser().getId().equals(userId)) {
+            throw new FeedAccessDeniedException(ErrorCode.FEED_ACCESS_DENIED);
+        }
         feedRepository.delete(feed);
     }
 
