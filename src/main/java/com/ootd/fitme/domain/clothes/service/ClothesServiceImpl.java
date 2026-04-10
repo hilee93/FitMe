@@ -46,7 +46,6 @@ public class ClothesServiceImpl implements ClothesService {
     private final SelectableValueRepository selectableValueRepository;
 
     private final MediaFileService mediaFileService;
-    private final ApplicationEventPublisher eventPublisher;
     private final PlaywrightScraper scraper;
 
     @Override
