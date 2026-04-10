@@ -134,14 +134,14 @@ class NotificationServiceUnitTest {
             given(profile.getName()).willReturn("commenter");
 
             given(userRepository.findById(userId)).willReturn(Optional.of(user));
-            given(notificationFactory.feedCommented(user, "commenter", "nice")).willReturn(notification);
+            given(notificationFactory.feedCommented(user, "content", "commenter", "nice")).willReturn(notification);
 
-            notificationService.notifyFeedCommented(userId, commenterId, "nice");
+            notificationService.notifyFeedCommented(userId, "content", commenterId, "nice");
 
             verify(userRepository).findById(userId);
             verify(profileRepository).findByUserId(commenterId);
             verify(profile).getName();
-            verify(notificationFactory).feedCommented(user, "commenter", "nice");
+            verify(notificationFactory).feedCommented(user, "content", "commenter", "nice");
             verify(notificationRepository).save(notification);
         }
 

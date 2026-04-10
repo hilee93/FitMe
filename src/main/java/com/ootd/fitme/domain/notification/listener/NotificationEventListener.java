@@ -76,6 +76,7 @@ public class NotificationEventListener {
         try {
             notificationService.notifyFeedCommented(
                     event.feedOwnerId(),
+                    event.content(),
                     event.commenterId(),
                     event.comment()
             );

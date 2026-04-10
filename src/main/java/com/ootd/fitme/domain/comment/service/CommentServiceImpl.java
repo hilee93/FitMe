@@ -44,6 +44,7 @@ public class CommentServiceImpl implements CommentService {
                         savedComment.getId(),
                         feed.getId(),
                         feed.getUser().getId(),
+                        feed.getContent(),
                         comment.getUser().getId(),
                         comment.getContent(),
                         savedComment.getCreatedAt()

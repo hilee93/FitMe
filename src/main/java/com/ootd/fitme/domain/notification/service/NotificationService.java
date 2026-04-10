@@ -123,7 +123,7 @@ public class NotificationService {
     }
 
     @Transactional
-    public Notification notifyFeedCommented(UUID feedOwnerId, UUID commenterId, String comment) {
+    public Notification notifyFeedCommented(UUID feedOwnerId, String content, UUID commenterId, String comment) {
 
         User user = userRepository.findById(feedOwnerId)
                 .orElseThrow(() -> new UserException(ErrorCode.USER_NOT_FOUND));
@@ -131,7 +131,7 @@ public class NotificationService {
         Profile commenterProfile = profileRepository.findByUserId(commenterId).orElseThrow(() -> new ProfileException(ErrorCode.PROFILE_NOT_FOUND));
 
 
-        Notification notification = notificationFactory.feedCommented(user, commenterProfile.getName(), comment);
+        Notification notification = notificationFactory.feedCommented(user, content, commenterProfile.getName(), comment);
 
         Notification saved = notificationRepository.save(notification);
 

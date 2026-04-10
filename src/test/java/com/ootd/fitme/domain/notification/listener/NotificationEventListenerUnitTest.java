@@ -101,6 +101,7 @@ class NotificationEventListenerUnitTest {
                             commentId,
                             feedId,
                             feedOwnerId,
+                            "content",
                             commenterId,
                             "comment",
                             now
@@ -109,7 +110,7 @@ class NotificationEventListenerUnitTest {
             listener.feedCommented(event);
 
             verify(notificationService)
-                    .notifyFeedCommented(feedOwnerId, commenterId, "comment");
+                    .notifyFeedCommented(feedOwnerId, "content", commenterId, "comment");
         }
 
         @Test
