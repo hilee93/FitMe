@@ -71,14 +71,15 @@ class DirectMessageServiceUnitTest {
         void getDirectMessages_called_findDirectMessages() {
 
             //given
-            UUID userId = UUID.randomUUID();
+            UUID myId = UUID.randomUUID();
+            UUID targetId = UUID.randomUUID();
             int limit = 5;
 
             //when
-            directMessageServiceImpl.getDirectMessages(userId, null, null, limit);
+            directMessageServiceImpl.getDirectMessages(myId, targetId, null, null, limit);
 
             //then
-            then(directMessageRepository).should().findDirectMessages(eq(userId), any(), any(), eq(limit));
+            then(directMessageRepository).should().findDirectMessages(eq(myId), eq(targetId), any(), any(), eq(limit));
         }
     }
 
