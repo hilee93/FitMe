@@ -11,12 +11,11 @@ import com.ootd.fitme.domain.user.enums.UserSortBy;
 import com.ootd.fitme.domain.user.exception.user.UserException;
 import com.ootd.fitme.domain.user.mapper.UserMapper;
 import com.ootd.fitme.domain.user.repository.UserRepository;
+import com.ootd.fitme.domain.user.service.temppassword.TemporaryPasswordMailSender;
+import com.ootd.fitme.domain.user.service.temppassword.TemporaryPasswordStore;
 import com.ootd.fitme.global.exception.ErrorCode;
 import com.ootd.fitme.global.security.jwt.TokenBlacklistService;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
@@ -24,6 +23,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -33,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -54,6 +55,9 @@ public class UserServiceUnitTest {
 
     @Mock
     private ProfileRepository profileRepository;
+
+    @Mock
+    private TemporaryPasswordMailSender temporaryPasswordMailSender;
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -189,6 +193,7 @@ public class UserServiceUnitTest {
             given(user.getId()).willReturn(userId);
             given(userRepository.findByEmail(email)).willReturn(Optional.of(user));
             given(passwordEncoder.encode(anyString())).willReturn("encoded-temp");
+            given(user.getEmail()).willReturn(email);
 
             userService.resetPassword(new ResetPasswordRequest(email));
 
@@ -201,6 +206,8 @@ public class UserServiceUnitTest {
             assertThat(expiresAt).isBefore(now.plusSeconds(210));
 
             verify(tokenBlacklistService).setRevokeAllBefore(eq(userId), any(Instant.class));
+            verify(temporaryPasswordMailSender)
+                    .sendTemporaryPassword(eq(email), anyString(), eq(Duration.ofMinutes(3)));
         }
 
         @Test
@@ -216,6 +223,28 @@ public class UserServiceUnitTest {
             verify(user).updatePassword("encoded-new");
             verify(temporaryPasswordStore).delete(userId);
             verify(tokenBlacklistService).setRevokeAllBefore(eq(userId), any(Instant.class));
+        }
+
+        @Test
+        @DisplayName("실패 - 메일 발송 실패 시 임시 비밀번호 롤백 + USER_TEMP_PASSWORD_MAIL_SEND_FAILED")
+        void resetPassword_mailSendFail_rollBackTempPassword() {
+            User user = mock(User.class);
+
+            given(user.getId()).willReturn(userId);
+            given(user.getEmail()).willReturn(email);
+            given(userRepository.findByEmail(email)).willReturn(Optional.of(user));
+            given(passwordEncoder.encode(anyString())).willReturn("encoded-temp");
+            willThrow(new IllegalStateException("smtp fail"))
+                    .given(temporaryPasswordMailSender)
+                    .sendTemporaryPassword(eq(email), anyString(), eq(Duration.ofMinutes(3)));
+
+            assertThatThrownBy(() -> userService.resetPassword(new ResetPasswordRequest(email)))
+                    .isInstanceOf(UserException.class)
+                    .extracting(ex -> ((UserException) ex).getErrorCode())
+                    .isEqualTo(ErrorCode.USER_TEMP_PASSWORD_MAIL_SEND_FAILED);
+
+            verify(temporaryPasswordStore).delete(userId);
+            verify(tokenBlacklistService, never()).setRevokeAllBefore(eq(userId), any(Instant.class));
         }
     }
 

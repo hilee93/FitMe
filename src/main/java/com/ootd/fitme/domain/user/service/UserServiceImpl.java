@@ -11,6 +11,8 @@ import com.ootd.fitme.domain.user.enums.UserSortBy;
 import com.ootd.fitme.domain.user.exception.user.UserException;
 import com.ootd.fitme.domain.user.mapper.UserMapper;
 import com.ootd.fitme.domain.user.repository.UserRepository;
+import com.ootd.fitme.domain.user.service.temppassword.TemporaryPasswordMailSender;
+import com.ootd.fitme.domain.user.service.temppassword.TemporaryPasswordStore;
 import com.ootd.fitme.global.exception.ErrorCode;
 import com.ootd.fitme.global.security.jwt.TokenBlacklistService;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +42,7 @@ public class UserServiceImpl implements UserService {
     private final TokenBlacklistService tokenBlacklistService;
     private final TemporaryPasswordStore temporaryPasswordStore;
     private final ProfileRepository profileRepository;
+    private final TemporaryPasswordMailSender temporaryPasswordMailSender;
 
     @Override
     public String encodePassword(String password) {
@@ -115,17 +118,28 @@ public class UserServiceImpl implements UserService {
 
         String tempPassword = generateTemporaryPassword();
         String encodedTempPassword = passwordEncoder.encode(tempPassword);
+        Instant expiresAt = Instant.now().plus(TEMP_PASSWORD_TTL);
 
         temporaryPasswordStore.save(
                 user.getId(),
                 encodedTempPassword,
-                Instant.now().plus(TEMP_PASSWORD_TTL)
+                expiresAt
         );
 
-        tokenBlacklistService.setRevokeAllBefore(user.getId(), nowSeconds());
+        try {
+            temporaryPasswordMailSender.sendTemporaryPassword(
+                    user.getEmail(),
+                    tempPassword,
+                    TEMP_PASSWORD_TTL
+            );
+        } catch (RuntimeException e) {
+            temporaryPasswordStore.delete(user.getId());
+            log.error("[TEMP_PASSWORD_MAIL][FAIL] userEmail={}", maskEmail(user.getEmail()), e);
+            throw new UserException(ErrorCode.USER_TEMP_PASSWORD_MAIL_SEND_FAILED);
+        }
 
-        // TODO: 메일 발송 연동
-        log.info("[TEMP PASSWORD] userEmail={}", user.getEmail());
+        tokenBlacklistService.setRevokeAllBefore(user.getId(), nowSeconds());
+        log.info("[TEMP PASSWORD MAIL][SUCCESS] userEmail={}", maskEmail(user.getEmail()));
     }
 
     @Transactional
@@ -223,5 +237,23 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new ProfileException(ErrorCode.PROFILE_NOT_FOUND));
 
         return userMapper.toDto(user, name);
+    }
+
+    private String maskEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return "***";
+        }
+        int at = email.indexOf('@');
+        if (at <= 0) {
+            return "***";
+        }
+
+        String local = email.substring(0, at);
+        String domain = email.substring(at);
+
+        if (local.length() == 1) {
+            return local.charAt(0) + "***" + domain;
+        }
+        return local.charAt(0) + "***" + local.charAt(local.length() - 1) + domain;
     }
 }

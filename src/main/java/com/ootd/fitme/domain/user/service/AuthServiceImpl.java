@@ -12,6 +12,7 @@ import com.ootd.fitme.domain.user.exception.auth.AuthException;
 import com.ootd.fitme.domain.user.exception.user.UserException;
 import com.ootd.fitme.domain.user.mapper.UserMapper;
 import com.ootd.fitme.domain.user.repository.UserRepository;
+import com.ootd.fitme.domain.user.service.temppassword.TemporaryPasswordStore;
 import com.ootd.fitme.global.exception.ErrorCode;
 import com.ootd.fitme.global.security.jwt.JwtProvider;
 import com.ootd.fitme.global.security.jwt.TokenBlacklistService;

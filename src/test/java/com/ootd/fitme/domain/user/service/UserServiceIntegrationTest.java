@@ -9,6 +9,7 @@ import com.ootd.fitme.domain.user.dto.response.UserDto;
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.enums.Role;
 import com.ootd.fitme.domain.user.repository.UserRepository;
+import com.ootd.fitme.domain.user.service.temppassword.TemporaryPasswordStore;
 import com.ootd.fitme.global.security.jwt.TokenBlacklistService;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;

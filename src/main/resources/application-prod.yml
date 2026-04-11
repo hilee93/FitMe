@@ -55,6 +55,18 @@ spring:
   elasticsearch:
     uris: ${ELASTICSEARCH_URI}
 
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail.smtp.auth: true # 인증 사용
+      mail.smtp.starttls.enable: true # 평문 연결 후 TLS 업그레이드
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 5000 # 읽기
+      mail.smtp.writetimeout: 5000 # 쓰기
+
 logging:
   level:
     com.ootd: info
@@ -88,3 +100,9 @@ admin:
     password: ${ADMIN_PASSWORD}
     profile-name: ${ADMIN_PROFILE_NAME}
     reset-password: false
+
+fitme:
+  user:
+    temp-password:
+      mail:
+        enabled: true
