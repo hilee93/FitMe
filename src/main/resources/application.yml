@@ -56,7 +56,7 @@ fitme:
     temp-password:
       mail:
         enabled: false
-        from: no-reply@fitme.com
+        from: DoNotReply@0826e947-ae51-4c84-9b02-5e4e1931293c.azurecomm.net
         subject: "[FitMe] 임시 비밀번호 안내"
 
 # prod제외 모든 환경에서 환경변수 값으로 동적이거나 보안적으로 가릴 필요없기때문에 공통적인 값은 그대로 쓰는방식, Prod에서만 환경변수로 오버라이딩 처리
