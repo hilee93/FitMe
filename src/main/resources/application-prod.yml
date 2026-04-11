@@ -32,7 +32,7 @@ spring:
         enabled: true
 
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS} # ex) my-namespace.servicebus.windows.net:9093
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
     properties:
       security.protocol: SASL_SSL
       sasl.mechanism: PLAIN
@@ -56,8 +56,8 @@ spring:
     uris: ${ELASTICSEARCH_URI}
 
   mail:
-    host: ${MAIL_HOST}
-    port: ${MAIL_PORT:587}
+    host: smtp.azurecomm.net
+    port: 587
     username: ${MAIL_USERNAME}
     password: ${MAIL_PASSWORD}
     properties:
