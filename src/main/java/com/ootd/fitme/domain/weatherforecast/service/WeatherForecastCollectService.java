@@ -9,8 +9,6 @@ import com.ootd.fitme.domain.weatherforecast.enums.WindStrengthWord;
 import com.ootd.fitme.domain.weatherforecast.repository.WeatherForecastRepository;
 import com.ootd.fitme.infrastructure.external.openweather.ForecastItem;
 import com.ootd.fitme.infrastructure.external.openweather.OpenWeatherClient;
-import com.ootd.fitme.infrastructure.external.openweather.OpenWeatherForecastResponse;
-import com.ootd.fitme.infrastructure.external.openweather.Wind;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,10 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -37,6 +32,7 @@ public class WeatherForecastCollectService {
     private final RegionRepository regionRepository;
     private final WeatherForecastRepository weatherForecastRepository;
     private final OpenWeatherClient openWeatherClient;
+    private final WeatherAlertPublishService weatherAlertPublishService;
 
     public void collectAndStoreAllRegions() {
         List<Region> regions = regionRepository.findAll();
@@ -114,41 +110,51 @@ public class WeatherForecastCollectService {
         double windSpeed = nvl(item.wind() != null ? item.wind().speed() : null);
         WindStrengthWord windStrengthWord = toWindStrength(windSpeed);
 
-        weatherForecastRepository.findByRegionIdAndForecastAt(region.getId(), forecastAt)
-                .ifPresentOrElse(
-                        existing -> existing.updateFromCollection(
-                                collectedAt,
-                                skyStatus,
-                                precipitationType,
-                                precipitationAmount,
-                                precipitationProbability,
-                                humidityCurrent,
-                                delta.humidityDiff(),
-                                temperatureCurrent,
-                                delta.temperatureDiff(),
-                                temperatureMin,
-                                temperatureMax,
-                                windSpeed,
-                                windStrengthWord
-                        ),
-                        () -> weatherForecastRepository.save(WeatherForecast.create(
-                                collectedAt,
-                                forecastAt,
-                                skyStatus,
-                                precipitationType,
-                                precipitationAmount,
-                                precipitationProbability,
-                                humidityCurrent,
-                                delta.humidityDiff(),
-                                temperatureCurrent,
-                                delta.temperatureDiff(),
-                                temperatureMin,
-                                temperatureMax,
-                                windSpeed,
-                                windStrengthWord,
-                                region
-                        ))
-                );
+        Optional<WeatherForecast> existingOpt = weatherForecastRepository.findByRegionIdAndForecastAt(region.getId(), forecastAt);
+        PrecipitationType previousPrecipitationType = existingOpt.map(WeatherForecast::getPrecipitationType)
+                .orElse(null);
+
+        WeatherForecast current;
+
+        if (existingOpt.isPresent()) {
+            WeatherForecast existing = existingOpt.get();
+            existing.updateFromCollection(
+                    collectedAt,
+                    skyStatus,
+                    precipitationType,
+                    precipitationAmount,
+                    precipitationProbability,
+                    humidityCurrent,
+                    delta.humidityDiff(),
+                    temperatureCurrent,
+                    delta.temperatureDiff(),
+                    temperatureMin,
+                    temperatureMax,
+                    windSpeed,
+                    windStrengthWord
+            );
+            current = existing;
+        } else {
+            current = weatherForecastRepository.save(WeatherForecast.create(
+                    collectedAt,
+                    forecastAt,
+                    skyStatus,
+                    precipitationType,
+                    precipitationAmount,
+                    precipitationProbability,
+                    humidityCurrent,
+                    delta.humidityDiff(),
+                    temperatureCurrent,
+                    delta.temperatureDiff(),
+                    temperatureMin,
+                    temperatureMax,
+                    windSpeed,
+                    windStrengthWord,
+                    region
+            ));
+        }
+
+        weatherAlertPublishService.publishIfNeeded(region, previousPrecipitationType, current);
     }
 
     private LocalDate toKstDate(long epochSecond) {

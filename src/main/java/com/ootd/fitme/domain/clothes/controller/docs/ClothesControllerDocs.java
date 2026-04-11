@@ -54,7 +54,7 @@ public interface ClothesControllerDocs {
     @ApiResponse(responseCode = "404", description = "해당 옷을 찾을 수 없음")
     ResponseEntity<ClothesDto> updateClothes(
             @Parameter(description = "수정할 옷의 UUID", required = true) @PathVariable UUID clothesId,
-            @Parameter(description = "수정할 옷의 정보") @ModelAttribute ClothesUpdateRequest request,
+            @Parameter(description = "수정할 옷의 정보") @RequestPart("request") ClothesUpdateRequest request,
             @Parameter(description = "수정할 옷의 사진") @RequestPart(value = "image", required = false) MultipartFile image,
             @Parameter(hidden = true) @AuthenticationPrincipal(expression = "userId") UUID loginUserId
     );

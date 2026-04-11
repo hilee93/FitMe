@@ -24,7 +24,7 @@ public class UserWeatherNotification extends BaseUpdateEntity {
     @Column(name = "sent_at", nullable = false)
     private Instant sentAt;
 
-    @Column(name = "user_id", nullable = false, unique = true)
+    @Column(name = "user_id", nullable = false)
     private UUID userId;
 
     private UserWeatherNotification(NoticeType noticeType, Instant sentAt, UUID userId) {
@@ -35,6 +35,10 @@ public class UserWeatherNotification extends BaseUpdateEntity {
 
     public static UserWeatherNotification create(NoticeType noticeType, Instant sentAt, UUID userId) {
         return new UserWeatherNotification(noticeType, sentAt, userId);
+    }
+
+    public void updateSentAt(Instant sentAt) {
+        this.sentAt = sentAt;
     }
 
 

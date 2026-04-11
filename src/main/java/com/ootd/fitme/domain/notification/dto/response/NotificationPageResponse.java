@@ -11,7 +11,7 @@ public record NotificationPageResponse(
         String nextCursor,
         String nextIdAfter,
         boolean hasNext,
-        long totalElements,
+        long totalCount,
         String sortBy,
         String sortDirection
 ) {

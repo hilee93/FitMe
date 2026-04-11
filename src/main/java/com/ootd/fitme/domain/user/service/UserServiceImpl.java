@@ -4,16 +4,16 @@ import com.ootd.fitme.domain.profile.entity.Profile;
 import com.ootd.fitme.domain.profile.exception.ProfileException;
 import com.ootd.fitme.domain.profile.repository.ProfileRepository;
 import com.ootd.fitme.domain.user.dto.request.*;
-import com.ootd.fitme.domain.user.dto.response.JwtDto;
-import com.ootd.fitme.domain.user.dto.response.SignInResult;
-import com.ootd.fitme.domain.user.dto.response.UserDto;
+import com.ootd.fitme.domain.user.dto.response.*;
 import com.ootd.fitme.domain.user.entity.User;
-import com.ootd.fitme.domain.user.exception.auth.AuthException;
+import com.ootd.fitme.domain.user.enums.SortDirection;
+import com.ootd.fitme.domain.user.enums.UserSortBy;
 import com.ootd.fitme.domain.user.exception.user.UserException;
 import com.ootd.fitme.domain.user.mapper.UserMapper;
 import com.ootd.fitme.domain.user.repository.UserRepository;
+import com.ootd.fitme.domain.user.service.temppassword.TemporaryPasswordMailSender;
+import com.ootd.fitme.domain.user.service.temppassword.TemporaryPasswordStore;
 import com.ootd.fitme.global.exception.ErrorCode;
-import com.ootd.fitme.global.security.jwt.JwtProvider;
 import com.ootd.fitme.global.security.jwt.TokenBlacklistService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +27,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
-// TODO: 인증 관련 로직(signIn/토큰 발급)은 AuthService로 분리 검토
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -35,14 +34,15 @@ public class UserServiceImpl implements UserService {
     private static final String TEMP_PASSWORD_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
     private static final int TEMP_PASSWORD_LENGTH = 12;
     private static final Duration TEMP_PASSWORD_TTL = Duration.ofMinutes(3);
+    private static final int DEFAULT_USER_LIST_LIMIT = 20;
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
-    private final JwtProvider jwtProvider;
     private final TokenBlacklistService tokenBlacklistService;
     private final TemporaryPasswordStore temporaryPasswordStore;
     private final ProfileRepository profileRepository;
+    private final TemporaryPasswordMailSender temporaryPasswordMailSender;
 
     @Override
     public String encodePassword(String password) {
@@ -85,84 +85,6 @@ public class UserServiceImpl implements UserService {
         return mapToUserDto(saved);
     }
 
-    @Transactional(readOnly = true)
-    @Override
-    public User validateSignIn(SignInRequest signInRequest) {
-        User user = userRepository.findByEmail(signInRequest.username())
-                .orElseThrow(() -> new AuthException(ErrorCode.AUTH_INVALID_CREDENTIALS));
-
-        if (user.isLocked()) {
-            throw new UserException(ErrorCode.USER_ACCOUNT_LOCKED);
-        }
-
-        boolean normalPasswordMatched = passwordEncoder.matches(signInRequest.password(), user.getPassword());
-        if (!normalPasswordMatched) {
-            boolean temporaryPasswordMatched = temporaryPasswordStore.findValidEncodedPassword(user.getId())
-                    .map(encoded -> passwordEncoder.matches(signInRequest.password(), encoded))
-                    .orElse(false);
-
-            if (!temporaryPasswordMatched) {
-                throw new AuthException(ErrorCode.AUTH_INVALID_CREDENTIALS);
-            }
-        }
-
-        return user;
-    }
-
-    @Transactional(readOnly = true)
-    @Override
-    public SignInResult signIn(SignInRequest signInRequest) {
-        User user = validateSignIn(signInRequest);
-
-        // 기존 로그인 강제 무효화
-        tokenBlacklistService.setRevokeAllBefore(user.getId(), nowSeconds());
-
-        String accessToken = jwtProvider.generateAccessToken(user.getId(), user.getRole().name());
-        String refreshToken = jwtProvider.generateRefreshToken(user.getId(), user.getRole().name());
-
-        JwtDto jwtDto = new JwtDto(mapToUserDto(user), accessToken);
-
-        return new SignInResult(jwtDto, refreshToken);
-    }
-
-    @Transactional(readOnly = true)
-    @Override
-    public JwtDto refresh(String refreshToken) {
-        if (refreshToken == null || !jwtProvider.validateToken(refreshToken) || !jwtProvider.isRefreshToken(refreshToken)) {
-            throw new AuthException(ErrorCode.AUTH_INVALID_TOKEN);
-        }
-
-        UUID userId = jwtProvider.getUserId(refreshToken);
-        String jti = jwtProvider.getTokenId(refreshToken);
-        Instant iat = jwtProvider.getIssuedAt(refreshToken);
-
-        if (tokenBlacklistService.isBlacklisted(jti)) {
-            throw new AuthException(ErrorCode.AUTH_INVALID_TOKEN);
-        }
-
-        Instant cutoff = tokenBlacklistService.getRevokeAllBefore(userId);
-        if (cutoff != null && iat.isBefore(cutoff.truncatedTo(ChronoUnit.SECONDS))) {
-            throw new AuthException(ErrorCode.AUTH_INVALID_TOKEN);
-        }
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new AuthException(ErrorCode.AUTH_INVALID_TOKEN));
-
-        if (user.isLocked()) {
-            throw new UserException(ErrorCode.USER_ACCOUNT_LOCKED);
-        }
-
-        String newAccessToken = jwtProvider.generateAccessToken(userId, user.getRole().name());
-        return new JwtDto(mapToUserDto(user), newAccessToken);
-    }
-
-    @Transactional(readOnly = true)
-    @Override
-    public void signOut(String accessToken, String refreshToken) {
-        blacklistIfValid(accessToken);
-        blacklistIfValid(refreshToken);
-    }
-
     @Transactional
     @Override
     public UserDto updateRole(UUID userId, UserRoleUpdateRequest userRoleUpdateRequest) {
@@ -196,17 +118,28 @@ public class UserServiceImpl implements UserService {
 
         String tempPassword = generateTemporaryPassword();
         String encodedTempPassword = passwordEncoder.encode(tempPassword);
+        Instant expiresAt = Instant.now().plus(TEMP_PASSWORD_TTL);
 
         temporaryPasswordStore.save(
                 user.getId(),
                 encodedTempPassword,
-                Instant.now().plus(TEMP_PASSWORD_TTL)
+                expiresAt
         );
 
-        tokenBlacklistService.setRevokeAllBefore(user.getId(), nowSeconds());
+        try {
+            temporaryPasswordMailSender.sendTemporaryPassword(
+                    user.getEmail(),
+                    tempPassword,
+                    TEMP_PASSWORD_TTL
+            );
+        } catch (RuntimeException e) {
+            temporaryPasswordStore.delete(user.getId());
+            log.error("[TEMP_PASSWORD_MAIL][FAIL] userEmail={}", maskEmail(user.getEmail()), e);
+            throw new UserException(ErrorCode.USER_TEMP_PASSWORD_MAIL_SEND_FAILED);
+        }
 
-        // TODO: 메일 발송 연동
-        log.info("[TEMP PASSWORD] userEmail={}", user.getEmail());
+        tokenBlacklistService.setRevokeAllBefore(user.getId(), nowSeconds());
+        log.info("[TEMP PASSWORD MAIL][SUCCESS] userEmail={}", maskEmail(user.getEmail()));
     }
 
     @Transactional
@@ -223,13 +156,63 @@ public class UserServiceImpl implements UserService {
         tokenBlacklistService.setRevokeAllBefore(userId, nowSeconds());
     }
 
-    private void blacklistIfValid(String token) {
-        if (token == null || !jwtProvider.validateToken(token)) {
-            return;
+    @Transactional(readOnly = true)
+    @Override
+    public UserDtoCursorResponse getUsers(UserSearchCondition userSearchCondition) {
+        String cursor = userSearchCondition.cursor();
+
+        if (cursor != null && cursor.isBlank()) {
+            cursor = null;
         }
 
-        tokenBlacklistService.blacklist(jwtProvider.getTokenId(token), jwtProvider.getExpiration(token));
+        String emailLike = userSearchCondition.emailLike();
+        if (emailLike != null) {
+            emailLike = emailLike.trim();
+            if (emailLike.isEmpty()) {
+                emailLike = null;
+            }
+        }
 
+        int limit = userSearchCondition.limit() == null ? DEFAULT_USER_LIST_LIMIT : userSearchCondition.limit();
+        UserSortBy sortBy = userSearchCondition.sortBy() == null ? UserSortBy.CREATED_AT : userSearchCondition.sortBy();
+        SortDirection sortDirection = userSearchCondition.sortDirection() == null
+                ? SortDirection.DESCENDING
+                : userSearchCondition.sortDirection();
+
+        if ((cursor == null) != (userSearchCondition.idAfter() == null)) {
+            throw new UserException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        if (sortBy == UserSortBy.CREATED_AT && cursor != null) {
+            try {
+                Instant.parse(cursor);
+            } catch (Exception ex) {
+                throw new UserException(ErrorCode.INVALID_INPUT_VALUE);
+            }
+        }
+
+        UserSearchCondition queryCondition = new UserSearchCondition(
+                cursor,
+                userSearchCondition.idAfter(),
+                limit,
+                sortBy,
+                sortDirection,
+                emailLike,
+                userSearchCondition.roleEqual(),
+                userSearchCondition.locked()
+        );
+
+        CursorSlice<UserDto> slice = userRepository.findUsersByCondition(queryCondition);
+
+        return new UserDtoCursorResponse(
+                slice.data(),
+                slice.nextCursor(),
+                slice.nextIdAfter(),
+                slice.hasNext(),
+                slice.totalCount(),
+                sortBy.getValue(),
+                sortDirection
+        );
     }
 
     private String generateTemporaryPassword() {
@@ -254,5 +237,23 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new ProfileException(ErrorCode.PROFILE_NOT_FOUND));
 
         return userMapper.toDto(user, name);
+    }
+
+    private String maskEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return "***";
+        }
+        int at = email.indexOf('@');
+        if (at <= 0) {
+            return "***";
+        }
+
+        String local = email.substring(0, at);
+        String domain = email.substring(at);
+
+        if (local.length() == 1) {
+            return local.charAt(0) + "***" + domain;
+        }
+        return local.charAt(0) + "***" + local.charAt(local.length() - 1) + domain;
     }
 }

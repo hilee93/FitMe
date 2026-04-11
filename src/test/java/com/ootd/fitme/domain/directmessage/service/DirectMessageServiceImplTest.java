@@ -70,7 +70,7 @@ class DirectMessageServiceImplTest {
 
             //when
             DirectMessageDtoCursorResponse directMessages = directMessageServiceImpl.getDirectMessages(
-                    senderId, null, null, 10);
+                    senderId,  receiverId, null, null, 10);
 
             //then
             assertThat(directMessages).isNotNull();
@@ -87,7 +87,7 @@ class DirectMessageServiceImplTest {
 
             //when
             DirectMessageDtoCursorResponse directMessages = directMessageServiceImpl.getDirectMessages(
-                    receiverId, null, null, 10);
+                    receiverId,  senderId,null, null, 10);
 
             //then
             assertThat(directMessages).isNotNull();
@@ -106,7 +106,7 @@ class DirectMessageServiceImplTest {
 
             //when
             DirectMessageDtoCursorResponse directMessages = directMessageServiceImpl.getDirectMessages(
-                    senderId, null, null, 2);
+                    senderId, receiverId, null, null, 2);
 
             //then
             assertThat(directMessages.hasNext()).isTrue();
@@ -122,7 +122,7 @@ class DirectMessageServiceImplTest {
 
             //when
             DirectMessageDtoCursorResponse directMessages = directMessageServiceImpl.getDirectMessages(
-                    senderId, null, null, 2);
+                    senderId, receiverId,null, null, 2);
 
             //then
             assertThat(directMessages.hasNext()).isFalse();
@@ -135,7 +135,7 @@ class DirectMessageServiceImplTest {
 
             //when
             DirectMessageDtoCursorResponse directMessages = directMessageServiceImpl.getDirectMessages(
-                    senderId, null, null, 2);
+                    senderId, receiverId,null, null, 2);
 
             //then
             assertThat(directMessages.data()).isEmpty();
@@ -153,7 +153,7 @@ class DirectMessageServiceImplTest {
 
             //when
             DirectMessageDtoCursorResponse directMessages = directMessageServiceImpl.getDirectMessages(
-                    senderId, null, null, 2);
+                    senderId, receiverId,null, null, 2);
 
             //then
             assertThat(directMessages.hasNext()).isTrue();
@@ -170,7 +170,7 @@ class DirectMessageServiceImplTest {
 
             //when
             DirectMessageDtoCursorResponse directMessages = directMessageServiceImpl.getDirectMessages(
-                    senderId, null, null, 2);
+                    senderId, receiverId,null, null, 2);
 
             //then
             assertThat(directMessages.hasNext()).isFalse();
@@ -189,7 +189,7 @@ class DirectMessageServiceImplTest {
 
             //when
             DirectMessageDtoCursorResponse directMessages = directMessageServiceImpl.getDirectMessages(
-                    senderId, null, null, 2);
+                    senderId, receiverId,null, null, 2);
 
             //then
             assertThat(directMessages.totalCount()).isEqualTo(3);

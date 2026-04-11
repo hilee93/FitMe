@@ -107,8 +107,10 @@ class FeedControllerTest {
         @DisplayName("[201] 유효한 요청이면 피드 생성 후 201 Created와 응답을 반환한다")
         void createFeed_success_when_valid_request() throws Exception {
 
+            UUID userId = UUID.randomUUID();
+
             FeedCreateRequest request = new FeedCreateRequest(
-                    UUID.randomUUID(),
+                    userId,
                     UUID.randomUUID(),
                     List.of(UUID.randomUUID()),
                     "테스트 피드"
@@ -129,11 +131,12 @@ class FeedControllerTest {
             given(feedService.createFeed(any())).willReturn(response);
 
             mockMvc.perform(post("/api/feeds")
+                            .with(userPrincipal(userId))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.content").value("테스트 피드"));
-            then(feedService).should(times(1)).createFeed(request);
+            then(feedService).should(times(1)).createFeed(any());
         }
 
         @Test
@@ -174,14 +177,17 @@ class FeedControllerTest {
 
             //given
             UUID feedId = UUID.randomUUID();
+            UUID userId = UUID.randomUUID();
 
-            willDoNothing().given(feedService).deleteFeed(feedId);
+            willDoNothing().given(feedService).deleteFeed(feedId, userId);
 
             //when & then
-            mockMvc.perform(delete("/api/feeds/{feedId}", feedId))
+            mockMvc.perform(delete("/api/feeds/{feedId}", feedId)
+                            .with(userPrincipal(userId))
+                    )
                     .andExpect(status().isNoContent());
 
-            then(feedService).should(times(1)).deleteFeed(feedId);
+            then(feedService).should(times(1)).deleteFeed(feedId, userId);
         }
 
         @Test
@@ -190,14 +196,17 @@ class FeedControllerTest {
 
             // given
             UUID feedId = UUID.randomUUID();
+            UUID userId = UUID.randomUUID();
 
-            willThrow(new FeedNotFoundException(ErrorCode.FEED_NOT_FOUND)).given(feedService).deleteFeed(feedId);
+            willThrow(new FeedNotFoundException(ErrorCode.FEED_NOT_FOUND)).given(feedService).deleteFeed(feedId, userId);
 
             // when & then
-            mockMvc.perform(delete("/api/feeds/{feedId}", feedId))
+            mockMvc.perform(delete("/api/feeds/{feedId}", feedId)
+                            .with(userPrincipal(userId))
+                    )
                     .andExpect(status().isNotFound());
 
-            then(feedService).should(times(1)).deleteFeed(feedId);
+            then(feedService).should(times(1)).deleteFeed(feedId, userId);
         }
 
     }

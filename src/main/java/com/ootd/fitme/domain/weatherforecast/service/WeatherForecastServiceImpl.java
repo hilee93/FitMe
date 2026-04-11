@@ -2,6 +2,7 @@ package com.ootd.fitme.domain.weatherforecast.service;
 
 import com.ootd.fitme.domain.region.entity.Region;
 import com.ootd.fitme.domain.region.service.RegionService;
+import com.ootd.fitme.domain.useractivelocation.service.UserActiveLocationService;
 import com.ootd.fitme.domain.weatherforecast.dto.response.WeatherAPILocation;
 import com.ootd.fitme.domain.weatherforecast.dto.response.WeatherDto;
 import com.ootd.fitme.domain.weatherforecast.entity.WeatherForecast;
@@ -24,11 +25,13 @@ public class WeatherForecastServiceImpl implements WeatherForecastService {
     private final RegionService regionService;
     private final WeatherForecastMapper weatherForecastMapper;
     private final WeatherForecastCollectService weatherForecastCollectService;
+    private final UserActiveLocationService userActiveLocationService;
 
     @Override
     @Transactional
     public List<WeatherDto> getWeathers(double longitude, double latitude) {
         Region region = regionService.resolveAndUpsert(longitude, latitude);
+        userActiveLocationService.upsertCurrentUser(region);
 
         List<WeatherForecast> forecasts = findUpcoming(region.getId());
 

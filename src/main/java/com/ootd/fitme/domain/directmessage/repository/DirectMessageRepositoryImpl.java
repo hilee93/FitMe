@@ -21,7 +21,7 @@ public class DirectMessageRepositoryImpl implements DirectMessageRepositoryCusto
     private final JPAQueryFactory jpaQueryFactory;
 
     @Override
-    public List<DirectMessageDto> findDirectMessages(UUID userId, String cursor, UUID idAfter, int limit) {
+    public List<DirectMessageDto> findDirectMessages(UUID myId, UUID targetId, String cursor, UUID idAfter, int limit) {
 
         QDirectMessage directMessage = QDirectMessage.directMessage;
         QProfile senderProfile = new QProfile("senderProfile");
@@ -49,7 +49,8 @@ public class DirectMessageRepositoryImpl implements DirectMessageRepositoryCusto
                 .join(senderProfile).on(senderProfile.user.id.eq(directMessage.senderId))
                 .join(receiverProfile).on(receiverProfile.user.id.eq(directMessage.receiverId))
                 .where(
-                        directMessage.senderId.eq(userId).or(directMessage.receiverId.eq(userId)),
+                        directMessage.senderId.eq(myId).and(directMessage.receiverId.eq(targetId))
+                                .or(directMessage.senderId.eq(targetId).and(directMessage.receiverId.eq(myId))),
                         cursorCondition(cursor, idAfter)
                 )
                 .orderBy(directMessage.createdAt.desc(), directMessage.id.asc())

@@ -11,6 +11,18 @@ services:
       AZURE_STORAGE_ACCOUNT_NAME: ${AZURE_STORAGE_ACCOUNT_NAME}
       AZURE_STORAGE_ACCOUNT_KEY: ${AZURE_STORAGE_ACCOUNT_KEY}
       JAVA_OPTS: -Xms256m -Xmx512m
+
+      # 임시 비밀번호 메일 기능 ON
+      FITME_USER_TEMP_PASSWORD_MAIL_ENABLED: "true"
+      FITME_USER_TEMP_PASSWORD_MAIL_FROM: "no-reply@fitme.com"
+      FITME_USER_TEMP_PASSWORD_MAIL_SUBJECT: "[FitMe] 임시 비밀번호 안내"
+
+      # docker에 spring.mail.* 주입
+      SPRING_MAIL_HOST: "mailhog"
+      SPRING_MAIL_PORT: "1025"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: "false"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "false"
+
     volumes:
       - fitme-storage:/app/storage
       - fitme-logs:/app/.logs
@@ -20,8 +32,8 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 40s
+      retries: 15
+      start_period: 90s
     depends_on:
       postgres: # postgres라는 동작에 의존하고 이게 될때까지 위의서비스는 대기
         condition: service_healthy # 해당 서비스(postgres)가 healthy해야만 동작하도록 조건 추가 및 대기
@@ -31,6 +43,8 @@ services:
         condition: service_healthy
       elasticsearch:
         condition: service_healthy
+      mailhog:
+        condition: service_started
     networks:
       - fitme-backend-network
 
@@ -108,7 +122,7 @@ services:
       - discovery.type=single-node
       - xpack.security.enabled=false # 운영에서는 무조건 true, 그게아니면 누구나 데이터 조회/삭제 가능
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
-      - network.host=0.0.0.0 # 공식 이미지 기본설정은 이미 yml에 들어가있어서 굳이 안써도되지만 까먹을수있기때문에 명시해놓고 추후 익숙해지면 제거
+      - network.host=0.0.0.0 # 공식 이미지 기본설정은 이미 yml에 들어가있어서 굳이 안써도되지만 까먹을수있기때문에 명시해놓고 추후 익숙해지면 제거, 이 컨테이너/서버가 가진 모든 네트워크 인터페이스에서 요청 받기
 #      - bootstrap.memory_lock=true # 추후 swap 되는 상황 예를들어 부하테스트 또는 달느상황으로 elasticsearch 일부를 디스크로 빼버려서 성능이 저하되는 상황을 볼때 킬것(트러블슈팅)
 #    ulimits: # memory_lock = true 옵션을 실제로 동작하기 위한 필요한 설정, OS 수준에서 메모리 lock 제한을 해제하여 ES가 메모리 swap으로 내려가는 것 방지
 #      memlock:
@@ -119,10 +133,11 @@ services:
     volumes:
       - fitme-elasticsearch-data:/usr/share/elasticsearch/data
     healthcheck:
-      test: [ "CMD-SHELL", "curl -fsS http://localhost:9200 >/dev/null || exit 1" ]
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s >/dev/null || exit 1" ]
       interval: 15s
       timeout: 10s
-      retries: 10
+      retries: 15
+      start_period: 90s
     networks:
       - fitme-backend-network
 
@@ -131,12 +146,20 @@ services:
     ports:
       - "80:80" # 외부 요청(80)을 nginx로 받고 → 내부 app:8080으로 프록시
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/nginx.conf.local:/etc/nginx/nginx.conf:ro
     depends_on:
       app:
         condition: service_healthy
     networks:
       - fitme-backend-network
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    ports:
+      - "8025:8025" # 메일 확인 UI
+    networks:
+      - fitme-backend-network
+    platform: linux/amd64
 
 
 

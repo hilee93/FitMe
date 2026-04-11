@@ -1,5 +1,6 @@
 package com.ootd.fitme.domain.notification.entity;
 
+import com.ootd.fitme.domain.notification.enums.AttributeAction;
 import com.ootd.fitme.domain.notification.enums.NotificationLevel;
 import com.ootd.fitme.domain.notification.enums.NotificationType;
 import com.ootd.fitme.domain.user.entity.User;
@@ -84,10 +85,10 @@ class NotificationFactoryTest {
         @DisplayName("피드 댓글 알림을 생성한다")
         void create_FeedCommented_Notification() {
 
-            Notification notification = notificationFactory.feedCommented(user, "피드이름","제원","좋은 글이네요!");
+            Notification notification = notificationFactory.feedCommented(user, "content", "제원","좋은 글이네요!");
 
             assertThat(notification.getLevel()).isEqualTo(NotificationLevel.INFO);
-            assertThat(notification.getTitle()).isEqualTo("[피드이름]피드에 [제원]님이 댓글을 남겼습니다.");
+            assertThat(notification.getTitle()).isEqualTo("[content]피드에 [제원]님이 댓글을 남겼습니다.");
             assertThat(notification.getContent()).isEqualTo("좋은 글이네요!");
             assertThat(notification.getType()).isEqualTo(NotificationType.FEED_COMMENTED);
             assertThat(notification.getUser()).isEqualTo(user);
@@ -111,11 +112,11 @@ class NotificationFactoryTest {
         @DisplayName("속성 추가 알림을 생성한다")
         void createAttributeAddedNotification() {
 
-            Notification notification = notificationFactory.attributeAdded(user, "사이즈");
+            Notification notification = notificationFactory.attributeAdded(user, "사이즈", AttributeAction.ADDED);
 
             assertThat(notification.getLevel()).isEqualTo(NotificationLevel.INFO);
-            assertThat(notification.getTitle()).isEqualTo("[사이즈] 속성이 추가되었습니다.");
-            assertThat(notification.getContent()).isEqualTo("속성을 확인해보세요");
+            assertThat(notification.getTitle()).isEqualTo("속성이 추가되었습니다.");
+            assertThat(notification.getContent()).isEqualTo("[사이즈]속성을 확인해보세요");
             assertThat(notification.getType()).isEqualTo(NotificationType.ATTRIBUTE_ADDED);
             assertThat(notification.getUser()).isEqualTo(user);
         }

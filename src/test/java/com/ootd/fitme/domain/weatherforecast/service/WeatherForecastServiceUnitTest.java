@@ -2,6 +2,7 @@ package com.ootd.fitme.domain.weatherforecast.service;
 
 import com.ootd.fitme.domain.region.entity.Region;
 import com.ootd.fitme.domain.region.service.RegionService;
+import com.ootd.fitme.domain.useractivelocation.service.UserActiveLocationService;
 import com.ootd.fitme.domain.weatherforecast.dto.response.*;
 import com.ootd.fitme.domain.weatherforecast.entity.WeatherForecast;
 import com.ootd.fitme.domain.weatherforecast.enums.PrecipitationType;
@@ -43,6 +44,12 @@ public class WeatherForecastServiceUnitTest {
     @Mock
     private WeatherForecastCollectService weatherForecastCollectService;
 
+    @Mock
+    private WeatherAlertPublishService weatherAlertPublishService;
+
+    @Mock
+    private UserActiveLocationService userActiveLocationService;
+
     @InjectMocks
     private WeatherForecastServiceImpl weatherForecastService;
 
@@ -77,6 +84,7 @@ public class WeatherForecastServiceUnitTest {
             assertThat(pageableCaptor.getValue().getPageNumber()).isEqualTo(0);
             assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(5);
             verify(weatherForecastCollectService, never()).collectAndStoreRegion(any());
+            verify(userActiveLocationService).upsertCurrentUser(region);
         }
 
         @Test
@@ -99,6 +107,7 @@ public class WeatherForecastServiceUnitTest {
             List<WeatherDto> result = weatherForecastService.getWeathers(126.9707, 37.5841);
 
             assertThat(result).containsExactly(dto1);
+            verify(userActiveLocationService).upsertCurrentUser(region);
             verify(weatherForecastCollectService).collectAndStoreRegion(region);
             verify(weatherForecastRepository, times(2))
                     .findUpcomingByRegionId(eq(regionId), any(Instant.class), any(Pageable.class));

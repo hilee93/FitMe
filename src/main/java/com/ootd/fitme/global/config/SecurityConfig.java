@@ -62,13 +62,13 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/.well-known/**",
                                 "/actuator/**",
-                                "/h2-console/**" // 운영단계에서 제거
+                                "/h2-console/**", // 운영단계에서 제거
+                                "/storage/**"
                         ).permitAll()
                         // CORS preflight 요청을 위한 설정
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(
                                 // API
-                                "/api/users",
                                 "/api/auth/sign-in",
                                 "/api/auth/sign-out",
                                 "/api/auth/refresh",
@@ -77,9 +77,11 @@ public class SecurityConfig {
                                 "/api/sse",
                                 "/ws/**"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/clothes/attribute-defs/**").hasAnyRole("ADMIN", "USER")
                         .requestMatchers("/api/clothes/attribute-defs/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+                        .requestMatchers("/storage/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .headers(headers -> headers

@@ -105,13 +105,11 @@ class ClothesTest {
             UUID newValueId3 = UUID.randomUUID();
 
             ClothesAttribute existingToUpdate = createMockAttribute(attributeId1, oldValueId1);
-
             ClothesAttribute existingToRemove = createMockAttribute(attributeId2, oldValueId2);
 
             clothes.getAttributes().addAll(new ArrayList<>(List.of(existingToUpdate, existingToRemove)));
 
             ClothesAttribute incomingNew = createMockAttribute(attributeId3, newValueId3);
-
             ClothesAttribute incomingUpdate = createMockAttribute(attributeId1, newValueId1);
 
             List<ClothesAttribute> incomingAttributes = List.of(incomingNew, incomingUpdate);
@@ -130,9 +128,8 @@ class ClothesTest {
             // 추가 검증
             assertThat(resultAttributes).contains(incomingNew);
 
-            verify(existingToUpdate, times(1)).assignOption(
-                    incomingUpdate.getClothesAttributeSelectableValue().getSelectableValue()
-            );
+            var incomingOption = incomingUpdate.getClothesAttributeSelectableValue().getSelectableValue();
+            verify(existingToUpdate, times(1)).assignOption(incomingOption);
         }
 
         @Nested

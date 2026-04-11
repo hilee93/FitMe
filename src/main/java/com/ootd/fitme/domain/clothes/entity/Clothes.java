@@ -4,6 +4,7 @@ import com.ootd.fitme.domain.base.BaseUpdateEntity;
 import com.ootd.fitme.domain.clothes.enums.ClothesType;
 import com.ootd.fitme.domain.clothes.exception.ClothesException;
 import com.ootd.fitme.domain.clothesattribute.entity.ClothesAttribute;
+import com.ootd.fitme.domain.selectablevalue.entity.SelectableValue;
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.global.exception.ErrorCode;
 import jakarta.persistence.*;
@@ -91,11 +92,9 @@ public class Clothes extends BaseUpdateEntity {
 
             if (existingOpt.isPresent()) {
                 ClothesAttribute existing = existingOpt.get();
+                SelectableValue incomingOption = incoming.getClothesAttributeSelectableValue().getSelectableValue();
 
-                if (!existing.getClothesAttributeSelectableValue().getSelectableValue().getId().equals(incoming.getClothesAttributeSelectableValue().
-                        getSelectableValue().getId())) {
-                    existing.assignOption(incoming.getClothesAttributeSelectableValue().getSelectableValue());
-                }
+                existing.assignOption(incomingOption);
             } else {
                 this.attributes.add(incoming);
             }

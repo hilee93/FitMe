@@ -2,6 +2,8 @@ package com.ootd.fitme.domain.notification.listener;
 
 
 import com.ootd.fitme.domain.attribute.event.AttributeAddedEvent;
+import com.ootd.fitme.domain.attribute.event.AttributeDeleteEvent;
+import com.ootd.fitme.domain.attribute.event.AttributeUpdateEvent;
 import com.ootd.fitme.domain.comment.event.FeedCommentCreateEvent;
 import com.ootd.fitme.domain.directmessage.event.DirectMessageCreateEvent;
 import com.ootd.fitme.domain.feed.event.FeedCreateEvent;
@@ -58,9 +60,9 @@ public class NotificationEventListener {
     public void feedLiked(FeedLikedCreateEvent event) {
         try {
             notificationService.notifyFeedLiked(
-                    event.likedId(),
-                    event.feedName(),
-                    event.likerName()
+                    event.targetUserId(),
+                    event.content(),
+                    event.likerId()
             );
             log.info("[LIKE] 알림이벤트 처리 성공. likeId={}", event.feedLikeId());
         } catch (Exception e) {
@@ -74,8 +76,8 @@ public class NotificationEventListener {
         try {
             notificationService.notifyFeedCommented(
                     event.feedOwnerId(),
-                    event.feedName(),
-                    event.commenterName(),
+                    event.content(),
+                    event.commenterId(),
                     event.comment()
             );
             log.info("[COMMENT] 알림이벤트 처리 성공. commentId={}", event.commentId());
@@ -89,11 +91,40 @@ public class NotificationEventListener {
     public void attributeAdded(AttributeAddedEvent event) {
         try {
             notificationService.notifyAttributeAdded(
-                    event.attributeName()
+                    event.attributeName(),
+                    event.action()
             );
             log.info("[ATTRIBUTE_ADDED] 알림이벤트 처리 성공. attributeId={}", event.attributeId());
         } catch (Exception e) {
             log.error("[ATTRIBUTE_ADDED] 알림이벤트 처리 실패. attributeId={}", event.attributeId(), e);
+        }
+    }
+    @Async("eventTaskExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void attributeUpdated(AttributeUpdateEvent event) {
+        try {
+            notificationService.notifyAttributeAdded(
+                    event.attributeName(),
+                    event.action()
+            );
+            log.info("[ATTRIBUTE_UPDATED] 알림이벤트 처리 성공. attributeId={}", event.attributeId());
+        } catch (Exception e) {
+            log.error("[ATTRIBUTE_UPDATED] 알림이벤트 처리 실패. attributeId={}", event.attributeId(), e);
+        }
+    }
+
+    @Async("eventTaskExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void attributeDeleted(AttributeDeleteEvent event) {
+        try {
+            notificationService.notifyAttributeAdded(
+                    event.attributeName(),
+                    event.action()
+            );
+
+            log.info("[ATTRIBUTE_DELETED] 알림이벤트 처리 성공. attributeId={}", event.attributeId());
+        } catch (Exception e) {
+            log.error("[ATTRIBUTE_DELETED] 알림이벤트 처리 실패. attributeId={}", event.attributeId(), e);
         }
     }
 
@@ -103,8 +134,7 @@ public class NotificationEventListener {
         try {
             notificationService.notifyFollowerNewFeed(
                     event.userId(),
-                    event.writerName(),
-                    event.feedName()
+                    event.content()
             );
             log.info("[FOLLOWER_FEED] 알림이벤트 처리 성공. feedId={}", event.feedId());
         } catch (Exception e) {
@@ -117,8 +147,9 @@ public class NotificationEventListener {
     public void weatherAlert(WeatherAlertEvent event) {
         try {
             notificationService.notifyWeatherAlert(
-                    event.region_1(),
-                    event.region_2(),
+                    event.receiverIds(),
+                    event.region1DepthName(),
+                    event.region2DepthName(),
                     event.message()
             );
             log.info("[WEATHER_ALERT] 알림이벤트 처리 성공.");

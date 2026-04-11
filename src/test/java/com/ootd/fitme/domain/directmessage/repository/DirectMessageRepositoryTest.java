@@ -65,7 +65,7 @@ class DirectMessageRepositoryTest {
 
             //when
             List<DirectMessageDto> directMessages = directMessageRepository.findDirectMessages(
-                    senderId, null, null, 2);
+                    senderId, receiverId, null,null, 2);
 
             //then
             assertThat(directMessages.size()).isEqualTo(3);
@@ -81,14 +81,14 @@ class DirectMessageRepositoryTest {
             directMessageRepository.save(DirectMessage.create(senderId, receiverId, "테스트 메시지3"));
 
             List<DirectMessageDto> firstPage = directMessageRepository.findDirectMessages(
-                    senderId, null, null, 2);
+                    senderId,  receiverId,null, null, 2);
 
             String cursor = firstPage.get(1).createdAt().toString();
             UUID idAfter = firstPage.get(1).id();
 
             //when
             List<DirectMessageDto> secondPage = directMessageRepository.findDirectMessages(
-                    senderId, cursor, idAfter, 2);
+                    senderId, receiverId, cursor, idAfter, 2);
 
             //then
             assertThat(secondPage.size()).isEqualTo(1);

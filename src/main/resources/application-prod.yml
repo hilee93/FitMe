@@ -21,7 +21,51 @@ spring:
         default_batch_fetch_size: 100 # (덮어쓰기) Prod는 성능 위해 100으로 증가
 
   cache:
-    type: caffeine # 운영서버에 redis생길시 변경
+    type: redis
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
+      ssl:
+        enabled: true
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    properties:
+      security.protocol: SASL_SSL
+      sasl.mechanism: PLAIN
+      sasl.jaas.config: >
+        org.apache.kafka.common.security.plain.PlainLoginModule required
+        username="$ConnectionString"
+        password="${EVENT_HUBS_CONNECTION_STRING}";
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        enable.idempotence: true
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.use.type.headers: false
+
+  elasticsearch:
+    uris: ${ELASTICSEARCH_URI}
+
+  mail:
+    host: smtp.azurecomm.net
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail.smtp.auth: true # 인증 사용
+      mail.smtp.starttls.enable: true # 평문 연결 후 TLS 업그레이드
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 5000 # 읽기
+      mail.smtp.writetimeout: 5000 # 쓰기
 
 logging:
   level:
@@ -37,6 +81,11 @@ management:
   endpoint:
     health:
       show-details: always # (보안) 운영서버지만 초기에 잘 뜨는지 확인하기위해 always설정 추후 when_authorized 변경 고려
+      show-components: always
+
+  health:
+    elasticsearch:
+      enabled: true
 
 jwt:
   secret-key: ${JWT_SECRET}
@@ -51,3 +100,9 @@ admin:
     password: ${ADMIN_PASSWORD}
     profile-name: ${ADMIN_PROFILE_NAME}
     reset-password: false
+
+fitme:
+  user:
+    temp-password:
+      mail:
+        enabled: true
