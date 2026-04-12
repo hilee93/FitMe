@@ -8,6 +8,7 @@ import com.ootd.fitme.domain.clothes.dto.request.ClothesDtoCursorRequest;
 import com.ootd.fitme.domain.clothes.dto.request.ClothesUpdateRequest;
 import com.ootd.fitme.domain.clothes.dto.response.ClothesDtoCursorResponse;
 import com.ootd.fitme.domain.clothes.entity.Clothes;
+import com.ootd.fitme.domain.clothes.enums.ClothesType;
 import com.ootd.fitme.domain.clothes.exception.ClothesException;
 import com.ootd.fitme.domain.clothes.repository.ClothesRepository;
 import com.ootd.fitme.domain.clothesattribute.entity.ClothesAttribute;
@@ -18,6 +19,7 @@ import com.ootd.fitme.domain.selectablevalue.repository.SelectableValueRepositor
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.repository.UserRepository;
 import com.ootd.fitme.global.exception.ErrorCode;
+import com.ootd.fitme.infrastructure.ai.AiDataExtractor;
 import com.ootd.fitme.infrastructure.scraper.PlaywrightScraper;
 import com.ootd.fitme.infrastructure.scraper.exception.ScraperException;
 import lombok.RequiredArgsConstructor;
@@ -46,8 +48,8 @@ public class ClothesServiceImpl implements ClothesService {
     private final SelectableValueRepository selectableValueRepository;
 
     private final MediaFileService mediaFileService;
-    private final ApplicationEventPublisher eventPublisher;
     private final PlaywrightScraper scraper;
+    private final AiDataExtractor aiExtractor;
 
     @Override
     @Transactional
@@ -209,32 +211,89 @@ public class ClothesServiceImpl implements ClothesService {
 
     @Override
     public ClothesDto extractInfoFromLink(String link) {
-        log.info("[ClothesService] 링크 스크래핑 요청 시작 - URL: {}", link);
+        log.info("[ClothesService] 스크래핑 및 AI 분석 시작 - URL: {}", link);
 
-        try {
-            PlaywrightScraper.ScrapedData scrapedData = scraper.scrape(link);
+        // 1. 스크래퍼 호출: 원본 이름, 이미지 URL, 그리고 AI 분석을 위해 다이어트된 텍스트(coreText)를 가져옵니다.
+        PlaywrightScraper.ScrapedData scrapedData = scraper.scrape(link);
 
-            String finalName = (scrapedData.title() != null && !scrapedData.title().isBlank())
-                    ? HtmlUtils.htmlEscape(scrapedData.title())
-                    : "이름 없음";
+        // 2. DB에서 전체 속성을 조회하여 AI에게 줄 가이드라인(선택지)을 만듭니다.
+        List<Attribute> allAttributes = attributeRepository.findAll();
+        String attributePromptGuide = buildAttributePromptGuide(allAttributes);
 
-            if (finalName.length() > 100) {
-                finalName = finalName.substring(0, 100);
-            }
+        // 3. AI 시스템 프롬프트 (역할과 규칙 부여)
+        String systemInstruction = "You are an expert fashion data analyst.\n" +
+                "Read the provided product information and extract the clothing details.\n" +
+                "1. name: Summarize the core product name in about 20 characters in Korean.\n" +
+                "2. type: Choose EXACTLY ONE from this list: [ALL, TOP, BOTTOM, DRESS, OUTER, UNDERWEAR, SHOES, SOCKS, HAT, BAG, ACCESSORY, SCARF, ETC]\n" +
+                "3. attributes: Map the product details to the [Allowed Attributes & Options] provided below.\n" +
+                "   - Actively INFER attributes like gender, fit, material, and season from the context.\n" +
+                "   - IMPORTANT: You MUST output the exact Korean names for the definition and value from the allowed list.\n" +
+                "   - Omit unknown attributes.\n\n" +
+                "[Allowed Attributes & Options]\n" + attributePromptGuide;
 
-            return new ClothesDto(
-                    null,
-                    null,
-                    finalName,
-                    scrapedData.imageUrl(),
-                    null,
-                    new ArrayList<>()
-            );
+        // 4. AI 유저 데이터 (실제 분석할 스크래핑 결과물)
+        String rawData = String.format("[원본 상품명]: %s\n[이미지 URL]: %s\n[상세 정보]:\n%s",
+                scrapedData.title(),
+                scrapedData.imageUrl(),
+                scrapedData.coreText());
 
-        } catch (ScraperException e) {
-            log.error("[ClothesService] 링크 스크래핑 실패 - URL: {}, Error: {}", link, e.getMessage(), e);
-            throw e;
+        // 5. AI 데이터 추출 실행 (AiDataExtractor 내부에서 에러 발생 시 알아서 예외를 던집니다)
+        AiClothesResult aiResult = aiExtractor.extractData(
+                rawData,
+                systemInstruction,
+                AiClothesResult.class
+        );
+
+        // 6. 결과 검증 및 안전한 데이터 조립
+        String finalImageUrl = (scrapedData.imageUrl() != null && !scrapedData.imageUrl().isBlank())
+                ? scrapedData.imageUrl()
+                : "";
+
+        ClothesType finalType = aiResult.type() != null ? aiResult.type() : ClothesType.ETC;
+
+        // AI가 이름을 제대로 추출하지 못했다면, 스크래퍼가 긁어온 원본 타이틀을 사용(Fallback)
+        String finalName = (aiResult.name() != null && !aiResult.name().isBlank())
+                ? HtmlUtils.htmlEscape(aiResult.name())
+                : HtmlUtils.htmlEscape(scrapedData.title());
+
+        if (finalName.length() > 100) {
+            finalName = finalName.substring(0, 100);
         }
+
+        // 7. 속성 매핑 (AI가 추출한 결과를 DB의 실제 속성 ID와 매칭)
+        // (주의: 반환하는 ClothesDto 생성자에 맞는 DTO 타입으로 리스트를 구성하세요)
+        List<ClothesAttributeWithDefDto> mappedAttributes = new ArrayList<>();
+        if (aiResult.attributes() != null) {
+            for (AiClothesResult.AiAttribute aiAttr : aiResult.attributes()) {
+                allAttributes.stream()
+                        .filter(dbAttr -> dbAttr.getName().equalsIgnoreCase(aiAttr.definitionName()))
+                        .findFirst()
+                        .ifPresent(dbAttr -> {
+                            List<String> selectableOptions = dbAttr.getSelectableValues().stream()
+                                    .map(sv -> sv.getType())
+                                    .toList();
+
+                            mappedAttributes.add(new ClothesAttributeWithDefDto(
+                                    dbAttr.getId(),
+                                    dbAttr.getName(),
+                                    selectableOptions,
+                                    aiAttr.value()
+                            ));
+                        });
+            }
+        }
+
+        log.info("[ClothesService] 스크래핑 및 AI 분석 완료 - 최종 상품명: {}", finalName);
+
+        // 8. 최종 ClothesDto 반환 (기존 빈 리스트 대신 매핑된 속성을 넣어줍니다)
+        return new ClothesDto(
+                null,
+                null,
+                finalName,
+                finalImageUrl,
+                finalType,
+                mappedAttributes
+        );
     }
 
     @Override
@@ -337,4 +396,16 @@ public class ClothesServiceImpl implements ClothesService {
                     );
                 }).toList();
     }
+
+    private String buildAttributePromptGuide(List<Attribute> attributes) {
+        StringBuilder guide = new StringBuilder();
+        for (Attribute attr : attributes) {
+            String options = attr.getSelectableValues().stream()
+                    .map(sv -> sv.getType())
+                    .collect(Collectors.joining(", "));
+            guide.append("- ").append(attr.getName()).append(" (선택가능 옵션: ").append(options).append(")\n");
+        }
+        return guide.toString();
+    }
 }
+
