@@ -36,6 +36,8 @@ spring:
         options:
           model: gemini-2.5-flash
           temperature: 0.1
+      retry:
+        max-attempts: 1
 
 
 fitme:
