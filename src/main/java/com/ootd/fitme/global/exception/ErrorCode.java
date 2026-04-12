@@ -86,6 +86,9 @@ public enum ErrorCode {
     //ai
     ERROR_OCCURRED_DURING_ANALYSIS(HttpStatus.INTERNAL_SERVER_ERROR, "AI 데이터 분석 중 오류가 발생했습니다.", "AI-001"),
 
+    //ai
+    ERROR_OCCURRED_DURING_ANALYSIS(HttpStatus.INTERNAL_SERVER_ERROR, "AI 데이터 분석 중 오류가 발생했습니다.", "AI-001"),
+
     //mediafile
     MEDIA_FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 미디어 파일입니다.", "MEDIA-001"),
     MEDIA_FILE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "해당 파일에 대한 접근 권한이 없습니다.", "MEDIA-002"),
