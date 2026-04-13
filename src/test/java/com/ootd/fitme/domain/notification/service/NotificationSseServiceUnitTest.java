@@ -30,6 +30,9 @@ class NotificationSseServiceUnitTest {
     @Mock
     private EmitterRepository emitterRepository;
 
+    @Mock
+    private SseMessageRepository sseMessageRepository;
+
     @InjectMocks
     private NotificationSseService notificationSseService;
 
@@ -42,9 +45,10 @@ class NotificationSseServiceUnitTest {
         void shouldSaveEmitterWhenSubscribe() {
             // given
             UUID userId = UUID.randomUUID();
+            UUID lastEventId = UUID.randomUUID();
 
             // when
-            SseEmitter result = notificationSseService.subscribe(userId);
+            SseEmitter result = notificationSseService.subscribe(userId,lastEventId);
 
             // then
             assertThat(result).isNotNull();
