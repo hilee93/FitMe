@@ -135,7 +135,17 @@ class NotificationEventListenerUnitTest {
             UUID userId = UUID.randomUUID();
 
             FeedCreateEvent event =
-                    new FeedCreateEvent(feedId, userId, "content", Instant.now());
+                    new FeedCreateEvent(
+                            feedId,
+                            userId,
+                            "content",
+                            Instant.now(),
+                            0,
+                            0,
+                            null,
+                            null,
+                            null
+                            );
 
             listener.followerNewFeed(event);
 

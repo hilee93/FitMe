@@ -82,7 +82,12 @@ public class FeedServiceImpl implements FeedService {
                         savedFeed.getId(),
                         user.getId(),
                         savedFeed.getContent(),
-                        savedFeed.getCreatedAt()
+                        savedFeed.getCreatedAt(),
+                        feed.getLikeCount(),
+                        feed.getCommentCount(),
+                        savedFeed.getWeatherForecast().getId(),
+                        savedFeed.getWeatherForecast().getSkyStatus(),
+                        savedFeed.getWeatherForecast().getPrecipitationType()
                 )
         );
 
