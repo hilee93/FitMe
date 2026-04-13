@@ -1,26 +1,26 @@
 package com.ootd.fitme.domain.directmessage.listener;
 
 import com.ootd.fitme.domain.directmessage.dto.response.DirectMessageDto;
-import com.ootd.fitme.domain.directmessage.dto.response.UserSummary;
 import com.ootd.fitme.domain.directmessage.event.DirectMessageCreateEvent;
+import com.ootd.fitme.infrastructure.realtime.websocket.DmRedisPublisher;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.time.Instant;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.then;
 
 @ExtendWith(MockitoExtension.class)
 class DirectMessageWebSocketEventListenerUnitTest {
 
     @Mock
-    private SimpMessagingTemplate messagingTemplate;
+    private DmRedisPublisher dmRedisPublisher;
 
     @InjectMocks
     private DirectMessageWebSocketEventListener eventListener;
@@ -41,18 +41,11 @@ class DirectMessageWebSocketEventListenerUnitTest {
                 "받는사람", null,
                 "안녕하세요", now);
 
-        DirectMessageDto messageDto = new DirectMessageDto(
-                messageId, now,
-                new UserSummary(senderId, "보내는사람", null),
-                new UserSummary(receiverId, "받는사람", null),
-                "안녕하세요");
-
         //when
         eventListener.handleDirectMessageSent(event);
 
         //then
-        String channel = "/sub/direct-messages_89a71b30-e73f-415f-b791-e8cb9694e5b6_96671e32-ff27-4215-bf96-d0575abc11f4";
-        then(messagingTemplate).should().convertAndSend(channel, messageDto);
+        then(dmRedisPublisher).should().publish(any(DirectMessageDto.class));
     }
 
 }
