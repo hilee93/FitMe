@@ -77,7 +77,7 @@ public class NotificationSseService {
             SseEmitter emitter = entry.getValue();
             try {
                 emitter.send(event);
-            } catch (IOException e) {
+            } catch (IOException | IllegalStateException e) {
                 log.warn("SSE send failed userId={}, emitterId={}", userId, emitterId, e);
                 emitterRepository.deleteByUserId(userId);
             }
