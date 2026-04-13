@@ -4,13 +4,13 @@ import com.ootd.fitme.domain.notification.dto.response.NotificationDto;
 import com.ootd.fitme.domain.notification.repository.EmitterRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -21,8 +21,9 @@ public class NotificationSseService {
     private static final Long DEFAULT_TIMEOUT = 60L * 1000 * 60;
 
     private final EmitterRepository emitterRepository;
+    private final SseMessageRepository sseMessageRepository;
 
-    public SseEmitter subscribe(UUID userId) {
+    public SseEmitter subscribe(UUID userId,UUID lastEventId) {
 
         emitterRepository.deleteByUserId(userId);
         String emitterId = createEmitterId(userId);
@@ -46,28 +47,33 @@ public class NotificationSseService {
 
         emitterRepository.save(userId, emitterId, emitter);
 
-        try {
-            emitter.send(
-                    SseEmitter.event()
-                            .name("ping")
-                            .data("")
-            );
-        } catch (IOException | IllegalStateException e) {
-            log.warn("SSE ping send failed userId={}, emitterId={}", userId, emitterId, e);
-            emitterRepository.deleteByUserId(userId);
-        }
-
+        Optional.ofNullable(lastEventId)
+                .ifPresentOrElse(
+                        id -> {
+                            sseMessageRepository.findAllByEventIdAfterAndReceiverId(id, userId)
+                                    .forEach(sseMessage -> {
+                                        try {
+                                            emitter.send(sseMessage.toEvent());
+                                        } catch (IOException e) {
+                                            log.error(e.getMessage(), e);
+                                        }
+                                    });
+                        },
+                        () -> {
+                            ping(emitter);
+                        }
+                );
 
         return emitter;
     }
 
     public void send(UUID userId, NotificationDto data) {
+        SseMessage message = sseMessageRepository.save(SseMessage.create(userId, data));
         Map<String, SseEmitter> emitters = emitterRepository.findAllByUserId(userId);
 
         for (Map.Entry<String, SseEmitter> entry : emitters.entrySet()) {
             String emitterId = entry.getKey();
             SseEmitter emitter = entry.getValue();
-
             sendToClient(emitter, userId, emitterId, data);
         }
     }
@@ -110,5 +116,25 @@ public class NotificationSseService {
         return userId + "_" + System.currentTimeMillis();
     }
 
+    private boolean ping(SseEmitter sseEmitter) {
+        try {
+            sseEmitter.send(SseEmitter.event()
+                    .name("ping")
+                    .build());
+            return true;
+        } catch (IOException e) {
+            log.error("Failed to send ping event", e);
+            return false;
+        }
+    }
+
+    @Scheduled(fixedDelay = 1000 * 60 * 30)
+    public void cleanUp() {
+        emitterRepository.findAll().values().stream()
+                .flatMap(map -> map.values().stream())
+                .filter(emitter -> !ping(emitter))
+                .forEach(emitter ->
+                        emitter.completeWithError(new RuntimeException("sse ping failed")));
+    }
 
 }
