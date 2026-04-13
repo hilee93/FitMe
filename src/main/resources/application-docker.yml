@@ -16,6 +16,8 @@ spring:
 
   elasticsearch:
     uris: http://elasticsearch:9200
+  cache:
+    type: redis
 
 
   data:

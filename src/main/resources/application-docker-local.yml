@@ -22,6 +22,8 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+  cache:
+    type: redis
 
   kafka:
     bootstrap-servers: broker:29092
