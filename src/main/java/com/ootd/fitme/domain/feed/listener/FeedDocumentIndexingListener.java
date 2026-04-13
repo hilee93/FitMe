@@ -2,6 +2,8 @@ package com.ootd.fitme.domain.feed.listener;
 
 import com.ootd.fitme.domain.feed.document.FeedDocument;
 import com.ootd.fitme.domain.feed.event.FeedCreateEvent;
+import com.ootd.fitme.domain.feed.event.FeedDeleteEvent;
+import com.ootd.fitme.domain.feed.event.FeedUpdateEvent;
 import com.ootd.fitme.domain.feed.repository.elasticsearch.FeedDocumentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -37,5 +39,30 @@ public class FeedDocumentIndexingListener {
         );
         feedDocumentRepository.save(feedDocument);
     }
+
+    @Async("eventTaskExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleFeedDeletedEvent(FeedDeleteEvent event){
+        feedDocumentRepository.deleteById(event.feedId());
+    }
+
+    @Async("eventTaskExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleFeedUpdatedEvent(FeedUpdateEvent event){
+
+        FeedDocument updated = FeedDocument.create(
+                event.feedId(),
+                event.createdAt(),
+                event.content(),
+                event.commentCount(),
+                event.likeCount(),
+                event.weatherForecastId(),
+                event.skyStatus(),
+                event.precipitationType(),
+                event.userId()
+        );
+        feedDocumentRepository.save(updated);
+    }
+
 
 }
