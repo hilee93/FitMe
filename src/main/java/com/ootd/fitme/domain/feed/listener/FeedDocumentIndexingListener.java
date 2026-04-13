@@ -57,7 +57,7 @@ public class FeedDocumentIndexingListener {
                 event.updatedAt(),
                 event.content(),
                 event.commentCount(),
-                event.likeCount(),
+                event.likeCount(), // NOTE: Eventual Consistency 결과적 일관성으로 당장 안맞아도 결국 맞아진다는 뜻으로 검색용 read model이라 이정도는 감수한다.
                 event.weatherForecastId(),
                 event.skyStatus(),
                 event.precipitationType(),
