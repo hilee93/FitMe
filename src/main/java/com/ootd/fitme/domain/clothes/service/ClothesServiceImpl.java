@@ -24,10 +24,9 @@ import com.ootd.fitme.infrastructure.scraper.JsoupScraper;
 import com.ootd.fitme.infrastructure.scraper.PlaywrightScraper;
 import com.ootd.fitme.infrastructure.scraper.ScrapedData;
 import com.ootd.fitme.infrastructure.scraper.SmartScraperManager;
-import com.ootd.fitme.infrastructure.scraper.exception.ScraperException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -217,8 +216,11 @@ public class ClothesServiceImpl implements ClothesService {
     }
 
     @Override
+    @Cacheable(value = "clothes_extraction",
+            key = "T(com.ootd.fitme.infrastructure.scraper.UrlUtil).normalize(#link)",
+            unless = "#aiResult == null")
     public ClothesDto extractInfoFromLink(String link) {
-        log.info("[ClothesService] 스크래핑 및 AI 분석 시작 - URL: {}", link);
+        log.info("[ClothesService] 캐시 미스 - 스크래핑 및 AI 분석 시작: {}", link);
 
         ScrapedData scrapedData = scraperManager.scrape(link);
 
@@ -239,11 +241,13 @@ public class ClothesServiceImpl implements ClothesService {
                 scrapedData.title(),
                 scrapedData.coreText());
 
-        AiClothesResult aiResult = aiExtractor.extractData(
-                rawData,
-                systemInstruction,
-                AiClothesResult.class
-        );
+        AiClothesResult aiResult = null;
+
+        try {
+            aiResult = aiExtractor.extractData(rawData, systemInstruction, AiClothesResult.class);
+        } catch (Exception e) {
+            log.warn("[ClothesService] AI 분석 서버 응답 지연/실패. 기본 스크래핑 데이터만으로 Fallback 진행합니다. (원인: {})", e.getMessage());
+        }
 
         String finalImageUrl = (scrapedData.imageUrl() != null && !scrapedData.imageUrl().isBlank())
                 ? scrapedData.imageUrl()
@@ -280,7 +284,7 @@ public class ClothesServiceImpl implements ClothesService {
             }
         }
 
-        log.info("[ClothesService] 스크래핑 및 AI 분석 완료 - 최종 상품명: {}", finalName);
+        log.info("[ClothesService] 분석 완료 및 결과 캐싱 예정 - 최종 상품명: {}", finalName);
 
         return new ClothesDto(
                 null,

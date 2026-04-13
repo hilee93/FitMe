@@ -74,9 +74,9 @@ public class PlaywrightScraper implements Scraper {
                     .setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
 
             page.evaluate("window.scrollBy(0, 800)");
-            page.waitForTimeout(1000);
+            page.waitForTimeout(500);
             page.evaluate("window.scrollBy(0, 800)");
-            page.waitForTimeout(1000);
+            page.waitForTimeout(500);
 
             String imageUrl = extractImageUrl(page);
             String exactProductName = extractTitleByJS(page);
