@@ -20,7 +20,10 @@ import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.repository.UserRepository;
 import com.ootd.fitme.global.exception.ErrorCode;
 import com.ootd.fitme.infrastructure.ai.AiDataExtractor;
+import com.ootd.fitme.infrastructure.scraper.JsoupScraper;
 import com.ootd.fitme.infrastructure.scraper.PlaywrightScraper;
+import com.ootd.fitme.infrastructure.scraper.ScrapedData;
+import com.ootd.fitme.infrastructure.scraper.SmartScraperManager;
 import com.ootd.fitme.infrastructure.scraper.exception.ScraperException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.HtmlUtils;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -48,8 +52,11 @@ public class ClothesServiceImpl implements ClothesService {
     private final SelectableValueRepository selectableValueRepository;
 
     private final MediaFileService mediaFileService;
-    private final PlaywrightScraper scraper;
+    private final PlaywrightScraper playwrightScraper;
+    private final JsoupScraper jsoupScraper;
     private final AiDataExtractor aiExtractor;
+
+    private final SmartScraperManager scraperManager;
 
     @Override
     @Transactional
@@ -213,14 +220,11 @@ public class ClothesServiceImpl implements ClothesService {
     public ClothesDto extractInfoFromLink(String link) {
         log.info("[ClothesService] 스크래핑 및 AI 분석 시작 - URL: {}", link);
 
-        // 1. 스크래퍼 호출: 원본 이름, 이미지 URL, 그리고 AI 분석을 위해 다이어트된 텍스트(coreText)를 가져옵니다.
-        PlaywrightScraper.ScrapedData scrapedData = scraper.scrape(link);
+        ScrapedData scrapedData = scraperManager.scrape(link);
 
-        // 2. DB에서 전체 속성을 조회하여 AI에게 줄 가이드라인(선택지)을 만듭니다.
         List<Attribute> allAttributes = attributeRepository.findAll();
         String attributePromptGuide = buildAttributePromptGuide(allAttributes);
 
-        // 3. AI 시스템 프롬프트 (역할과 규칙 부여)
         String systemInstruction = "You are an expert fashion data analyst.\n" +
                 "Read the provided product information and extract the clothing details.\n" +
                 "1. name: Summarize the core product name in about 20 characters in Korean.\n" +
@@ -231,27 +235,22 @@ public class ClothesServiceImpl implements ClothesService {
                 "   - Omit unknown attributes.\n\n" +
                 "[Allowed Attributes & Options]\n" + attributePromptGuide;
 
-        // 4. AI 유저 데이터 (실제 분석할 스크래핑 결과물)
-        String rawData = String.format("[원본 상품명]: %s\n[이미지 URL]: %s\n[상세 정보]:\n%s",
+        String rawData = String.format("[원본 상품명]: %s\n[상세 정보]:\n%s",
                 scrapedData.title(),
-                scrapedData.imageUrl(),
                 scrapedData.coreText());
 
-        // 5. AI 데이터 추출 실행 (AiDataExtractor 내부에서 에러 발생 시 알아서 예외를 던집니다)
         AiClothesResult aiResult = aiExtractor.extractData(
                 rawData,
                 systemInstruction,
                 AiClothesResult.class
         );
 
-        // 6. 결과 검증 및 안전한 데이터 조립
         String finalImageUrl = (scrapedData.imageUrl() != null && !scrapedData.imageUrl().isBlank())
                 ? scrapedData.imageUrl()
                 : "";
 
         ClothesType finalType = aiResult.type() != null ? aiResult.type() : ClothesType.ETC;
 
-        // AI가 이름을 제대로 추출하지 못했다면, 스크래퍼가 긁어온 원본 타이틀을 사용(Fallback)
         String finalName = (aiResult.name() != null && !aiResult.name().isBlank())
                 ? HtmlUtils.htmlEscape(aiResult.name())
                 : HtmlUtils.htmlEscape(scrapedData.title());
@@ -260,8 +259,6 @@ public class ClothesServiceImpl implements ClothesService {
             finalName = finalName.substring(0, 100);
         }
 
-        // 7. 속성 매핑 (AI가 추출한 결과를 DB의 실제 속성 ID와 매칭)
-        // (주의: 반환하는 ClothesDto 생성자에 맞는 DTO 타입으로 리스트를 구성하세요)
         List<ClothesAttributeWithDefDto> mappedAttributes = new ArrayList<>();
         if (aiResult.attributes() != null) {
             for (AiClothesResult.AiAttribute aiAttr : aiResult.attributes()) {
@@ -285,7 +282,6 @@ public class ClothesServiceImpl implements ClothesService {
 
         log.info("[ClothesService] 스크래핑 및 AI 분석 완료 - 최종 상품명: {}", finalName);
 
-        // 8. 최종 ClothesDto 반환 (기존 빈 리스트 대신 매핑된 속성을 넣어줍니다)
         return new ClothesDto(
                 null,
                 null,
@@ -293,42 +289,6 @@ public class ClothesServiceImpl implements ClothesService {
                 finalImageUrl,
                 finalType,
                 mappedAttributes
-        );
-    }
-
-    @Override
-    @Transactional
-    public ClothesDto createClothesFromExtracted(UUID loginUserId, ExtractedClothesInfo extractedInfo) {
-        log.info("[ClothesService] 스크래핑된 정보로 옷 생성 요청 - loginUserId: {}, name: {}", loginUserId, extractedInfo.name());
-
-        User user = userRepository.findById(loginUserId)
-                .orElseThrow(() -> {
-                    log.warn("[ClothesService] 스크래핑 옷 생성 실패: 존재하지 않는 사용자 - userId: {}", loginUserId);
-                    return new ClothesException(ErrorCode.CLOTHES_OWNER_NOT_FOUND);
-                });
-
-        Clothes clothes = Clothes.createWithImage(
-                extractedInfo.name(),
-                extractedInfo.type(),
-                user,
-                extractedInfo.imageUrl()
-        );
-
-        List<ClothesAttribute> clothesAttributes = buildClothesAttributes(clothes, extractedInfo.attributes());
-        clothes.replaceAttributes(clothesAttributes);
-
-        Clothes savedClothes = clothesRepository.save(clothes);
-        log.info("[ClothesService] 스크래핑 옷 DB 저장 완료 - clothesId: {}", savedClothes.getId());
-
-        List<ClothesAttributeWithDefDto> attributeDtos = buildAttributeDtos(clothesAttributes);
-
-        return new ClothesDto(
-                savedClothes.getId(),
-                user.getId(),
-                savedClothes.getName(),
-                savedClothes.getImageUrl(),
-                savedClothes.getClothesType(),
-                attributeDtos
         );
     }
 
