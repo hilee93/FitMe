@@ -27,33 +27,12 @@ public class CacheConfig {
 
     @Bean
     @Primary
-    public CacheManager caffeineCacheManager() {
-
-        CaffeineCacheManager cacheManager = new CaffeineCacheManager();
-
-        cacheManager.setCaffeine(
-                Caffeine.newBuilder()
-                        .maximumSize(1000)
-                        .expireAfterWrite(10, TimeUnit.MINUTES)
-                        .recordStats()
-        );
-
-        cacheManager.registerCustomCache("attributes",
-                Caffeine.newBuilder()
-                        .maximumSize(500)
-                        .expireAfterWrite(10, TimeUnit.MINUTES)
-                        .recordStats()
-                        .build());
-        return cacheManager;
-    }
-
-    @Bean
     public CacheManager redisCacheManager(RedisConnectionFactory factory, RedisCacheConfiguration config) {
-
-        // TOOD: 추후 개별 캐시 추가시 개별 RedisCacheConfiguration 설정
 
         return RedisCacheManager.builder(factory)
                 .cacheDefaults(config)
+                .withCacheConfiguration("weatherforecast", // NOTE: 이런식으로 자신 캐시이름, 세팅 아래 붙여서 추가
+                        config.entryTtl(Duration.ofMinutes(30)))
                 .enableStatistics()
                 .build();
     }
