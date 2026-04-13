@@ -8,6 +8,7 @@ import com.ootd.fitme.domain.user.dto.response.*;
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.enums.SortDirection;
 import com.ootd.fitme.domain.user.enums.UserSortBy;
+import com.ootd.fitme.domain.user.event.TemporaryPasswordMailRequestedEvent;
 import com.ootd.fitme.domain.user.exception.user.UserException;
 import com.ootd.fitme.domain.user.mapper.UserMapper;
 import com.ootd.fitme.domain.user.repository.UserRepository;
@@ -17,6 +18,7 @@ import com.ootd.fitme.global.exception.ErrorCode;
 import com.ootd.fitme.global.security.jwt.TokenBlacklistService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,7 +44,7 @@ public class UserServiceImpl implements UserService {
     private final TokenBlacklistService tokenBlacklistService;
     private final TemporaryPasswordStore temporaryPasswordStore;
     private final ProfileRepository profileRepository;
-    private final TemporaryPasswordMailSender temporaryPasswordMailSender;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public String encodePassword(String password) {
@@ -111,6 +113,7 @@ public class UserServiceImpl implements UserService {
         return mapToUserDto(user);
     }
 
+    @Transactional
     @Override
     public void resetPassword(ResetPasswordRequest resetPasswordRequest) {
         User user = userRepository.findByEmail(resetPasswordRequest.email())
@@ -127,19 +130,21 @@ public class UserServiceImpl implements UserService {
         );
 
         try {
-            temporaryPasswordMailSender.sendTemporaryPassword(
+            eventPublisher.publishEvent(new TemporaryPasswordMailRequestedEvent(
+                    user.getId(),
                     user.getEmail(),
                     tempPassword,
-                    TEMP_PASSWORD_TTL
-            );
+                    TEMP_PASSWORD_TTL,
+                    Instant.now()
+            ));
         } catch (RuntimeException e) {
             temporaryPasswordStore.delete(user.getId());
-            log.error("[TEMP_PASSWORD_MAIL][FAIL] userEmail={}", maskEmail(user.getEmail()), e);
+            log.error("[TEMP_PASSWORD_MAIL][EVENT_PUBLISH_FAIL] userEmail={}", maskEmail(user.getEmail()), e);
             throw new UserException(ErrorCode.USER_TEMP_PASSWORD_MAIL_SEND_FAILED);
         }
 
         tokenBlacklistService.setRevokeAllBefore(user.getId(), nowSeconds());
-        log.info("[TEMP PASSWORD MAIL][SUCCESS] userEmail={}", maskEmail(user.getEmail()));
+        log.info("[TEMP PASSWORD MAIL][ENQUEUED] userEmail={}", maskEmail(user.getEmail()));
     }
 
     @Transactional
