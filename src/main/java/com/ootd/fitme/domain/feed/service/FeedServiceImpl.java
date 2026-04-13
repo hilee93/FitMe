@@ -84,6 +84,7 @@ public class FeedServiceImpl implements FeedService {
                         user.getId(),
                         savedFeed.getContent(),
                         savedFeed.getCreatedAt(),
+                        savedFeed.getUpdatedAt(),
                         feed.getLikeCount(),
                         feed.getCommentCount(),
                         savedFeed.getWeatherForecast().getId(),
@@ -106,7 +107,7 @@ public class FeedServiceImpl implements FeedService {
             throw new FeedAccessDeniedException(ErrorCode.FEED_ACCESS_DENIED);
         }
         feedRepository.delete(feed);
-        
+
         eventPublisher.publishEvent(
                 new FeedDeleteEvent(
                         feed.getId()
@@ -133,6 +134,7 @@ public class FeedServiceImpl implements FeedService {
                         feed.getUser().getId(),
                         feed.getContent(),
                         feed.getCreatedAt(),
+                        feed.getUpdatedAt(),
                         feed.getLikeCount(),
                         feed.getCommentCount(),
                         feed.getWeatherForecast().getId(),

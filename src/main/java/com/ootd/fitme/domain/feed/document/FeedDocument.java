@@ -27,6 +27,9 @@ public class FeedDocument {
     @Field(type = FieldType.Date)
     private Instant createdAt;
 
+    @Field(type = FieldType.Date)
+    private Instant updatedAt;
+
     @Field(type = FieldType.Text, analyzer = "feed_content_analyzer")
     private String content;
 
@@ -51,6 +54,7 @@ public class FeedDocument {
     private FeedDocument(
             UUID id,
             Instant createdAt,
+            Instant updatedAt,
             String content,
             int commentCount,
             int likeCount,
@@ -61,6 +65,7 @@ public class FeedDocument {
     ) {
         this.id = id;
         this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
         this.content = content;
         this.commentCount = commentCount;
         this.likeCount = likeCount;
@@ -73,6 +78,7 @@ public class FeedDocument {
     public static FeedDocument create(
             UUID id,
             Instant createdAt,
+            Instant updatedAt,
             String content,
             int commentCount,
             int likeCount,
@@ -85,6 +91,7 @@ public class FeedDocument {
         return new FeedDocument(
                 id,
                 createdAt,
+                updatedAt,
                 content,
                 commentCount,
                 likeCount,

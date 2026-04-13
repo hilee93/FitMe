@@ -11,6 +11,7 @@ public record FeedUpdateEvent(
     UUID userId,
     String content,
     Instant createdAt,
+    Instant updatedAt,
     int likeCount,
     int commentCount,
     UUID weatherForecastId,

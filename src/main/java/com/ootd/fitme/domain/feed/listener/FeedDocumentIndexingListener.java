@@ -29,6 +29,7 @@ public class FeedDocumentIndexingListener {
         FeedDocument feedDocument = FeedDocument.create(
                 event.feedId(),
                 event.createdAt(),
+                event.updatedAt(),
                 event.content(),
                 event.commentCount(),
                 event.likeCount(),
@@ -53,6 +54,7 @@ public class FeedDocumentIndexingListener {
         FeedDocument updated = FeedDocument.create(
                 event.feedId(),
                 event.createdAt(),
+                event.updatedAt(),
                 event.content(),
                 event.commentCount(),
                 event.likeCount(),
