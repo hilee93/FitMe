@@ -69,46 +69,18 @@ public class NotificationSseService {
 
     public void send(UUID userId, NotificationDto data) {
         SseMessage message = sseMessageRepository.save(SseMessage.create(userId, data));
+        Set<ResponseBodyEmitter.DataWithMediaType> event = message.toEvent();
         Map<String, SseEmitter> emitters = emitterRepository.findAllByUserId(userId);
 
         for (Map.Entry<String, SseEmitter> entry : emitters.entrySet()) {
             String emitterId = entry.getKey();
             SseEmitter emitter = entry.getValue();
-            sendToClient(emitter, userId, emitterId, data);
-        }
-    }
-
-    public void sendAll(NotificationDto data) {
-        Map<UUID, Map<String, SseEmitter>> allEmitters = emitterRepository.findAll();
-
-        for (Map.Entry<UUID, Map<String, SseEmitter>> userEntry : allEmitters.entrySet()) {
-            UUID userId = userEntry.getKey();
-            Map<String, SseEmitter> userEmitters = userEntry.getValue();
-
-            for (Map.Entry<String, SseEmitter> emitterEntry : userEmitters.entrySet()) {
-                String emitterId = emitterEntry.getKey();
-                SseEmitter emitter = emitterEntry.getValue();
-
-                sendToClient(emitter, userId, emitterId, data);
+            try {
+                emitter.send(event);
+            } catch (IOException e) {
+                log.warn("SSE send failed userId={}, emitterId={}", userId, emitterId, e);
+                emitterRepository.deleteByUserId(userId);
             }
-        }
-    }
-
-    private void sendToClient(
-            SseEmitter emitter,
-            UUID userId,
-            String emitterId,
-            NotificationDto data
-    ) {
-        try {
-            emitter.send(
-                    SseEmitter.event()
-                            .name("notifications")
-                            .data(data)
-            );
-        } catch (IOException | IllegalStateException e) {
-            log.warn("SSE send failed userId={}, emitterId={}", userId, emitterId, e);
-            emitterRepository.deleteByUserId(userId);
         }
     }
 
