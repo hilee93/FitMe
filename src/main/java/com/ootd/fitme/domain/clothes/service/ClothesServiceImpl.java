@@ -231,8 +231,6 @@ public class ClothesServiceImpl implements ClothesService {
                 "3. attributes: Map the product details to the [Allowed Attributes & Options] provided below.\n" +
                 "   - Actively INFER attributes like gender, fit, material, and season from the context.\n" +
                 "   - STRICT RULE 1: Select EXACTLY ONE value per attribute definition. DO NOT output duplicate definitionNames. (e.g., If multiple seasons apply, pick the single most dominant one).\n" +
-                "   - STRICT RULE 2: For gender, infer carefully based on the brand or fit. If it's men's clothing, output '남'. If unisex or unclear, output '남녀공용' (if available) or omit it.\n" +
-                "   - IMPORTANT: You MUST output the exact Korean names for the definition and value from the allowed list.\n" +
                 "   - Omit unknown attributes.\n\n" +
                 "[Allowed Attributes & Options]\n" + attributePromptGuide;
 
