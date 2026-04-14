@@ -34,7 +34,7 @@ spring:
       chat:
         completions-path: /chat/completions
         options:
-          model: gemini-3-flash-preview
+          model: gemini-3-flash
           temperature: 0.1
       retry:
         max-attempts: 1
