@@ -1,0 +1,5 @@
+FROM grafana/grafana:11.0.3
+
+COPY grafana.yml /etc/grafana/provisioning/datasources/datasource.yml
+
+EXPOSE 3000
