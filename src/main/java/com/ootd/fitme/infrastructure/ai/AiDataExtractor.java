@@ -21,6 +21,18 @@ public class AiDataExtractor {
      * @param responseType 반환받고 싶은 DTO 클래스 타입
      * @return T 타입으로 구조화(Structured Output)된 자바 객체
      */
+
+    public String generateText(String promptText, String dataText) {
+        log.info("[AiDataExtractor] 텍스트 생성 요청");
+
+        return chatClient.prompt()
+                .user(u -> u.text("{promptText}\n\n[분석할 데이터]\n{dataText}")
+                        .param("promptText", promptText)
+                        .param("dataText", dataText))
+                .call()
+                .content();
+    }
+
     public <T> T extractData(String rawData, String prompt, Class<T> responseType) {
         String finalPrompt = String.format(
                 "%s\n\n[분석할 데이터]\n%s", prompt, rawData
