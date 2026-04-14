@@ -34,8 +34,10 @@ spring:
       chat:
         completions-path: /chat/completions
         options:
-          model: gemini-2.5-flash
+          model: gemini-3-flash
           temperature: 0.1
+      retry:
+        max-attempts: 1
 
 
 fitme:

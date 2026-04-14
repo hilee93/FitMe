@@ -81,6 +81,10 @@ public enum ErrorCode {
 
     // scraper
     SCRAP_FAILED(HttpStatus.INTERNAL_SERVER_ERROR,"해당 링크에 접근할 수 없거나 보안에 막혔습니다.","SCRAP-001"),
+    UNSUPPORTED_DOMAIN(HttpStatus.INTERNAL_SERVER_ERROR,"해당 쇼핑몰은 현재 지원하지 않는 도메인입니다.","SCRAP-002"),
+
+    //ai
+    ERROR_OCCURRED_DURING_ANALYSIS(HttpStatus.INTERNAL_SERVER_ERROR, "AI 데이터 분석 중 오류가 발생했습니다.", "AI-001"),
 
     //mediafile
     MEDIA_FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 미디어 파일입니다.", "MEDIA-001"),
