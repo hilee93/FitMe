@@ -1,6 +1,8 @@
 package com.ootd.fitme.domain.notification.listener;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ootd.fitme.domain.attribute.event.AttributeAddedEvent;
 import com.ootd.fitme.domain.attribute.event.AttributeDeleteEvent;
 import com.ootd.fitme.domain.attribute.event.AttributeUpdateEvent;
@@ -13,6 +15,7 @@ import com.ootd.fitme.domain.notification.service.NotificationService;
 import com.ootd.fitme.domain.weatherforecast.event.WeatherAlertEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
@@ -22,41 +25,40 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @Component
 @RequiredArgsConstructor
 public class NotificationEventListener {
-
     private final NotificationService notificationService;
 
-    @Async("eventTaskExecutor")
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void directMessage(DirectMessageCreateEvent event) {
-
+    @KafkaListener(topics = "fitme.DirectMessageCreateEvent", groupId = "notification-save-group")
+    public void directMessage(DirectMessageCreateEvent  event) {
         try {
+
             notificationService.notifyDirectMessage(
                     event.receiverId(),
                     event.senderName(),
                     event.message()
             );
-            log.info("[DM] 알림이벤트 처리 성공. messageId={}", event.messageId());
+
+            log.info("[KAFKA][DM] 처리 성공 messageId={}", event.messageId());
+
         } catch (Exception e) {
-            log.error("[DM] 알림이벤트 처리 실패. messageId={}", event.messageId(), e);
+            log.error("[KAFKA][DM] 알림 서비스 처리 실패", e);
         }
     }
 
-    @Async("eventTaskExecutor")
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @KafkaListener(topics = "fitme.FollowCreateEvent", groupId = "notification-save-group")
     public void followed(FollowCreateEvent event) {
         try {
             notificationService.notifyFollowed(
                     event.followeeId(),
                     event.followerName()
             );
-            log.info("[FOLLOW] 알림이벤트 처리 성공. followId={}", event.followId());
+
+            log.info("[KAFKA][FOLLOW] 처리 성공 followId={}", event.followId());
         } catch (Exception e) {
-            log.error("[FOLLOW] 알림이벤트 처리 실패. followId={}", event.followId(),e);
+            log.error("[KAFKA][FOLLOW] 알림 서비스 처리 실패 followId={}", event.followId(), e);
         }
     }
 
-    @Async("eventTaskExecutor")
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @KafkaListener(topics = "fitme.FeedLikedCreateEvent", groupId = "notification-save-group")
     public void feedLiked(FeedLikedCreateEvent event) {
         try {
             notificationService.notifyFeedLiked(
@@ -64,14 +66,14 @@ public class NotificationEventListener {
                     event.content(),
                     event.likerId()
             );
-            log.info("[LIKE] 알림이벤트 처리 성공. likeId={}", event.feedLikeId());
+
+            log.info("[KAFKA][LIKE] 처리 성공 likeId={}", event.feedLikeId());
         } catch (Exception e) {
-            log.error("[LIKE] 알림이벤트 처리 실패. likeId={}", event.feedLikeId(), e);
+            log.error("[KAFKA][LIKE] 알림 서비스 처리 실패 likeId={}", event.feedLikeId(), e);
         }
     }
 
-    @Async("eventTaskExecutor")
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @KafkaListener(topics = "fitme.FeedCommentCreateEvent", groupId = "notification-save-group")
     public void feedCommented(FeedCommentCreateEvent event) {
         try {
             notificationService.notifyFeedCommented(
@@ -80,70 +82,42 @@ public class NotificationEventListener {
                     event.commenterId(),
                     event.comment()
             );
-            log.info("[COMMENT] 알림이벤트 처리 성공. commentId={}", event.commentId());
+
+            log.info("[KAFKA][COMMENT] 처리 성공 commentId={}", event.commentId());
         } catch (Exception e) {
-            log.error("[COMMENT] 알림이벤트 처리 실패. commentId={}", event.commentId(), e);
+            log.error("[KAFKA][COMMENT] 알림 서비스 처리 실패 commentId={}", event.commentId(), e);
         }
     }
 
-    @Async("eventTaskExecutor")
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @KafkaListener(topics = "fitme.AttributeAddedEvent", groupId = "notification-save-group")
     public void attributeAdded(AttributeAddedEvent event) {
         try {
             notificationService.notifyAttributeAdded(
                     event.attributeName(),
                     event.action()
             );
-            log.info("[ATTRIBUTE_ADDED] 알림이벤트 처리 성공. attributeId={}", event.attributeId());
+
+            log.info("[KAFKA][ATTRIBUTE_ADDED] 처리 성공 attributeId={}", event.attributeId());
         } catch (Exception e) {
-            log.error("[ATTRIBUTE_ADDED] 알림이벤트 처리 실패. attributeId={}", event.attributeId(), e);
-        }
-    }
-    @Async("eventTaskExecutor")
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void attributeUpdated(AttributeUpdateEvent event) {
-        try {
-            notificationService.notifyAttributeAdded(
-                    event.attributeName(),
-                    event.action()
-            );
-            log.info("[ATTRIBUTE_UPDATED] 알림이벤트 처리 성공. attributeId={}", event.attributeId());
-        } catch (Exception e) {
-            log.error("[ATTRIBUTE_UPDATED] 알림이벤트 처리 실패. attributeId={}", event.attributeId(), e);
+            log.error("[KAFKA][ATTRIBUTE_ADDED] 알림 서비스 처리 실패 attributeId={}", event.attributeId(), e);
         }
     }
 
-    @Async("eventTaskExecutor")
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void attributeDeleted(AttributeDeleteEvent event) {
-        try {
-            notificationService.notifyAttributeAdded(
-                    event.attributeName(),
-                    event.action()
-            );
-
-            log.info("[ATTRIBUTE_DELETED] 알림이벤트 처리 성공. attributeId={}", event.attributeId());
-        } catch (Exception e) {
-            log.error("[ATTRIBUTE_DELETED] 알림이벤트 처리 실패. attributeId={}", event.attributeId(), e);
-        }
-    }
-
-    @Async("eventTaskExecutor")
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @KafkaListener(topics = "fitme.FeedCreateEvent", groupId = "notification-save-group")
     public void followerNewFeed(FeedCreateEvent event) {
         try {
             notificationService.notifyFollowerNewFeed(
                     event.userId(),
                     event.content()
             );
-            log.info("[FOLLOWER_FEED] 알림이벤트 처리 성공. feedId={}", event.feedId());
+
+            log.info("[KAFKA][FOLLOWER_FEED] 처리 성공 feedId={}", event.feedId());
         } catch (Exception e) {
-            log.error("[FOLLOWER_FEED] 알림이벤트 처리 실패. feedId={}", event.feedId(), e);
+            log.error("[KAFKA][FOLLOWER_FEED] 알림 서비스 처리 실패 feedId={}", event.feedId(), e);
         }
     }
 
-    @Async("eventTaskExecutor")
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @KafkaListener(topics = "fitme.WeatherAlertEvent", groupId = "notification-save-group")
     public void weatherAlert(WeatherAlertEvent event) {
         try {
             notificationService.notifyWeatherAlert(
@@ -152,9 +126,10 @@ public class NotificationEventListener {
                     event.region2DepthName(),
                     event.message()
             );
-            log.info("[WEATHER_ALERT] 알림이벤트 처리 성공.");
+
+            log.info("[KAFKA][WEATHER_ALERT] 처리 성공");
         } catch (Exception e) {
-            log.error("[WEATHER_ALERT] 알림이벤트 처리 실패.", e);
+            log.error("[KAFKA][WEATHER_ALERT] 알림 서비스 처리 실패", e);
         }
     }
 }

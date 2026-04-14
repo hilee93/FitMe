@@ -26,7 +26,7 @@ public class FeedSearchQueryRepositoryImpl implements FeedSearchQueryRepository 
 
     @Override
     public CursorResult<FeedSearchHitRow> searchFeeds(FeedSearchCondition condition) {
-        // TODO: Operations
+
         Integer size = condition.limit();
         int fetchSize = size + 1;
 
@@ -56,7 +56,7 @@ public class FeedSearchQueryRepositoryImpl implements FeedSearchQueryRepository 
 
         if (condition.authorIdEqual() != null) {
             boolBuilder.filter(query -> query.term(termQuery -> termQuery
-                            .field("authorId")
+                            .field("userId")
                             .value(condition.authorIdEqual().toString())
                     )
             );
