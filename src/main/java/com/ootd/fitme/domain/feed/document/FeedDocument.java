@@ -5,10 +5,7 @@ import com.ootd.fitme.domain.weatherforecast.enums.SkyStatus;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.elasticsearch.annotations.Document;
-import org.springframework.data.elasticsearch.annotations.Field;
-import org.springframework.data.elasticsearch.annotations.FieldType;
-import org.springframework.data.elasticsearch.annotations.Setting;
+import org.springframework.data.elasticsearch.annotations.*;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -31,7 +28,12 @@ public class FeedDocument {
     @Field(type = FieldType.Date)
     private Instant updatedAt;
 
-    @Field(type = FieldType.Text, analyzer = "feed_content_analyzer")
+    @MultiField(
+            mainField = @Field(type = FieldType.Text, analyzer = "feed_content_analyzer"),
+            otherFields = {
+                    @InnerField( suffix = "ngram", type = FieldType.Text, analyzer = "feed_content_ngram_analyzer")
+            }
+           )
     private String content;
 
     @Field(type = FieldType.Integer)
@@ -44,10 +46,10 @@ public class FeedDocument {
     private UUID weatherForecastId;
 
     @Field(type = FieldType.Keyword)
-    SkyStatus skyStatus;
+    private SkyStatus skyStatus;
 
     @Field(type = FieldType.Keyword)
-    PrecipitationType precipitationType;
+    private PrecipitationType precipitationType;
 
     @Field(type = FieldType.Keyword)
     private UUID userId;
