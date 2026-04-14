@@ -46,10 +46,10 @@ public class FeedDocument {
     private UUID weatherForecastId;
 
     @Field(type = FieldType.Keyword)
-    SkyStatus skyStatus;
+    private SkyStatus skyStatus;
 
     @Field(type = FieldType.Keyword)
-    PrecipitationType precipitationType;
+    private PrecipitationType precipitationType;
 
     @Field(type = FieldType.Keyword)
     private UUID userId;

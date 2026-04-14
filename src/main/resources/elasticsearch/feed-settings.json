@@ -1,4 +1,7 @@
 {
+  "index" : {
+    "max_ngram_diff" : 5
+  },
   "analysis": {
     "tokenizer": {
       "feed_ngram_tokenizer": {
