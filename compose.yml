@@ -164,6 +164,30 @@ services:
       - fitme-backend-network
     platform: linux/amd64
 
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro # 컨테이너 안에서 Prometheus가 읽는 고정 경로
+      - fitme-prometheus-data:/prometheus # 수집한 메트릭 데이터 볼륨 저장, 고정 경로
+    networks:
+      - fitme-backend-network
+
+  grafana:
+    image: grafana/grafana:11.0.3
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./monitoring/grafana/grafana.yml:/etc/grafana/provisioning/datasources/datasource.yml
+      - fitme-grafana-data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
+    networks:
+      - fitme-backend-network
 
 
 # 볼륨 정의, local일경우 생략가능하지만 명시
@@ -180,6 +204,11 @@ volumes:
     driver: local
 #  fitme-elasticsearch-data:
 #    driver: local
+  fitme-prometheus-data:
+    driver: local
+  fitme-grafana-data:
+    driver: local
+
 
 # 네트워크 설정
 networks:
