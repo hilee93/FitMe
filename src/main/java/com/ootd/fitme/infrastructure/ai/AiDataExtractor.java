@@ -33,11 +33,6 @@ public class AiDataExtractor {
                 responseType.getSimpleName(), rawData.length());
 
         try {
-            log.info("========== [테스트용 프롬프트 박제] ==========");
-            log.info("System:\n{}", systemInstruction);
-            log.info("User:\n{}", rawData);
-            log.info("Format (JSON 스키마):\n{}", formatInstructions);
-            log.info("=========================================");
 
             return chatClient.prompt()
                     .system(systemInstruction)

@@ -33,10 +33,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.HtmlUtils;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -218,7 +215,7 @@ public class ClothesServiceImpl implements ClothesService {
     @Override
     @Cacheable(value = "clothes_extraction",
             key = "T(com.ootd.fitme.infrastructure.scraper.UrlUtil).normalize(#link)",
-            unless = "#aiResult == null")
+            unless = "#result == null || #result.attributes().isEmpty()")
     public ClothesDto extractInfoFromLink(String link) {
         log.info("[ClothesService] 캐시 미스 - 스크래핑 및 AI 분석 시작: {}", link);
 
@@ -233,6 +230,8 @@ public class ClothesServiceImpl implements ClothesService {
                 "2. type: Choose EXACTLY ONE from this list: [ALL, TOP, BOTTOM, DRESS, OUTER, UNDERWEAR, SHOES, SOCKS, HAT, BAG, ACCESSORY, SCARF, ETC]\n" +
                 "3. attributes: Map the product details to the [Allowed Attributes & Options] provided below.\n" +
                 "   - Actively INFER attributes like gender, fit, material, and season from the context.\n" +
+                "   - STRICT RULE 1: Select EXACTLY ONE value per attribute definition. DO NOT output duplicate definitionNames. (e.g., If multiple seasons apply, pick the single most dominant one).\n" +
+                "   - STRICT RULE 2: For gender, infer carefully based on the brand or fit. If it's men's clothing, output '남'. If unisex or unclear, output '남녀공용' (if available) or omit it.\n" +
                 "   - IMPORTANT: You MUST output the exact Korean names for the definition and value from the allowed list.\n" +
                 "   - Omit unknown attributes.\n\n" +
                 "[Allowed Attributes & Options]\n" + attributePromptGuide;
@@ -253,9 +252,9 @@ public class ClothesServiceImpl implements ClothesService {
                 ? scrapedData.imageUrl()
                 : "";
 
-        ClothesType finalType = aiResult.type() != null ? aiResult.type() : ClothesType.ETC;
+        ClothesType finalType = (aiResult != null && aiResult.type() != null) ? aiResult.type() : ClothesType.ETC;
 
-        String finalName = (aiResult.name() != null && !aiResult.name().isBlank())
+        String finalName = (aiResult != null && aiResult.name() != null && !aiResult.name().isBlank())
                 ? HtmlUtils.htmlEscape(aiResult.name())
                 : HtmlUtils.htmlEscape(scrapedData.title());
 
@@ -264,8 +263,16 @@ public class ClothesServiceImpl implements ClothesService {
         }
 
         List<ClothesAttributeWithDefDto> mappedAttributes = new ArrayList<>();
-        if (aiResult.attributes() != null) {
+
+        Set<String> processedDefinitions = new HashSet<>();
+
+        if (aiResult != null && aiResult.attributes() != null) {
             for (AiClothesResult.AiAttribute aiAttr : aiResult.attributes()) {
+
+                if (processedDefinitions.contains(aiAttr.definitionName())) {
+                    continue;
+                }
+
                 allAttributes.stream()
                         .filter(dbAttr -> dbAttr.getName().equalsIgnoreCase(aiAttr.definitionName()))
                         .findFirst()
@@ -280,6 +287,8 @@ public class ClothesServiceImpl implements ClothesService {
                                     selectableOptions,
                                     aiAttr.value()
                             ));
+
+                            processedDefinitions.add(aiAttr.definitionName());
                         });
             }
         }
