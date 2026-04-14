@@ -1,5 +1,6 @@
 package com.ootd.fitme.domain.feed.dto.response;
 
+import com.ootd.fitme.domain.feed.dto.response.elasticsearch.FeedSearchHitRow;
 import com.ootd.fitme.domain.feed.enums.FeedSortCriteria;
 import com.ootd.fitme.domain.feed.enums.SortDirection;
 
@@ -16,17 +17,16 @@ public record FeedCursorResponseDto(
         SortDirection sortDirection
 ) {
 
-
     public static FeedCursorResponseDto from(
-            CursorResult<FeedBaseFlatRow> cursorResult,
+            CursorResult<FeedSearchHitRow> cursorResult,
             List<FeedResponseDto> feedResponseDtoList,
             FeedSortCriteria sortBy,
             SortDirection sortDirection
     ) {
 
-        List<FeedBaseFlatRow> data = cursorResult.content();
+        List<FeedSearchHitRow> data = cursorResult.content();
 
-        FeedBaseFlatRow lastData = data.isEmpty() ? null : data.get(data.size() - 1);
+        FeedSearchHitRow lastData = data.isEmpty() ? null : data.get(data.size() - 1);
 
         String nextCursor = null;
         UUID nextIdAfter = null;
@@ -48,7 +48,7 @@ public record FeedCursorResponseDto(
                 );
     }
 
-    private static String extractCursor(FeedSortCriteria sortBy, FeedBaseFlatRow last) {
+    private static String extractCursor(FeedSortCriteria sortBy, FeedSearchHitRow last) {
         return switch (sortBy) {
             case CREATED_AT -> last.createdAt().toString();
             case LIKE_COUNT -> String.valueOf(last.likeCount());
