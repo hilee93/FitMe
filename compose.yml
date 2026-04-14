@@ -133,7 +133,7 @@ services:
 #        hard: -1 # 고정 램 무제한 설정(현재 512)
     ports:
       - "9201:9200"
-#    volumes:
+#    volumes: # 로컬 볼륨 생성시 인덱스가 바꾸거나 할때 기존에 존재하는 인덱스가 있어 수정되어 새로 생성하지않음 개발환경에서는 볼륨없이 초기화되도록 설정
 #      - fitme-elasticsearch-data:/usr/share/elasticsearch/data
     healthcheck:
       test: [ "CMD-SHELL", "curl -fsS http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s >/dev/null || exit 1" ]

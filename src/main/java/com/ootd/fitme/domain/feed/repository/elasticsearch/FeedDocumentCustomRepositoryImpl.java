@@ -26,4 +26,16 @@ public class FeedDocumentCustomRepositoryImpl implements FeedDocumentCustomRepos
 
         elasticsearchOperations.update(updateQuery, IndexCoordinates.of("feeds"));
     }
+
+    @Override
+    public void updateCommentCount(UUID feedId, int commentCount) {
+        Document document = Document.create();
+        document.put("commentCount", commentCount);
+
+        UpdateQuery updateQuery = UpdateQuery.builder(feedId.toString())
+                .withDocument(document)
+                .build();
+
+        elasticsearchOperations.update(updateQuery, IndexCoordinates.of("feeds"));
+    }
 }

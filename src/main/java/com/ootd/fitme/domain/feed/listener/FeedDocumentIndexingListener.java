@@ -1,5 +1,6 @@
 package com.ootd.fitme.domain.feed.listener;
 
+import com.ootd.fitme.domain.comment.event.FeedCommentCreateEvent;
 import com.ootd.fitme.domain.feed.document.FeedDocument;
 import com.ootd.fitme.domain.feed.entity.Feed;
 import com.ootd.fitme.domain.feed.event.FeedCreateEvent;
@@ -94,6 +95,19 @@ public class FeedDocumentIndexingListener {
 
         feedDocumentRepository.updateLikeCount(feed.getId(), likeCount);
     }
+
+    @Async("eventTaskExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleFeedLikeDeleteEvent(FeedCommentCreateEvent event) {
+
+        Feed feed = feedRepository.findById(event.feedId()).orElseThrow(() -> new FeedNotFoundException(ErrorCode.FEED_NOT_FOUND));
+
+        int commentCount = feed.getCommentCount();
+
+        feedDocumentRepository.updateCommentCount(feed.getId(), commentCount);
+    }
+
+
 
 
 }
