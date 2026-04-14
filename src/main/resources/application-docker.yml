@@ -27,13 +27,14 @@ spring:
 
     elasticsearch:
       repositories:
-        enabled: false
+        enabled: true
 
 logging:
   level:
     com.ootd: debug
     org.hibernate.SQL: debug
     org.hibernate.orm.jdbc.bind: trace
+    org.elasticsearch.client: trace
 
 # 명시적으로 설정
 server:

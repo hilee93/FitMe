@@ -10,6 +10,8 @@ import com.ootd.fitme.domain.feed.dto.response.FeedCursorResponseDto;
 import com.ootd.fitme.domain.feed.dto.response.FeedResponseDto;
 import com.ootd.fitme.domain.feed.entity.Feed;
 import com.ootd.fitme.domain.feed.event.FeedCreateEvent;
+import com.ootd.fitme.domain.feed.event.FeedDeleteEvent;
+import com.ootd.fitme.domain.feed.event.FeedUpdateEvent;
 import com.ootd.fitme.domain.feed.exception.FeedAccessDeniedException;
 import com.ootd.fitme.domain.feed.exception.FeedLikeAlreadyExistsException;
 import com.ootd.fitme.domain.feed.exception.FeedLikeNotFoundException;
@@ -28,7 +30,6 @@ import com.ootd.fitme.domain.weatherforecast.repository.WeatherForecastRepositor
 import com.ootd.fitme.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -82,7 +83,13 @@ public class FeedServiceImpl implements FeedService {
                         savedFeed.getId(),
                         user.getId(),
                         savedFeed.getContent(),
-                        savedFeed.getCreatedAt()
+                        savedFeed.getCreatedAt(),
+                        savedFeed.getUpdatedAt(),
+                        feed.getLikeCount(),
+                        feed.getCommentCount(),
+                        savedFeed.getWeatherForecast().getId(),
+                        savedFeed.getWeatherForecast().getSkyStatus(),
+                        savedFeed.getWeatherForecast().getPrecipitationType()
                 )
         );
 
@@ -100,6 +107,12 @@ public class FeedServiceImpl implements FeedService {
             throw new FeedAccessDeniedException(ErrorCode.FEED_ACCESS_DENIED);
         }
         feedRepository.delete(feed);
+
+        eventPublisher.publishEvent(
+                new FeedDeleteEvent(
+                        feed.getId()
+                )
+        );
     }
 
     @Override
@@ -114,6 +127,21 @@ public class FeedServiceImpl implements FeedService {
         }
 
         feed.updateContent(feedUpdateRequestDto.content());
+
+        eventPublisher.publishEvent(
+                new FeedUpdateEvent(
+                        feed.getId(),
+                        feed.getUser().getId(),
+                        feed.getContent(),
+                        feed.getCreatedAt(),
+                        feed.getUpdatedAt(),
+                        feed.getLikeCount(),
+                        feed.getCommentCount(),
+                        feed.getWeatherForecast().getId(),
+                        feed.getWeatherForecast().getSkyStatus(),
+                        feed.getWeatherForecast().getPrecipitationType()
+                )
+        );
 
         return feedQueryService.getFeed(feed.getId(), userId);
     }

@@ -2,7 +2,9 @@ package com.ootd.fitme.domain.feed.service;
 
 import com.ootd.fitme.domain.feed.dto.request.FeedSearchCondition;
 import com.ootd.fitme.domain.feed.dto.response.*;
+import com.ootd.fitme.domain.feed.dto.response.elasticsearch.FeedSearchHitRow;
 import com.ootd.fitme.domain.feed.repository.*;
+import com.ootd.fitme.domain.feed.repository.elasticsearch.FeedSearchQueryRepository;
 import com.ootd.fitme.domain.profile.entity.Profile;
 import com.ootd.fitme.domain.profile.repository.ProfileRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,8 @@ public class FeedQueryService {
     private final FeedSelectableValueQueryRepository feedSelectableValueQueryRepository;
     private final FeedLikeQueryRepository feedLikeQueryRepository;
     private final FeedProfileQueryRepository feedProfileQueryRepository;
+    private final FeedSearchQueryRepository feedSearchQueryRepository;
+    private final FeedWeatherQueryRepositoryImpl feedWeatherQueryRepository;
 
     public FeedResponseDto getFeed(UUID feedId, UUID userId) {
 
@@ -81,19 +85,28 @@ public class FeedQueryService {
 
     public FeedCursorResponseDto searchFeeds(FeedSearchCondition condition, UUID userId) {
         // NOTE: 기본 루트 피드 리스트 조회 및 커서구조 조합
-        CursorResult<FeedBaseFlatRow> feedFlatRowCursorResult = feedQueryRepository.findFeedListFlatRows(condition);
+//        CursorResult<FeedBaseFlatRow> feedFlatRowCursorResult = feedQueryRepository.findFeedListFlatRows(condition);
+        CursorResult<FeedSearchHitRow> feedSearchHitRowCursorResult = feedSearchQueryRepository.searchFeeds(condition);
 
-        List<FeedBaseFlatRow> feedFlatRows = feedFlatRowCursorResult.content(); // NOTE: 피드 리스트만 추출
+        List<FeedSearchHitRow> feedFlatRows = feedSearchHitRowCursorResult.content(); // NOTE: 피드 리스트만 추출
         List<UUID> feedIds = feedFlatRows.stream()
-                .map(FeedBaseFlatRow::feedId)
+                .map(FeedSearchHitRow::feedId)
                 .toList();
 
         List<UUID> authorIds = feedFlatRows.stream()
-                .map(FeedBaseFlatRow::authorId)
+                .map(FeedSearchHitRow::authorId)
+                .distinct()
+                .toList();
+
+        List<UUID> weatherIds = feedFlatRows.stream()
+                .map(FeedSearchHitRow::weatherId)
                 .distinct()
                 .toList();
 
         Map<UUID, FeedAuthorSummaryDto> authorsByUserIds = feedProfileQueryRepository.findAuthorsByUserIds(authorIds);
+
+
+        Map<UUID, FeedWeatherSummaryDto> weatherSummaryByIds = feedWeatherQueryRepository.findWeatherSummaryByIds(weatherIds);
 
         // feedIds기반 clothes 조회
         List<FeedListClothesFlatRow> clothesRows = feedClothesQueryRepository.findFeedClothesByFeedIds(feedIds);
@@ -121,21 +134,7 @@ public class FeedQueryService {
                         feedBaseFlatRow.createdAt(),
                         feedBaseFlatRow.updatedAt(),
                         authorsByUserIds.get(feedBaseFlatRow.authorId()),
-                        new FeedWeatherSummaryDto(
-                                feedBaseFlatRow.weatherId(),
-                                feedBaseFlatRow.skyStatus(),
-                                new FeedPrecipitationSummaryDto(
-                                        feedBaseFlatRow.precipitationType(),
-                                        feedBaseFlatRow.precipitationAmount(),
-                                        feedBaseFlatRow.precipitationProbability()
-                                ),
-                                new FeedTemperatureSummaryDto(
-                                        feedBaseFlatRow.currentTemperature(),
-                                        feedBaseFlatRow.comparedToDayBefore(),
-                                        feedBaseFlatRow.temperatureMin(),
-                                        feedBaseFlatRow.temperatureMax()
-                                )
-                        ),
+                        weatherSummaryByIds.get(feedBaseFlatRow.weatherId()),
                         clothesByFeedId.getOrDefault(feedBaseFlatRow.feedId(), List.of()),
                         feedBaseFlatRow.content(),
                         feedBaseFlatRow.likeCount(),
@@ -144,7 +143,7 @@ public class FeedQueryService {
                 ))
                 .toList();
 
-        return FeedCursorResponseDto.from(feedFlatRowCursorResult, feedResponseDtoList, condition.sortBy(), condition.sortDirection());
+        return FeedCursorResponseDto.from(feedSearchHitRowCursorResult, feedResponseDtoList, condition.sortBy(), condition.sortDirection());
     }
 
     private Map<UUID, List<FeedAttributeSummaryDto>> groupAttributesByClothesId(List<? extends FeedClothesRowView> clothesFlatRow, Map<UUID, List<String>> selectableValuesByAttributeId) {
