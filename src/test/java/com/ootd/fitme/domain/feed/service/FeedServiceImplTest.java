@@ -11,9 +11,10 @@ import com.ootd.fitme.domain.clothesattributeselectablevalue.repository.ClothesA
 import com.ootd.fitme.domain.feed.dto.request.FeedCreateRequest;
 import com.ootd.fitme.domain.feed.dto.request.FeedSearchCondition;
 import com.ootd.fitme.domain.feed.dto.request.FeedUpdateRequestDto;
-import com.ootd.fitme.domain.feed.dto.response.FeedBaseFlatRow;
+import com.ootd.fitme.domain.feed.dto.response.CursorResult;
 import com.ootd.fitme.domain.feed.dto.response.FeedCursorResponseDto;
 import com.ootd.fitme.domain.feed.dto.response.FeedResponseDto;
+import com.ootd.fitme.domain.feed.dto.response.elasticsearch.FeedSearchHitRow;
 import com.ootd.fitme.domain.feed.entity.Feed;
 import com.ootd.fitme.domain.feed.enums.FeedSortCriteria;
 import com.ootd.fitme.domain.feed.enums.SortDirection;
@@ -26,6 +27,7 @@ import com.ootd.fitme.domain.feed.fixture.FeedFixtureBuilder.FeedFixture;
 import com.ootd.fitme.domain.feed.fixture.FeedFixtureBuilder.FeedFixtureWithClothesDetails;
 import com.ootd.fitme.domain.feed.fixture.FeedFixtureBuilder.FeedFixtureWithoutClothes;
 import com.ootd.fitme.domain.feed.repository.FeedRepository;
+import com.ootd.fitme.domain.feed.repository.elasticsearch.FeedSearchQueryRepository;
 import com.ootd.fitme.domain.feedclothes.repository.FeedClothesRepository;
 import com.ootd.fitme.domain.feedlike.entity.FeedLike;
 import com.ootd.fitme.domain.feedlike.repository.FeedLikeRepository;
@@ -36,8 +38,6 @@ import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.exception.user.UserException;
 import com.ootd.fitme.domain.user.repository.UserRepository;
 import com.ootd.fitme.domain.weatherforecast.entity.WeatherForecast;
-import com.ootd.fitme.domain.weatherforecast.enums.PrecipitationType;
-import com.ootd.fitme.domain.weatherforecast.enums.SkyStatus;
 import com.ootd.fitme.domain.weatherforecast.repository.WeatherForecastRepository;
 import com.ootd.fitme.global.exception.ErrorCode;
 import jakarta.persistence.EntityManager;
@@ -48,6 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -56,9 +57,12 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 
 @SpringBootTest
 @Transactional
@@ -109,12 +113,13 @@ class FeedServiceImplTest {
     @Autowired
     private FeedLikeRepository feedLikeRepository;
 
+    @MockitoBean
+    private FeedSearchQueryRepository feedSearchQueryRepository;
+
     @Autowired
     private ObjectMapper objectMapper;
 
     private static final Logger log = LoggerFactory.getLogger(FeedServiceImplTest.class);
-
-
 
 
     @Nested
@@ -464,8 +469,27 @@ class FeedServiceImplTest {
                     null,
                     null,
                     null
-                    );
+            );
 
+            given(feedSearchQueryRepository.searchFeeds(any()))
+                    .willReturn(new CursorResult<>(
+                            List.of(
+                                    new FeedSearchHitRow(
+                                            feed.getId(),
+                                            user.getId(),
+                                            feed.getWeatherForecast().getId(),
+                                            feed.getContent(),
+                                            feed.getLikeCount(),
+                                            feed.getCommentCount(),
+                                            feed.getWeatherForecast().getSkyStatus(),
+                                            feed.getWeatherForecast().getPrecipitationType(),
+                                            feed.getCreatedAt(),
+                                            feed.getUpdatedAt()
+                                    )
+                            ),
+                            false,
+                            1
+                    ));
 
             // when
             FeedCursorResponseDto result = feedService.searchFeeds(condition, user.getId());
@@ -516,6 +540,13 @@ class FeedServiceImplTest {
                     null
             );
 
+            given(feedSearchQueryRepository.searchFeeds(any()))
+                    .willReturn(new CursorResult<>(
+                            List.of(),
+                            false,
+                            0
+                    ));
+
             // when
             FeedCursorResponseDto result = feedService.searchFeeds(condition, UUID.randomUUID());
 
@@ -531,7 +562,7 @@ class FeedServiceImplTest {
         @Test
         @DisplayName("[Positive] 피드 목록 조회 - 옷 정보 없음")
         void searchFeeds_success_when_feed_has_no_ootds() throws JsonProcessingException {
-// given
+            // given
             FeedFixtureWithoutClothes feedFixture = feedFixtureBuilder.createFeedFixtureWithoutClothes();
             Feed feed = feedFixture.feed();
             User user = feedFixture.user();
@@ -550,6 +581,26 @@ class FeedServiceImplTest {
                     null,
                     null
             );
+
+            given(feedSearchQueryRepository.searchFeeds(any()))
+                    .willReturn(new CursorResult<>(
+                            List.of(
+                                    new FeedSearchHitRow(
+                                            feed.getId(),
+                                            user.getId(),
+                                            feed.getWeatherForecast().getId(),
+                                            feed.getContent(),
+                                            feed.getLikeCount(),
+                                            feed.getCommentCount(),
+                                            feed.getWeatherForecast().getSkyStatus(),
+                                            feed.getWeatherForecast().getPrecipitationType(),
+                                            feed.getCreatedAt(),
+                                            feed.getUpdatedAt()
+                                    )
+                            ),
+                            false,
+                            1
+                    ));
 
             // when
             FeedCursorResponseDto result = feedService.searchFeeds(condition, user.getId());
@@ -604,6 +655,40 @@ class FeedServiceImplTest {
                     null
             );
 
+            given(feedSearchQueryRepository.searchFeeds(any()))
+                    .willReturn(new CursorResult<>(
+                            List.of(
+                                    // 최신 (newer) 먼저
+                                    new FeedSearchHitRow(
+                                            newerFeed.getId(),
+                                            user.getId(),
+                                            newerFeed.getWeatherForecast().getId(),
+                                            newerFeed.getContent(),
+                                            newerFeed.getLikeCount(),
+                                            newerFeed.getCommentCount(),
+                                            newerFeed.getWeatherForecast().getSkyStatus(),
+                                            newerFeed.getWeatherForecast().getPrecipitationType(),
+                                            newerFeed.getCreatedAt(),
+                                            newerFeed.getUpdatedAt()
+                                    ),
+                                    // 그 다음 older
+                                    new FeedSearchHitRow(
+                                            olderFeed.getId(),
+                                            user.getId(),
+                                            olderFeed.getWeatherForecast().getId(),
+                                            olderFeed.getContent(),
+                                            olderFeed.getLikeCount(),
+                                            olderFeed.getCommentCount(),
+                                            olderFeed.getWeatherForecast().getSkyStatus(),
+                                            olderFeed.getWeatherForecast().getPrecipitationType(),
+                                            olderFeed.getCreatedAt(),
+                                            olderFeed.getUpdatedAt()
+                                    )
+                            ),
+                            false,
+                            2
+                    ));
+
             // when
             FeedCursorResponseDto result = feedService.searchFeeds(condition, user.getId());
 
@@ -622,6 +707,7 @@ class FeedServiceImplTest {
         void searchFeeds_success_hasNext_true_when_more_than_limit() throws JsonProcessingException {
 // given
             FeedFixture firstFixture = feedFixtureBuilder.createFeedFixture();
+            Feed firstFeed = firstFixture.feed();
             User user = firstFixture.user();
 
             for (int i = 0; i < 20; i++) {
@@ -643,6 +729,28 @@ class FeedServiceImplTest {
                     null
             );
 
+            List<FeedSearchHitRow> mockRows = IntStream.range(0, 20)
+                    .mapToObj(i -> new FeedSearchHitRow(
+                            UUID.randomUUID(),
+                            user.getId(),
+                            firstFeed.getWeatherForecast().getId(),
+                            "content " + i,
+                            0,
+                            0,
+                            firstFeed.getWeatherForecast().getSkyStatus(),
+                            firstFeed.getWeatherForecast().getPrecipitationType(),
+                            Instant.now().minusSeconds(i),
+                            Instant.now().minusSeconds(i)
+                    ))
+                    .toList();
+
+            given(feedSearchQueryRepository.searchFeeds(any()))
+                    .willReturn(new CursorResult<>(
+                            mockRows,
+                            true,
+                            21
+                    ));
+
             // when
             FeedCursorResponseDto result = feedService.searchFeeds(condition, user.getId());
 
@@ -659,7 +767,7 @@ class FeedServiceImplTest {
         @Test
         @DisplayName("[Positive] 피드 목록 조회 - 다음 커서로 이어 조회된다")
         void searchFeeds_success_with_next_cursor() throws JsonProcessingException {
-// given
+            // given
             FeedFixtureWithClothesDetails firstFixture = feedFixtureBuilder.createFeedFixtureWithClothesDetails();
             User user = firstFixture.user();
 
@@ -681,6 +789,47 @@ class FeedServiceImplTest {
                     null,
                     null
             );
+
+
+            List<UUID> ids = IntStream.range(0, 5)
+                    .mapToObj(i -> UUID.randomUUID())
+                    .toList();
+
+            List<FeedSearchHitRow> firstRows = IntStream.range(0, 3)
+                    .mapToObj(i -> new FeedSearchHitRow(
+                            ids.get(i),
+                            user.getId(),
+                            firstFixture.feed().getWeatherForecast().getId(),
+                            "first " + i,
+                            0,
+                            0,
+                            firstFixture.feed().getWeatherForecast().getSkyStatus(),
+                            firstFixture.feed().getWeatherForecast().getPrecipitationType(),
+                            Instant.now().minusSeconds(i),
+                            Instant.now().minusSeconds(i)
+                    ))
+                    .toList();
+
+            List<FeedSearchHitRow> secondRows = IntStream.range(3, 5)
+                    .mapToObj(i -> new FeedSearchHitRow(
+                            ids.get(i),
+                            user.getId(),
+                            firstFixture.feed().getWeatherForecast().getId(),
+                            "second " + i,
+                            0,
+                            0,
+                            firstFixture.feed().getWeatherForecast().getSkyStatus(),
+                            firstFixture.feed().getWeatherForecast().getPrecipitationType(),
+                            Instant.now().minusSeconds(i),
+                            Instant.now().minusSeconds(i)
+                    ))
+                    .toList();
+
+            given(feedSearchQueryRepository.searchFeeds(any()))
+                    .willReturn(
+                            new CursorResult<>(firstRows, true, 5),   // 첫 페이지
+                            new CursorResult<>(secondRows, false, 5)  // 두 번째 페이지
+                    );
 
             // when
             FeedCursorResponseDto firstPage = feedService.searchFeeds(firstCondition, user.getId());
@@ -722,7 +871,6 @@ class FeedServiceImplTest {
         }
 
     }
-
 
 
 }
