@@ -30,10 +30,10 @@ services:
 #      - "8080:8080"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 10s
-      timeout: 5s
+      interval: 15s
+      timeout: 10s
       retries: 15
-      start_period: 90s
+      start_period: 150s
     depends_on:
       postgres: # postgres라는 동작에 의존하고 이게 될때까지 위의서비스는 대기
         condition: service_healthy # 해당 서비스(postgres)가 healthy해야만 동작하도록 조건 추가 및 대기
@@ -112,12 +112,15 @@ services:
       - fitme-backend-network
     healthcheck:
       test: [ "CMD", "bash", "-c", "nc -z localhost 9092" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 15s
+      timeout: 10s
+      retries: 15
+      start_period: 90s
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.13
+    build :
+      context: .
+      dockerfile: Dockerfile.elasticsearch
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false # 운영에서는 무조건 true, 그게아니면 누구나 데이터 조회/삭제 가능
@@ -130,8 +133,8 @@ services:
 #        hard: -1 # 고정 램 무제한 설정(현재 512)
     ports:
       - "9201:9200"
-    volumes:
-      - fitme-elasticsearch-data:/usr/share/elasticsearch/data
+#    volumes: # 로컬 볼륨 생성시 인덱스가 바꾸거나 할때 기존에 존재하는 인덱스가 있어 수정되어 새로 생성하지않음 개발환경에서는 볼륨없이 초기화되도록 설정
+#      - fitme-elasticsearch-data:/usr/share/elasticsearch/data
     healthcheck:
       test: [ "CMD-SHELL", "curl -fsS http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s >/dev/null || exit 1" ]
       interval: 15s
@@ -161,6 +164,30 @@ services:
       - fitme-backend-network
     platform: linux/amd64
 
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro # 컨테이너 안에서 Prometheus가 읽는 고정 경로
+      - fitme-prometheus-data:/prometheus # 수집한 메트릭 데이터 볼륨 저장, 고정 경로
+    networks:
+      - fitme-backend-network
+
+  grafana:
+    image: grafana/grafana:11.0.3
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./monitoring/grafana/grafana.yml:/etc/grafana/provisioning/datasources/datasource.yml
+      - fitme-grafana-data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
+    networks:
+      - fitme-backend-network
 
 
 # 볼륨 정의, local일경우 생략가능하지만 명시
@@ -175,8 +202,13 @@ volumes:
     driver: local
   fitme-kafka-data:
     driver: local
-  fitme-elasticsearch-data:
+#  fitme-elasticsearch-data:
+#    driver: local
+  fitme-prometheus-data:
     driver: local
+  fitme-grafana-data:
+    driver: local
+
 
 # 네트워크 설정
 networks:

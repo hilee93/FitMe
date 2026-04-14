@@ -31,12 +31,16 @@ spring:
 
     elasticsearch:
       uris: http://localhost:9200
+      repositories:
+        enabled: false
 
 logging:
   level:
     org.hibernate.SQL: debug
     org.hibernate.orm.jdbc.bind: trace
     com.ootd: debug
+    org.elasticsearch.client: trace
+
 management:
   endpoints:
     web:

@@ -1,5 +1,6 @@
 package com.ootd.fitme.domain.notification.listener;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ootd.fitme.domain.attribute.event.AttributeAddedEvent;
 import com.ootd.fitme.domain.comment.event.FeedCommentCreateEvent;
 import com.ootd.fitme.domain.directmessage.event.DirectMessageCreateEvent;
@@ -28,6 +29,9 @@ class NotificationEventListenerUnitTest {
 
     @Mock
     private NotificationService notificationService;
+
+    @Mock
+    private ObjectMapper objectMapper;
 
     @InjectMocks
     private NotificationEventListener listener;
@@ -135,7 +139,18 @@ class NotificationEventListenerUnitTest {
             UUID userId = UUID.randomUUID();
 
             FeedCreateEvent event =
-                    new FeedCreateEvent(feedId, userId, "content", Instant.now());
+                    new FeedCreateEvent(
+                            feedId,
+                            userId,
+                            "content",
+                            Instant.now(),
+                            Instant.now(),
+                            0,
+                            0,
+                            null,
+                            null,
+                            null
+                            );
 
             listener.followerNewFeed(event);
 

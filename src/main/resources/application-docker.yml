@@ -13,6 +13,14 @@ spring:
 
   kafka:
     bootstrap-servers: broker:29092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
 
   elasticsearch:
     uris: http://elasticsearch:9200
@@ -27,13 +35,14 @@ spring:
 
     elasticsearch:
       repositories:
-        enabled: false
+        enabled: true
 
 logging:
   level:
     com.ootd: debug
     org.hibernate.SQL: debug
     org.hibernate.orm.jdbc.bind: trace
+    org.elasticsearch.client: trace
 
 # 명시적으로 설정
 server:
