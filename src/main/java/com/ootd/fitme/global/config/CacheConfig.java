@@ -54,6 +54,12 @@ public class CacheConfig {
                         .recordStats()
                         .build());
 
+        cacheManager.registerCustomCache("clothes_extraction",
+                Caffeine.newBuilder()
+                        .maximumSize(500)
+                        .expireAfterWrite(1, TimeUnit.HOURS)
+                        .build());
+
         return cacheManager;
     }
 
@@ -67,6 +73,8 @@ public class CacheConfig {
                         config.entryTtl(Duration.ofMinutes(10)))
                 .withCacheConfiguration("weatherforecast",  // NOTE: 이런식으로 자신 캐시이름, 세팅 아래 붙여서 추가
                         config.entryTtl(Duration.ofMinutes(30)))
+                .withCacheConfiguration("clothes_extraction",
+                        config.entryTtl(Duration.ofDays(1)))
                 .enableStatistics()
                 .build();
     }

@@ -8,6 +8,7 @@ import com.ootd.fitme.domain.clothes.dto.request.ClothesDtoCursorRequest;
 import com.ootd.fitme.domain.clothes.dto.request.ClothesUpdateRequest;
 import com.ootd.fitme.domain.clothes.dto.response.ClothesDtoCursorResponse;
 import com.ootd.fitme.domain.clothes.entity.Clothes;
+import com.ootd.fitme.domain.clothes.enums.ClothesType;
 import com.ootd.fitme.domain.clothes.exception.ClothesException;
 import com.ootd.fitme.domain.clothes.repository.ClothesRepository;
 import com.ootd.fitme.domain.clothesattribute.entity.ClothesAttribute;
@@ -18,20 +19,21 @@ import com.ootd.fitme.domain.selectablevalue.repository.SelectableValueRepositor
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.repository.UserRepository;
 import com.ootd.fitme.global.exception.ErrorCode;
+import com.ootd.fitme.infrastructure.ai.AiDataExtractor;
+import com.ootd.fitme.infrastructure.scraper.JsoupScraper;
 import com.ootd.fitme.infrastructure.scraper.PlaywrightScraper;
-import com.ootd.fitme.infrastructure.scraper.exception.ScraperException;
+import com.ootd.fitme.infrastructure.scraper.ScrapedData;
+import com.ootd.fitme.infrastructure.scraper.SmartScraperManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.HtmlUtils;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.io.IOException;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -46,7 +48,11 @@ public class ClothesServiceImpl implements ClothesService {
     private final SelectableValueRepository selectableValueRepository;
 
     private final MediaFileService mediaFileService;
-    private final PlaywrightScraper scraper;
+    private final PlaywrightScraper playwrightScraper;
+    private final JsoupScraper jsoupScraper;
+    private final AiDataExtractor aiExtractor;
+
+    private final SmartScraperManager scraperManager;
 
     @Override
     @Transactional
@@ -207,68 +213,93 @@ public class ClothesServiceImpl implements ClothesService {
     }
 
     @Override
+    @Cacheable(value = "clothes_extraction",
+            key = "T(com.ootd.fitme.infrastructure.scraper.UrlUtil).normalize(#link)",
+            unless = "#result == null || #result.attributes().isEmpty()")
     public ClothesDto extractInfoFromLink(String link) {
-        log.info("[ClothesService] 링크 스크래핑 요청 시작 - URL: {}", link);
+        log.info("[ClothesService] 캐시 미스 - 스크래핑 및 AI 분석 시작: {}", link);
+
+        ScrapedData scrapedData = scraperManager.scrape(link);
+
+        List<Attribute> allAttributes = attributeRepository.findAll();
+        String attributePromptGuide = buildAttributePromptGuide(allAttributes);
+
+        String systemInstruction = "You are an expert fashion data analyst.\n" +
+                "Read the provided product information and extract the clothing details.\n" +
+                "1. name: Summarize the core product name in about 20 characters in Korean.\n" +
+                "2. type: Choose EXACTLY ONE from this list: [ALL, TOP, BOTTOM, DRESS, OUTER, UNDERWEAR, SHOES, SOCKS, HAT, BAG, ACCESSORY, SCARF, ETC]\n" +
+                "3. attributes: Map the product details to the [Allowed Attributes & Options] provided below.\n" +
+                "   - Actively INFER attributes like gender, fit, material, and season from the context.\n" +
+                "   - STRICT RULE 1: Select EXACTLY ONE value per attribute definition. DO NOT output duplicate definitionNames. (e.g., If multiple seasons apply, pick the single most dominant one).\n" +
+                "   - Omit unknown attributes.\n\n" +
+                "[Allowed Attributes & Options]\n" + attributePromptGuide;
+
+        String rawData = String.format("[원본 상품명]: %s\n[상세 정보]:\n%s",
+                scrapedData.title(),
+                scrapedData.coreText());
+
+        AiClothesResult aiResult = null;
 
         try {
-            PlaywrightScraper.ScrapedData scrapedData = scraper.scrape(link);
-
-            String finalName = (scrapedData.title() != null && !scrapedData.title().isBlank())
-                    ? HtmlUtils.htmlEscape(scrapedData.title())
-                    : "이름 없음";
-
-            if (finalName.length() > 100) {
-                finalName = finalName.substring(0, 100);
-            }
-
-            return new ClothesDto(
-                    null,
-                    null,
-                    finalName,
-                    scrapedData.imageUrl(),
-                    null,
-                    new ArrayList<>()
-            );
-
-        } catch (ScraperException e) {
-            log.error("[ClothesService] 링크 스크래핑 실패 - URL: {}, Error: {}", link, e.getMessage(), e);
-            throw e;
+            aiResult = aiExtractor.extractData(rawData, systemInstruction, AiClothesResult.class);
+        } catch (Exception e) {
+            log.warn("[ClothesService] AI 분석 서버 응답 지연/실패. 기본 스크래핑 데이터만으로 Fallback 진행합니다. (원인: {})", e.getMessage());
         }
-    }
 
-    @Override
-    @Transactional
-    public ClothesDto createClothesFromExtracted(UUID loginUserId, ExtractedClothesInfo extractedInfo) {
-        log.info("[ClothesService] 스크래핑된 정보로 옷 생성 요청 - loginUserId: {}, name: {}", loginUserId, extractedInfo.name());
+        String finalImageUrl = (scrapedData.imageUrl() != null && !scrapedData.imageUrl().isBlank())
+                ? scrapedData.imageUrl()
+                : "";
 
-        User user = userRepository.findById(loginUserId)
-                .orElseThrow(() -> {
-                    log.warn("[ClothesService] 스크래핑 옷 생성 실패: 존재하지 않는 사용자 - userId: {}", loginUserId);
-                    return new ClothesException(ErrorCode.CLOTHES_OWNER_NOT_FOUND);
-                });
+        ClothesType finalType = (aiResult != null && aiResult.type() != null) ? aiResult.type() : ClothesType.ETC;
 
-        Clothes clothes = Clothes.createWithImage(
-                extractedInfo.name(),
-                extractedInfo.type(),
-                user,
-                extractedInfo.imageUrl()
-        );
+        String finalName = (aiResult != null && aiResult.name() != null && !aiResult.name().isBlank())
+                ? HtmlUtils.htmlEscape(aiResult.name())
+                : HtmlUtils.htmlEscape(scrapedData.title());
 
-        List<ClothesAttribute> clothesAttributes = buildClothesAttributes(clothes, extractedInfo.attributes());
-        clothes.replaceAttributes(clothesAttributes);
+        if (finalName.length() > 100) {
+            finalName = finalName.substring(0, 100);
+        }
 
-        Clothes savedClothes = clothesRepository.save(clothes);
-        log.info("[ClothesService] 스크래핑 옷 DB 저장 완료 - clothesId: {}", savedClothes.getId());
+        List<ClothesAttributeWithDefDto> mappedAttributes = new ArrayList<>();
 
-        List<ClothesAttributeWithDefDto> attributeDtos = buildAttributeDtos(clothesAttributes);
+        Set<String> processedDefinitions = new HashSet<>();
+
+        if (aiResult != null && aiResult.attributes() != null) {
+            for (AiClothesResult.AiAttribute aiAttr : aiResult.attributes()) {
+
+                if (processedDefinitions.contains(aiAttr.definitionName())) {
+                    continue;
+                }
+
+                allAttributes.stream()
+                        .filter(dbAttr -> dbAttr.getName().equalsIgnoreCase(aiAttr.definitionName()))
+                        .findFirst()
+                        .ifPresent(dbAttr -> {
+                            List<String> selectableOptions = dbAttr.getSelectableValues().stream()
+                                    .map(sv -> sv.getType())
+                                    .toList();
+
+                            mappedAttributes.add(new ClothesAttributeWithDefDto(
+                                    dbAttr.getId(),
+                                    dbAttr.getName(),
+                                    selectableOptions,
+                                    aiAttr.value()
+                            ));
+
+                            processedDefinitions.add(aiAttr.definitionName());
+                        });
+            }
+        }
+
+        log.info("[ClothesService] 분석 완료 및 결과 캐싱 예정 - 최종 상품명: {}", finalName);
 
         return new ClothesDto(
-                savedClothes.getId(),
-                user.getId(),
-                savedClothes.getName(),
-                savedClothes.getImageUrl(),
-                savedClothes.getClothesType(),
-                attributeDtos
+                null,
+                null,
+                finalName,
+                finalImageUrl,
+                finalType,
+                mappedAttributes
         );
     }
 
@@ -340,4 +371,16 @@ public class ClothesServiceImpl implements ClothesService {
                     );
                 }).toList();
     }
+
+    private String buildAttributePromptGuide(List<Attribute> attributes) {
+        StringBuilder guide = new StringBuilder();
+        for (Attribute attr : attributes) {
+            String options = attr.getSelectableValues().stream()
+                    .map(sv -> sv.getType())
+                    .collect(Collectors.joining(", "));
+            guide.append("- ").append(attr.getName()).append(" (선택가능 옵션: ").append(options).append(")\n");
+        }
+        return guide.toString();
+    }
 }
+
