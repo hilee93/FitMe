@@ -33,9 +33,10 @@ public class FeedSearchQueryRepositoryImpl implements FeedSearchQueryRepository 
         BoolQuery.Builder boolBuilder = new BoolQuery.Builder();
 
         if (condition.keywordLike() != null && !condition.keywordLike().isBlank()) {
-            boolBuilder.must(query -> query.match(matchBuilder -> matchBuilder
-                            .field("content")
+            boolBuilder.must(query -> query.multiMatch(matchBuilder -> matchBuilder
                             .query(condition.keywordLike())
+                            .fields("content^2", "content.ngram") // NOTE: 부분검색 적용 및 일반 검색으로 정확한경우 부분검색보다 정확한 검색이니 가산점 2배
+                            .fuzziness("AUTO")
                     )
             );
         }
