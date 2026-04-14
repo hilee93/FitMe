@@ -21,6 +21,7 @@ import com.ootd.fitme.domain.feedclothes.entity.FeedClothes;
 import com.ootd.fitme.domain.feedclothes.repository.FeedClothesRepository;
 import com.ootd.fitme.domain.feedlike.entity.FeedLike;
 import com.ootd.fitme.domain.feedlike.event.FeedLikedCreateEvent;
+import com.ootd.fitme.domain.feedlike.event.FeedLikedDeleteEvent;
 import com.ootd.fitme.domain.feedlike.repository.FeedLikeRepository;
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.exception.user.UserException;
@@ -186,6 +187,10 @@ public class FeedServiceImpl implements FeedService {
         if (updatedCount == 0) {
             throw new IllegalStateException("더이상 감소 할 수 없습니다.");
         }
+        eventPublisher.publishEvent(
+                new FeedLikedDeleteEvent(feedLike.getId(), feed.getId())
+        );
+
     }
 
 

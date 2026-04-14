@@ -30,10 +30,10 @@ services:
 #      - "8080:8080"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 10s
-      timeout: 5s
+      interval: 15s
+      timeout: 10s
       retries: 15
-      start_period: 90s
+      start_period: 150s
     depends_on:
       postgres: # postgres라는 동작에 의존하고 이게 될때까지 위의서비스는 대기
         condition: service_healthy # 해당 서비스(postgres)가 healthy해야만 동작하도록 조건 추가 및 대기
@@ -112,9 +112,10 @@ services:
       - fitme-backend-network
     healthcheck:
       test: [ "CMD", "bash", "-c", "nc -z localhost 9092" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 15s
+      timeout: 10s
+      retries: 15
+      start_period: 90s
 
   elasticsearch:
     build :
@@ -132,8 +133,8 @@ services:
 #        hard: -1 # 고정 램 무제한 설정(현재 512)
     ports:
       - "9201:9200"
-    volumes:
-      - fitme-elasticsearch-data:/usr/share/elasticsearch/data
+#    volumes: # 로컬 볼륨 생성시 인덱스가 바꾸거나 할때 기존에 존재하는 인덱스가 있어 수정되어 새로 생성하지않음 개발환경에서는 볼륨없이 초기화되도록 설정
+#      - fitme-elasticsearch-data:/usr/share/elasticsearch/data
     healthcheck:
       test: [ "CMD-SHELL", "curl -fsS http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s >/dev/null || exit 1" ]
       interval: 15s
@@ -201,12 +202,13 @@ volumes:
     driver: local
   fitme-kafka-data:
     driver: local
-  fitme-elasticsearch-data:
-    driver: local
+#  fitme-elasticsearch-data:
+#    driver: local
   fitme-prometheus-data:
     driver: local
   fitme-grafana-data:
     driver: local
+
 
 # 네트워크 설정
 networks:
