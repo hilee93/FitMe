@@ -55,12 +55,15 @@ public class WeatherForecastCollectService {
         );
 
         Map<LocalDate, ForecastItem> picked = pickDailyRepresentative(raw, targetDates);
+        Map<LocalDate, DailyTemperatureStat> dailyTemperatureStats =
+                DailyTemperatureAggregator.aggregate(raw, targetDates);
 
         for (LocalDate date : targetDates) {
             ForecastItem item = picked.get(date);
+            DailyTemperatureStat dailyTemp = dailyTemperatureStats.get(date);
 
-            if (item != null) {
-                upsert(region, collectedAt, item);
+            if (item != null && dailyTemp != null) {
+                upsert(region, collectedAt, item, dailyTemp);
             }
         }
     }
@@ -83,32 +86,38 @@ public class WeatherForecastCollectService {
     }
 
     private ForecastItem chooseCloserToNoon(ForecastItem a, ForecastItem b) {
-        int da = Math.abs(toKstHour(a.dt()) - PIVOT_HOUR);
-        int db = Math.abs(toKstHour(b.dt()) - PIVOT_HOUR);
-        return da <= db ? a : b;
+        int hourA = Instant.ofEpochSecond(a.dt()).atZone(KST).getHour();
+        int hourB = Instant.ofEpochSecond(b.dt()).atZone(KST).getHour();
+
+        int diffA = Math.abs(hourA - PIVOT_HOUR);
+        int diffB = Math.abs(hourB - PIVOT_HOUR);
+
+        return diffA <= diffB ? a : b;
     }
 
-    private void upsert(Region region, Instant collectedAt, ForecastItem item) {
+    private void upsert(Region region, Instant collectedAt, ForecastItem item, DailyTemperatureStat dailyTemp) {
         Instant forecastAt = Instant.ofEpochSecond(item.dt());
 
-        double humidityCurrent = nvl(item.main() != null ? item.main().humidity() : null);
-        double temperatureCurrent = nvl(item.main() != null ? item.main().temp() : null);
+        double humidityCurrent = WeatherConditionMapper.valueOrZero(
+                item.main() != null ? item.main().humidity() : null);
+        double temperatureCurrent = dailyTemp.average();
 
         Delta delta = weatherForecastRepository.findLatestBeforeForecastAt(region.getId(), forecastAt)
                 .map(prev -> new Delta(
-                        humidityCurrent - nvl(prev.getHumidityCurrent()),
-                        temperatureCurrent - nvl(prev.getTemperatureCurrent())
+                        humidityCurrent - WeatherConditionMapper.valueOrZero(prev.getHumidityCurrent()),
+                        temperatureCurrent - WeatherConditionMapper.valueOrZero(prev.getTemperatureCurrent())
                 ))
                 .orElse(new Delta(0.0, 0.0));
 
-        SkyStatus skyStatus = toSkyStatus(weatherCode(item));
-        PrecipitationType precipitationType = toPrecipitationType(weatherCode(item));
-        double precipitationAmount = precipitationAmount(item);
-        double precipitationProbability = nvl(item.pop()) * 100.0;
-        double temperatureMin = nvl(item.main() != null ? item.main().tempMin() : null);
-        double temperatureMax = nvl(item.main() != null ? item.main().tempMax() : null);
-        double windSpeed = nvl(item.wind() != null ? item.wind().speed() : null);
-        WindStrengthWord windStrengthWord = toWindStrength(windSpeed);
+        SkyStatus skyStatus = WeatherConditionMapper.toSkyStatus(item);
+        PrecipitationType precipitationType = WeatherConditionMapper.toPrecipitationType(item);
+        double precipitationAmount = WeatherConditionMapper.precipitationAmount(item);
+        double precipitationProbability = WeatherConditionMapper.valueOrZero(item.pop()) * 100.0;
+        double temperatureMin = dailyTemp.minimum();
+        double temperatureMax = dailyTemp.maximum();
+        double windSpeed = WeatherConditionMapper.valueOrZero(
+                item.wind() != null ? item.wind().speed() : null);
+        WindStrengthWord windStrengthWord = WeatherConditionMapper.toWindStrength(windSpeed);
 
         Optional<WeatherForecast> existingOpt = weatherForecastRepository.findByRegionIdAndForecastAt(region.getId(), forecastAt);
         PrecipitationType previousPrecipitationType = existingOpt.map(WeatherForecast::getPrecipitationType)
@@ -159,72 +168,6 @@ public class WeatherForecastCollectService {
 
     private LocalDate toKstDate(long epochSecond) {
         return Instant.ofEpochSecond(epochSecond).atZone(KST).toLocalDate();
-    }
-
-    private int toKstHour(long epochSecond) {
-        return Instant.ofEpochSecond(epochSecond).atZone(KST).getHour();
-    }
-
-    private int weatherCode(ForecastItem item) {
-        if (item.weather() == null || item.weather().isEmpty() || item.weather().get(0).id() == null) {
-            return 800;
-        }
-        return item.weather().get(0).id();
-    }
-
-    private SkyStatus toSkyStatus(int code) {
-        if (code == 800) {
-            return SkyStatus.CLEAR;
-        }
-
-        if (code == 801 || code == 802) {
-            return SkyStatus.MOSTLY_CLOUDY;
-        }
-
-        return SkyStatus.CLOUDY;
-    }
-
-    private PrecipitationType toPrecipitationType(int code) {
-        if (code >= 200 && code <= 400) {
-            return PrecipitationType.SHOWER;
-        }
-
-        if (code >= 500 && code < 600) {
-            return PrecipitationType.RAIN;
-        }
-
-        if (code == 611 || code == 612 || code == 613 || code == 615 || code == 616) {
-            return PrecipitationType.RAIN_SNOW;
-        }
-
-        if (code >= 600 && code < 700) {
-            return PrecipitationType.SNOW;
-        }
-
-        return PrecipitationType.NONE;
-    }
-
-    private WindStrengthWord toWindStrength(double speed) {
-        if (speed < 4.0) {
-            return WindStrengthWord.WEAK;
-        }
-
-        if (speed < 9.0) {
-            return WindStrengthWord.MODERATE;
-        }
-
-        return WindStrengthWord.STRONG;
-    }
-
-    private double precipitationAmount(ForecastItem item) {
-        double rain = item.rain() != null ? nvl(item.rain().volume3h()) : 0.0;
-        double snow = item.snow() != null ? nvl(item.snow().volume3h()) : 0.0;
-        return rain + snow;
-    }
-
-    // null value logic
-    private double nvl(Double value) {
-        return value != null ? value : 0.0;
     }
 
     private record Delta(double humidityDiff, double temperatureDiff) {
