@@ -1,4 +1,4 @@
-package com.ootd.fitme.domain.feed.event;
+package com.ootd.fitme.domain.feed.dto.response.elasticsearch;
 
 import com.ootd.fitme.domain.weatherforecast.enums.PrecipitationType;
 import com.ootd.fitme.domain.weatherforecast.enums.SkyStatus;
@@ -6,16 +6,16 @@ import com.ootd.fitme.domain.weatherforecast.enums.SkyStatus;
 import java.time.Instant;
 import java.util.UUID;
 
-public record FeedCreateEvent(
+public record FeedSearchHitRow(
         UUID feedId,
-        UUID userId,
+        UUID authorId,
+        UUID weatherId,
         String content,
-        Instant createdAt,
-        Instant updatedAt,
         int likeCount,
         int commentCount,
-        UUID weatherForecastId,
         SkyStatus skyStatus,
-        PrecipitationType precipitationType
+        PrecipitationType precipitationType,
+        Instant createdAt,
+        Instant updatedAt
 ) {
 }

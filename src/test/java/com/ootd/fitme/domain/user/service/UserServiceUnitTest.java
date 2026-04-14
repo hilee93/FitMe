@@ -8,6 +8,7 @@ import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.enums.Role;
 import com.ootd.fitme.domain.user.enums.SortDirection;
 import com.ootd.fitme.domain.user.enums.UserSortBy;
+import com.ootd.fitme.domain.user.event.TemporaryPasswordMailRequestedEvent;
 import com.ootd.fitme.domain.user.exception.user.UserException;
 import com.ootd.fitme.domain.user.mapper.UserMapper;
 import com.ootd.fitme.domain.user.repository.UserRepository;
@@ -21,6 +22,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Duration;
@@ -57,7 +59,7 @@ public class UserServiceUnitTest {
     private ProfileRepository profileRepository;
 
     @Mock
-    private TemporaryPasswordMailSender temporaryPasswordMailSender;
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -206,8 +208,7 @@ public class UserServiceUnitTest {
             assertThat(expiresAt).isBefore(now.plusSeconds(210));
 
             verify(tokenBlacklistService).setRevokeAllBefore(eq(userId), any(Instant.class));
-            verify(temporaryPasswordMailSender)
-                    .sendTemporaryPassword(eq(email), anyString(), eq(Duration.ofMinutes(3)));
+            verify(eventPublisher).publishEvent(any(TemporaryPasswordMailRequestedEvent.class));
         }
 
         @Test
@@ -234,9 +235,9 @@ public class UserServiceUnitTest {
             given(user.getEmail()).willReturn(email);
             given(userRepository.findByEmail(email)).willReturn(Optional.of(user));
             given(passwordEncoder.encode(anyString())).willReturn("encoded-temp");
-            willThrow(new IllegalStateException("smtp fail"))
-                    .given(temporaryPasswordMailSender)
-                    .sendTemporaryPassword(eq(email), anyString(), eq(Duration.ofMinutes(3)));
+            willThrow(new RuntimeException("event publish fail"))
+                    .given(eventPublisher)
+                    .publishEvent(any(TemporaryPasswordMailRequestedEvent.class));
 
             assertThatThrownBy(() -> userService.resetPassword(new ResetPasswordRequest(email)))
                     .isInstanceOf(UserException.class)

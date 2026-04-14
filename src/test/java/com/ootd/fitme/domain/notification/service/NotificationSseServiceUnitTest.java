@@ -15,6 +15,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,6 +31,9 @@ class NotificationSseServiceUnitTest {
     @Mock
     private EmitterRepository emitterRepository;
 
+    @Mock
+    private SseMessageRepository sseMessageRepository;
+
     @InjectMocks
     private NotificationSseService notificationSseService;
 
@@ -42,9 +46,10 @@ class NotificationSseServiceUnitTest {
         void shouldSaveEmitterWhenSubscribe() {
             // given
             UUID userId = UUID.randomUUID();
+            UUID lastEventId = UUID.randomUUID();
 
             // when
-            SseEmitter result = notificationSseService.subscribe(userId);
+            SseEmitter result = notificationSseService.subscribe(userId,lastEventId);
 
             // then
             assertThat(result).isNotNull();
@@ -83,6 +88,8 @@ class NotificationSseServiceUnitTest {
                     "내용",
                     null
             );
+            SseMessage message = SseMessage.create(userId, data);
+            given(sseMessageRepository.save(any(SseMessage.class))).willReturn(message);
 
             given(emitterRepository.findAllByUserId(userId))
                     .willReturn(Map.of(emitterId, emitter));
@@ -92,11 +99,11 @@ class NotificationSseServiceUnitTest {
 
             // then
             verify(emitterRepository).findAllByUserId(userId);
-            verify(emitter).send(any(SseEmitter.SseEventBuilder.class));
+            verify(emitter).send(any(Set.class));
         }
 
         @Test
-        @DisplayName("send 중 IOException 발생 시 emitter를 삭제한다")
+        @DisplayName("send 중 IllegalStateException 발생 시 emitter를 삭제한다")
         void shouldDeleteEmitterWhenIOExceptionOccurs() throws Exception {
             // given
             UUID userId = UUID.randomUUID();
@@ -111,13 +118,15 @@ class NotificationSseServiceUnitTest {
                     "내용",
                     null
             );
+            SseMessage message = SseMessage.create(userId, data);
+            given(sseMessageRepository.save(any(SseMessage.class))).willReturn(message);
 
             given(emitterRepository.findAllByUserId(userId))
                     .willReturn(Map.of(emitterId, emitter));
 
-            doThrow(new IOException("send fail"))
+            doThrow(new IllegalStateException("already completed"))
                     .when(emitter)
-                    .send(any(SseEmitter.SseEventBuilder.class));
+                    .send(any(Set.class));
 
             // when
             notificationSseService.send(userId, data);
@@ -135,6 +144,7 @@ class NotificationSseServiceUnitTest {
             String emitterId = userId + "_12345";
 
             SseEmitter emitter = mock(SseEmitter.class);
+
             NotificationDto data = new NotificationDto(
                     UUID.randomUUID(),
                     Instant.now(),
@@ -144,12 +154,15 @@ class NotificationSseServiceUnitTest {
                     null
             );
 
+            SseMessage message = SseMessage.create(userId, data);
+            given(sseMessageRepository.save(any(SseMessage.class))).willReturn(message);
+
             given(emitterRepository.findAllByUserId(userId))
                     .willReturn(Map.of(emitterId, emitter));
 
             doThrow(new IllegalStateException("already completed"))
                     .when(emitter)
-                    .send(any(SseEmitter.SseEventBuilder.class));
+                    .send(any(Set.class));
 
             // when
             notificationSseService.send(userId, data);

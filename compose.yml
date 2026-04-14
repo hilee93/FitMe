@@ -117,7 +117,9 @@ services:
       retries: 5
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.13
+    build :
+      context: .
+      dockerfile: Dockerfile.elasticsearch
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false # 운영에서는 무조건 true, 그게아니면 누구나 데이터 조회/삭제 가능
