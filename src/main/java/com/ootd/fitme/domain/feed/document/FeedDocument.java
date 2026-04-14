@@ -22,6 +22,7 @@ import static lombok.AccessLevel.PROTECTED;
 public class FeedDocument {
 
     @Id
+    @Field(type = FieldType.Keyword)
     private UUID id;
 
     @Field(type = FieldType.Date)
