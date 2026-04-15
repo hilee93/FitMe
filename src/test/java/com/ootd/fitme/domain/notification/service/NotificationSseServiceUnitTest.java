@@ -228,4 +228,84 @@ class NotificationSseServiceUnitTest {
             verify(emitterRepository).deleteByUserIdAndEmitterId(userId, emitterId);
         }
     }
+
+    @Nested
+    @DisplayName("cleanUp")
+    class CleanUpTest {
+
+        @Test
+        @DisplayName("ping 실패한 emitter는 completeWithError를 호출한다")
+        void shouldCompleteWithErrorWhenPingFails() throws Exception {
+            // given
+            UUID userId = UUID.randomUUID();
+
+            SseEmitter failedEmitter = mock(SseEmitter.class);
+            SseEmitter successEmitter = mock(SseEmitter.class);
+
+            // ping 실패 유도
+            doThrow(new IOException("ping fail"))
+                    .when(failedEmitter)
+                    .send(any(Set.class));
+
+            // ping 성공 유도
+            doNothing()
+                    .when(successEmitter)
+                    .send(any(Set.class));
+
+            Map<String, SseEmitter> emitters = Map.of(
+                    "failed", failedEmitter,
+                    "success", successEmitter
+            );
+
+            Map<UUID, Map<String, SseEmitter>> allEmitters = Map.of(
+                    userId, emitters
+            );
+
+            given(emitterRepository.findAll()).willReturn(allEmitters);
+
+            // when
+            notificationSseService.cleanUp();
+
+            // then
+            verify(failedEmitter).completeWithError(any(RuntimeException.class));
+            verify(successEmitter, never()).completeWithError(any());
+        }
+
+        @Test
+        @DisplayName("모든 emitter가 정상일 경우 completeWithError를 호출하지 않는다")
+        void shouldNotCompleteWithErrorWhenAllPingSuccess() throws Exception {
+            // given
+            UUID userId = UUID.randomUUID();
+
+            SseEmitter emitter1 = mock(SseEmitter.class);
+            SseEmitter emitter2 = mock(SseEmitter.class);
+
+            doNothing().when(emitter1).send(any(Set.class));
+            doNothing().when(emitter2).send(any(Set.class));
+
+            Map<String, SseEmitter> emitters = Map.of(
+                    "e1", emitter1,
+                    "e2", emitter2
+            );
+
+            Map<UUID, Map<String, SseEmitter>> allEmitters = Map.of(
+                    userId, emitters
+            );
+
+            given(emitterRepository.findAll()).willReturn(allEmitters);
+
+            // when
+            notificationSseService.cleanUp();
+
+            // then
+            verify(emitter1, never()).completeWithError(any());
+            verify(emitter2, never()).completeWithError(any());
+        }
+    }
+
+
+
+
+
+
 }
