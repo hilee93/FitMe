@@ -9,7 +9,7 @@ on:
 jobs:
   ci:
     name: Run Tests
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,11 +30,11 @@ jobs:
           restore-keys: |
             gradle-${{ runner.os }}-
       #플레이라이트 설치
-      - name: Install Playwright Browsers and Dependencies
-        run: |
-            npm init -y
-            npm install @playwright/test@1.42.0
-            npx playwright install --with-deps
+#      - name: Install Playwright Browsers and Dependencies
+#        run: |
+#            npm init -y
+#            npm install @playwright/test@1.42.0
+#            npx playwright install --with-deps
 
       - name: Test + JaCoCo report
         run: ./gradlew test jacocoTestReport
