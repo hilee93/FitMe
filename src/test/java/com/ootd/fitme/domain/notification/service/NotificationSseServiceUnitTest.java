@@ -11,6 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedConstruction;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -119,6 +120,35 @@ class NotificationSseServiceUnitTest {
 
             verify(sseMessageRepository)
                     .findAllByEventIdAfterAndReceiverId(lastEventId, userId);
+        }
+
+        @Test
+        @DisplayName("subscribe 호출 시 completion/timeout/error 콜백을 등록한다")
+        void shouldRegisterEmitterCallbacksWhenSubscribe() {
+            // given
+            UUID userId = UUID.randomUUID();
+            UUID lastEventId = UUID.randomUUID();
+
+            given(sseMessageRepository.findAllByEventIdAfterAndReceiverId(lastEventId, userId))
+                    .willReturn(List.of());
+
+            try (MockedConstruction<SseEmitter> mocked =
+                         mockConstruction(SseEmitter.class, (mock, context) -> {
+                         })) {
+
+                // when
+                SseEmitter result = notificationSseService.subscribe(userId, lastEventId, "userAgent");
+
+                // then
+                assertThat(result).isNotNull();
+
+                SseEmitter emitterMock = mocked.constructed().get(0);
+
+                verify(emitterRepository).save(eq(userId), anyString(), eq(emitterMock));
+                verify(emitterMock).onCompletion(any(Runnable.class));
+                verify(emitterMock).onTimeout(any(Runnable.class));
+                verify(emitterMock).onError(any());
+            }
         }
 
 
