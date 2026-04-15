@@ -10,6 +10,7 @@ RUN ./gradlew clean build -x test
 
 # 런타임 실행 스테이지
 FROM eclipse-temurin:17-jre-jammy
+FROM mcr.microsoft.com/playwright/java:v1.42.0-jammy
 
 WORKDIR /app
 
