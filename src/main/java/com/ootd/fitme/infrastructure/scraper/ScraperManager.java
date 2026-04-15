@@ -11,7 +11,7 @@ import java.util.List;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class SmartScraperManager {
+public class ScraperManager {
 
     private final JsoupScraper jsoupScraper;
     private final PlaywrightScraper playwrightScraper;

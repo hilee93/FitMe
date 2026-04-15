@@ -1,5 +1,7 @@
 package com.ootd.fitme.domain.clothes.controller;
 
+import com.ootd.fitme.domain.catalog.entity.CatalogClothes;
+import com.ootd.fitme.domain.catalog.service.CatalogClothesService;
 import com.ootd.fitme.domain.clothes.controller.docs.ClothesControllerDocs;
 import com.ootd.fitme.domain.clothes.dto.ClothesDto;
 import com.ootd.fitme.domain.clothes.dto.ExtractedClothesInfo;
@@ -29,6 +31,7 @@ import java.util.UUID;
 public class ClothesController implements ClothesControllerDocs {
 
     private final ClothesService clothesService;
+    private final CatalogClothesService catalogClothesService;
 
     @GetMapping
     public ResponseEntity<ClothesDtoCursorResponse> getClothes(
@@ -74,9 +77,7 @@ public class ClothesController implements ClothesControllerDocs {
     @GetMapping("/extractions")
     public ResponseEntity<ClothesDto> extractClothesInfo(@RequestParam String url
     ) {
-
-        ClothesDto extractedInfo = clothesService.extractInfoFromLink(url);
-
-        return ResponseEntity.ok(extractedInfo);
+        ClothesDto result = catalogClothesService.extractInfoFromLink(url);
+        return ResponseEntity.ok(result);
     }
 }
