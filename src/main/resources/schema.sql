@@ -17,6 +17,7 @@ DROP TABLE IF EXISTS profiles CASCADE;
 DROP TABLE IF EXISTS attributes CASCADE;
 DROP TABLE IF EXISTS regions CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS catalog_clothes CASCADE;
 
 CREATE TABLE users
 (
@@ -367,3 +368,15 @@ CREATE TABLE media_files
 CREATE INDEX idx_media_files_status ON media_files (status);
 CREATE INDEX idx_media_files_user_id ON media_files (user_id);
 
+CREATE TABLE catalog_clothes
+(
+    id UUID PRIMARY KEY,
+    original_url VARCHAR(512) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    image_url VARCHAR(1000),
+    type VARCHAR(50) NOT NULL,
+    attributes JSONB,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    CONSTRAINT uk_original_url UNIQUE (original_url)
+);
+CREATE INDEX idx_catalog_clothes_type ON catalog_clothes (type);
