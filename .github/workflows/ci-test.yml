@@ -31,7 +31,7 @@ jobs:
             gradle-${{ runner.os }}-
       #플레이라이트 설치
       - name: Install Playwright Browsers and Dependencies
-        run: npx playwright@1.42.0 install --with-deps
+        run: npm init -y && npx playwright@1.42.0 install --with-deps
 
       - name: Test + JaCoCo report
         run: ./gradlew test jacocoTestReport
