@@ -29,12 +29,12 @@ spring:
 
   ai:
     openai:
-      api-key: ${API_KEY:dummy-key}
+      api-key: ${GOOGLE_AI_API_KEY:dummy-key}
       base-url: https://generativelanguage.googleapis.com/v1beta/openai
       chat:
         completions-path: /chat/completions
         options:
-          model: gemini-3-flash
+          model: gemini-3-flash-preview
           temperature: 0.1
       retry:
         max-attempts: 1
