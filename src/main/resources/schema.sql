@@ -375,7 +375,7 @@ CREATE TABLE catalog_clothes
     name VARCHAR(255) NOT NULL,
     image_url VARCHAR(1000),
     type VARCHAR(50) NOT NULL,
-    attributes JSONB,
+    attributes JSON,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL,
     CONSTRAINT uk_original_url UNIQUE (original_url)
 );
