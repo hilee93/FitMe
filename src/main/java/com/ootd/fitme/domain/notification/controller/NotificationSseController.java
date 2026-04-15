@@ -21,7 +21,6 @@ import java.util.UUID;
 public class NotificationSseController {
 
     private final NotificationSseService notificationSseService;
-    private final UserAgentAnalyzer uaa;
 
     @GetMapping(produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter subscribe(@AuthenticationPrincipal CustomUserPrincipal principal,
