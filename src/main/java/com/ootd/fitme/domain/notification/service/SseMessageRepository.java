@@ -14,9 +14,13 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 @Repository
 public class SseMessageRepository {
 
+    private final int eventQueueCapacity;
     private final ConcurrentLinkedDeque<UUID> eventIdQueue = new ConcurrentLinkedDeque<>();
     private final Map<UUID, SseMessage> messages = new ConcurrentHashMap<>();
 
+    public SseMessageRepository(@Value("${sse.message.capacity:1000}") int eventQueueCapacity) {
+        this.eventQueueCapacity = eventQueueCapacity;
+    }
     public SseMessage save(SseMessage message) {
         makeAvailableCapacity();
 
@@ -38,7 +42,6 @@ public class SseMessageRepository {
     }
 
     private void makeAvailableCapacity() {
-        int eventQueueCapacity = 1000;
         int availableCapacity = eventQueueCapacity - eventIdQueue.size();
         while (availableCapacity < 1) {
             UUID removedEventId = eventIdQueue.removeFirst();

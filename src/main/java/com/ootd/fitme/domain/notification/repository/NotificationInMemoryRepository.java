@@ -21,7 +21,7 @@ public class NotificationInMemoryRepository implements EmitterRepository {
         emitters
                 .computeIfAbsent(userId, key -> new ConcurrentHashMap<>())
                 .put(emitterId, emitter);
-       log.debug("save emitterId={}, userId={}", emitterId, emitters.get(userId));
+        log.debug("save emitterId={}, userId={}", emitterId, emitters.get(userId));
         return emitter;
     }
 

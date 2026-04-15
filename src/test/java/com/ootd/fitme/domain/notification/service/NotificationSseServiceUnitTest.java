@@ -12,10 +12,12 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -68,6 +70,58 @@ class NotificationSseServiceUnitTest {
             assertThat(savedEmitter).isNotNull();
             assertThat(savedEmitter).isSameAs(result);
         }
+
+        @Test
+        @DisplayName("재연결 시 못 받은 알림이 없으면 ping을 수행한다")
+        void shouldSendPingWhenNoMissedMessages() {
+            // given
+            UUID userId = UUID.randomUUID();
+            UUID lastEventId = UUID.randomUUID();
+
+            given(sseMessageRepository.findAllByEventIdAfterAndReceiverId(lastEventId, userId))
+                    .willReturn(List.of());
+
+            // when
+            SseEmitter result = notificationSseService.subscribe(userId, lastEventId, "userAgent");
+
+            // then
+            assertThat(result).isNotNull();
+
+            verify(sseMessageRepository)
+                    .findAllByEventIdAfterAndReceiverId(lastEventId, userId);
+        }
+
+        @Test
+        @DisplayName("재연결 시 못 받은 알림이 있으면 재전송 로직을 수행한다")
+        void shouldResendMessagesWhenReconnect() {
+            // given
+            UUID userId = UUID.randomUUID();
+            UUID lastEventId = UUID.randomUUID();
+
+            NotificationDto dto1 = new NotificationDto(
+                    UUID.randomUUID(), Instant.now(), userId, "제목1", "내용1", null
+            );
+            NotificationDto dto2 = new NotificationDto(
+                    UUID.randomUUID(), Instant.now(), userId, "제목2", "내용2", null
+            );
+
+            SseMessage message1 = SseMessage.create(userId, dto1);
+            SseMessage message2 = SseMessage.create(userId, dto2);
+
+            given(sseMessageRepository.findAllByEventIdAfterAndReceiverId(lastEventId, userId))
+                    .willReturn(List.of(message1, message2));
+
+            // when
+            SseEmitter result = notificationSseService.subscribe(userId, lastEventId, "userAgent");
+
+            // then
+            assertThat(result).isNotNull();
+
+            verify(sseMessageRepository)
+                    .findAllByEventIdAfterAndReceiverId(lastEventId, userId);
+        }
+
+
     }
 
     @Nested
