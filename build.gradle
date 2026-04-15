@@ -103,6 +103,8 @@ tasks.named('test') {
 
     systemProperty 'h2.tcp.enabled', 'false'
 
+    systemProperty "app.kafka.listener.enabled", "false"
+
     maxHeapSize = "1536m"
     maxParallelForks = 1
 }

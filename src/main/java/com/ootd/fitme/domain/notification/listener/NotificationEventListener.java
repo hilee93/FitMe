@@ -15,12 +15,19 @@ import com.ootd.fitme.domain.notification.service.NotificationService;
 import com.ootd.fitme.domain.weatherforecast.event.WeatherAlertEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+@ConditionalOnProperty(
+        name = "app.kafka.listener.enabled",
+        havingValue = "true",
+        matchIfMissing = true
+)
 @Slf4j
 @Component
 @RequiredArgsConstructor
