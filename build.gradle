@@ -102,6 +102,9 @@ tasks.named('test') {
     useJUnitPlatform()
 
     systemProperty 'h2.tcp.enabled', 'false'
+
+    maxHeapSize = "1536m"
+    maxParallelForks = 1
 }
 
 
