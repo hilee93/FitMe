@@ -2,6 +2,8 @@ package com.ootd.fitme.domain.notification.service;
 
 import com.ootd.fitme.domain.notification.dto.response.NotificationDto;
 import com.ootd.fitme.domain.notification.repository.EmitterRepository;
+import nl.basjes.parse.useragent.UserAgent;
+import nl.basjes.parse.useragent.UserAgentAnalyzer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -46,10 +48,10 @@ class NotificationSseServiceUnitTest {
         void shouldSaveEmitterWhenSubscribe() {
             // given
             UUID userId = UUID.randomUUID();
-            UUID lastEventId = UUID.randomUUID();
+            UUID lastEventId = UUID.randomUUID();;
 
             // when
-            SseEmitter result = notificationSseService.subscribe(userId,lastEventId);
+            SseEmitter result = notificationSseService.subscribe(userId,lastEventId,"userAgent");
 
             // then
             assertThat(result).isNotNull();
@@ -62,7 +64,7 @@ class NotificationSseServiceUnitTest {
             String savedEmitterId = emitterIdCaptor.getValue();
             SseEmitter savedEmitter = emitterCaptor.getValue();
 
-            assertThat(savedEmitterId).startsWith(userId.toString() + "_");
+            assertThat(savedEmitterId).isEqualTo("unknown");
             assertThat(savedEmitter).isNotNull();
             assertThat(savedEmitter).isSameAs(result);
         }
@@ -133,7 +135,7 @@ class NotificationSseServiceUnitTest {
 
             // then
             verify(emitterRepository).findAllByUserId(userId);
-            verify(emitterRepository).deleteByUserId(userId);
+            verify(emitterRepository).deleteByUserIdAndEmitterId(userId, emitterId);
         }
 
         @Test
@@ -169,7 +171,7 @@ class NotificationSseServiceUnitTest {
 
             // then
             verify(emitterRepository).findAllByUserId(userId);
-            verify(emitterRepository).deleteByUserId(userId);
+            verify(emitterRepository).deleteByUserIdAndEmitterId(userId, emitterId);
         }
     }
 }
