@@ -37,17 +37,17 @@ public class CatalogClothesService {
     public ClothesDto extractInfoFromLink(String link) {
         String normalizedUrl = UrlUtil.normalize(link);
         log.info("[CatalogService] 의상 정보 추출 요청: {}", normalizedUrl);
+        List<Attribute> allAttributes = attributeRepository.findAllWithSelectableValues();;
 
         Optional<CatalogClothes> existingCatalog = catalogRepository.findByOriginalUrl(normalizedUrl);
         if (existingCatalog.isPresent()) {
             log.info("[CatalogService] DB 캐시 Hit! AI 서버를 호출하지 않습니다.");
-            return convertToDto(existingCatalog.get());
+            return convertToDto(existingCatalog.get(), allAttributes);
         }
 
         log.info("[CatalogService] DB 캐시 Miss. 스크래핑 및 AI 분석을 시작합니다.");
         ScrapedData scrapedData = scraperManager.scrape(normalizedUrl);
 
-        List<Attribute> allAttributes = attributeRepository.findAll();
         String attributePromptGuide = buildAttributePromptGuide(allAttributes);
 
         String systemInstruction = "You are an expert fashion data analyst.\n" +
@@ -110,7 +110,7 @@ public class CatalogClothesService {
             CatalogClothes newCatalog = CatalogClothes.create(normalizedUrl, finalName, finalImageUrl, finalType, attributesMap);
             catalogRepository.save(newCatalog);
             log.info("[CatalogService] [성공] 새로운 카탈로그 DB 저장 완료: {}", finalName);
-            return convertToDto(newCatalog);
+            return convertToDto(newCatalog, allAttributes);
         } else {
             log.warn("[CatalogService] [실패/거절] AI 추출 데이터가 유효하지 않아 마스터 DB에 저장하지 않습니다.");
             return new ClothesDto(null, null, finalName, finalImageUrl, finalType, new ArrayList<>());
@@ -130,8 +130,8 @@ public class CatalogClothesService {
         return guide.toString();
     }
 
-    private ClothesDto convertToDto(CatalogClothes catalog) {
-        List<Attribute> allAttributes = attributeRepository.findAll();
+    private ClothesDto convertToDto(CatalogClothes catalog, List<Attribute> allAttributes) {
+
         List<ClothesAttributeWithDefDto> mappedAttributes = new ArrayList<>();
 
         for (Map.Entry<String, Object> entry : catalog.getAttributes().entrySet()) {
@@ -142,7 +142,7 @@ public class CatalogClothesService {
                     .filter(dbAttr -> dbAttr.getName().equalsIgnoreCase(defName))
                     .findFirst()
                     .ifPresent(dbAttr -> {
-                        List<String> selectableOptions = dbAttr.getSelectableValues().stream()
+                        List<String> selectableOptions = dbAttr.getSelectableValues().stream() // ✅ 이제 에러 안 납니다!
                                 .map(sv -> sv.getType())
                                 .toList();
                         mappedAttributes.add(new ClothesAttributeWithDefDto(
