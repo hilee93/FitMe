@@ -103,6 +103,34 @@ public class NotificationEventListener {
         }
     }
 
+    @KafkaListener(topics = "fitme.AttributeUpdateEvent", groupId = "notification-save-group")
+    public void attributeUpdated(AttributeUpdateEvent event) {
+        try {
+            notificationService.notifyAttributeAdded(
+                    event.attributeName(),
+                    event.action()
+            );
+
+            log.info("[KAFKA][ATTRIBUTE_UPDATED] 처리 성공 attributeId={}", event.attributeId());
+        } catch (Exception e) {
+            log.error("[KAFKA][ATTRIBUTE_UPDATED] 알림 서비스 처리 실패 attributeId={}", event.attributeId(), e);
+        }
+    }
+
+    @KafkaListener(topics = "fitme.AttributeDeleteEvent", groupId = "notification-save-group")
+    public void attributeDeleted(AttributeDeleteEvent event) {
+        try {
+            notificationService.notifyAttributeAdded(
+                    event.attributeName(),
+                    event.action()
+            );
+
+            log.info("[KAFKA][ATTRIBUTE_DELETED] 처리 성공 attributeId={}", event.attributeId());
+        } catch (Exception e) {
+            log.error("[KAFKA][ATTRIBUTE_DELETED] 알림 서비스 처리 실패 attributeId={}", event.attributeId(), e);
+        }
+    }
+
     @KafkaListener(topics = "fitme.FeedCreateEvent", groupId = "notification-save-group")
     public void followerNewFeed(FeedCreateEvent event) {
         try {

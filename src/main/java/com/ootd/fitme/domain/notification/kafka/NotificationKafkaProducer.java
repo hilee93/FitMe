@@ -4,6 +4,8 @@ package com.ootd.fitme.domain.notification.kafka;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ootd.fitme.domain.attribute.event.AttributeAddedEvent;
+import com.ootd.fitme.domain.attribute.event.AttributeDeleteEvent;
+import com.ootd.fitme.domain.attribute.event.AttributeUpdateEvent;
 import com.ootd.fitme.domain.comment.event.FeedCommentCreateEvent;
 import com.ootd.fitme.domain.directmessage.event.DirectMessageCreateEvent;
 import com.ootd.fitme.domain.feed.event.FeedCreateEvent;
@@ -53,6 +55,17 @@ public class NotificationKafkaProducer {
     @Async("eventTaskExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void attributeAdded(AttributeAddedEvent event) {
+        sendToKafka(event);
+    }
+    @Async("eventTaskExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void attributeUpdated(AttributeUpdateEvent event) {
+        sendToKafka(event);
+    }
+
+    @Async("eventTaskExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void attributeDeleted(AttributeDeleteEvent event) {
         sendToKafka(event);
     }
 
