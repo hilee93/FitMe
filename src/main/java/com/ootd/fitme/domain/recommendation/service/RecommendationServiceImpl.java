@@ -208,7 +208,7 @@ public class RecommendationServiceImpl implements RecommendationService {
             String gender,
             double feltTemp) {
 
-        // 1) 기본 필터링 (성별 + 날씨)
+        // 기본 필터링 (성별 + 날씨)
         List<RecommendationClothesSummaryDto> filtered = allClothes.stream()
                 .filter(clothes -> isGenderAppropriate(clothes, gender))
                 .filter(clothes -> isWeatherSuitable(clothes, feltTemp))
@@ -225,7 +225,7 @@ public class RecommendationServiceImpl implements RecommendationService {
         // 모자 / 비모자 분리
         List<RecommendationClothesSummaryDto> hats = filtered.stream()
                 .filter(c -> c.type() == ClothesType.HAT)
-                .toList();
+                .collect(Collectors.toList());
 
         List<RecommendationClothesSummaryDto> nonHats = filtered.stream()
                 .filter(c -> c.type() != ClothesType.HAT)
@@ -248,20 +248,21 @@ public class RecommendationServiceImpl implements RecommendationService {
                     .collect(Collectors.toList());
         }
 
-        // 아직 2개가 안 되면, 전체(allClothes)에서 부족한 만큼 더 채우기
+        // 아직 2개가 안 되면, 전체에서 부족한 만큼 더 채우기
         Set<UUID> alreadySelected = result.stream()
                 .map(RecommendationClothesSummaryDto::clothesId)
                 .collect(Collectors.toSet());
 
         List<RecommendationClothesSummaryDto> additional = allClothes.stream()
-                .filter(c -> isGenderAppropriate(c, gender))
-                .filter(c -> !alreadySelected.contains(c.clothesId()))
+                .filter(clothes -> isGenderAppropriate(clothes, gender))
+                .filter(clothes -> clothes.type() != ClothesType.HAT)
+                .filter(clothes -> !alreadySelected.contains(clothes.clothesId()))
                 .limit(2 - result.size())
                 .collect(Collectors.toList());
 
         result.addAll(additional);
 
-        // 최종적으로도 최대 5개까지만 반환
+        // 6) 최종적으로도 최대 5개까지만 반환
         return result.stream()
                 .limit(5)
                 .collect(Collectors.toList());
