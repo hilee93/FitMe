@@ -1,4 +1,8 @@
 # 👕 FitMe!
+
+![GitHub Actions Workflow Status](https://github.com/FitMe-FitMeUp/FitMe/actions/workflows/cd-deploy.yml/badge.svg?branch=main)
+[![codecov](https://codecov.io/gh/FitMe-FitMeUp/fitme/branch/main/graph/badge.svg?)](https://codecov.io/gh/FitMe-FitMeUp/fitme)
+
 > **"오늘도 당신의 스타일을 책임집니다"**
 > 사용자의 옷장과 실시간 날씨 데이터를 기반으로 최적의 코디를 제안하고 소통하는 개인 맞춤형 패션 플랫폼
 
