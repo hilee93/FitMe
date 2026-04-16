@@ -13,12 +13,14 @@ import com.ootd.fitme.domain.feedlike.event.FeedLikedCreateEvent;
 import com.ootd.fitme.domain.feedlike.event.FeedLikedDeleteEvent;
 import com.ootd.fitme.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(
@@ -33,20 +35,29 @@ public class FeedDocumentIndexingListener {
     @Async("eventTaskExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleFeedCreatedEvent(FeedCreateEvent event) {
+        try {
+            log.info("[ES] FeedCreatedEvent 수신 feedId={}", event.feedId());
 
-        FeedDocument feedDocument = FeedDocument.create(
-                event.feedId(),
-                event.createdAt(),
-                event.updatedAt(),
-                event.content(),
-                event.commentCount(),
-                event.likeCount(),
-                event.weatherForecastId(),
-                event.skyStatus(),
-                event.precipitationType(),
-                event.userId()
-        );
-        feedDocumentRepository.save(feedDocument);
+            FeedDocument feedDocument = FeedDocument.create(
+                    event.feedId(),
+                    event.createdAt(),
+                    event.updatedAt(),
+                    event.content(),
+                    event.commentCount(),
+                    event.likeCount(),
+                    event.weatherForecastId(),
+                    event.skyStatus(),
+                    event.precipitationType(),
+                    event.userId()
+            );
+
+            log.info("[ES] save 시작 feedId={}", event.feedId());
+            FeedDocument saved = feedDocumentRepository.save(feedDocument);
+            log.info("[ES] save 완료 feedId={}, savedId={}", event.feedId(), saved.getId());
+
+        } catch (Exception e) {
+            log.error("[ES] save 실패 feedId={}", event.feedId(), e);
+        }
     }
 
     @Async("eventTaskExecutor")
