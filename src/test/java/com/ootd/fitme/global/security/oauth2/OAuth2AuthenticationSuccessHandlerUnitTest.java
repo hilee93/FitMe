@@ -5,7 +5,7 @@ import com.ootd.fitme.domain.user.dto.response.SignInResult;
 import com.ootd.fitme.domain.user.dto.response.UserDto;
 import com.ootd.fitme.domain.user.enums.Role;
 import com.ootd.fitme.domain.user.service.AuthService;
-import com.ootd.fitme.global.config.SecurityCorsProperties;
+import com.ootd.fitme.global.config.AppRuntimePolicy;
 import com.ootd.fitme.global.security.jwt.JwtProperties;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -29,9 +30,7 @@ public class OAuth2AuthenticationSuccessHandlerUnitTest {
     @Test
     @DisplayName("성공 - refresh 쿠키 설정 후 추천 페이지로 리다이렉트")
     void onAuthenticationSuccess_success() throws Exception {
-        SecurityCorsProperties corsProperties = new SecurityCorsProperties();
-        corsProperties.setAllowedOrigins(List.of("http://localhost:8080"));
-
+        AppRuntimePolicy runtimePolicy = mock(AppRuntimePolicy.class);
         AuthService authService = mock(AuthService.class);
         JwtProperties jwtProperties = new JwtProperties(
                 "mySecretKeyForJwtTokenGeneration1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
@@ -40,8 +39,11 @@ public class OAuth2AuthenticationSuccessHandlerUnitTest {
                 "fitme"
         );
 
+        given(runtimePolicy.resolveClientBaseUrl(any())).willReturn("http://localhost:8080");
+        given(runtimePolicy.isSecureRequest(any())).willReturn(false);
+
         OAuth2AuthenticationSuccessHandler handler =
-                new OAuth2AuthenticationSuccessHandler(corsProperties, authService, jwtProperties);
+                new OAuth2AuthenticationSuccessHandler(authService, jwtProperties, runtimePolicy);
 
         UUID userId = UUID.randomUUID();
         UserDto userDto = new UserDto(
@@ -87,9 +89,7 @@ public class OAuth2AuthenticationSuccessHandlerUnitTest {
     @Test
     @DisplayName("실패 - 처리 예외 발생 시 error 쿼리로 리다이렉트")
     void onAuthenticationSuccess_fail_redirectError() throws Exception {
-        SecurityCorsProperties corsProperties = new SecurityCorsProperties();
-        corsProperties.setAllowedOrigins(List.of("http://localhost:8080"));
-
+        AppRuntimePolicy runtimePolicy = mock(AppRuntimePolicy.class);
         AuthService authService = mock(AuthService.class);
         JwtProperties jwtProperties = new JwtProperties(
                 "mySecretKeyForJwtTokenGeneration1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
@@ -98,8 +98,11 @@ public class OAuth2AuthenticationSuccessHandlerUnitTest {
                 "fitme"
         );
 
+        given(runtimePolicy.resolveClientBaseUrl(any())).willReturn("http://localhost:8080");
+        given(runtimePolicy.isSecureRequest(any())).willReturn(false);
+
         OAuth2AuthenticationSuccessHandler handler =
-                new OAuth2AuthenticationSuccessHandler(corsProperties, authService, jwtProperties);
+                new OAuth2AuthenticationSuccessHandler(authService, jwtProperties, runtimePolicy);
 
         Authentication authentication = mock(Authentication.class);
         given(authentication.getPrincipal()).willReturn("not-oauth2-principal");

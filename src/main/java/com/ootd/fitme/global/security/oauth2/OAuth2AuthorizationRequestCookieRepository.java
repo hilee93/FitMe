@@ -1,7 +1,9 @@
 package com.ootd.fitme.global.security.oauth2;
 
+import com.ootd.fitme.global.config.AppRuntimePolicy;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.client.web.AuthorizationRequestRepository;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.stereotype.Component;
@@ -10,10 +12,13 @@ import java.io.*;
 import java.util.Base64;
 
 @Component
+@RequiredArgsConstructor
 public class OAuth2AuthorizationRequestCookieRepository
 implements AuthorizationRequestRepository<OAuth2AuthorizationRequest> {
     public static final String OAUTH2_AUTH_REQUEST_COOKIE_NAME = "oauth2_auth_request";
     private static final int COOKIE_EXPIRE_SECONDS = 180;
+
+    private final AppRuntimePolicy runtimePolicy;
 
     @Override
     public OAuth2AuthorizationRequest loadAuthorizationRequest(HttpServletRequest request) {
@@ -27,12 +32,22 @@ implements AuthorizationRequestRepository<OAuth2AuthorizationRequest> {
                                          HttpServletRequest request,
                                          HttpServletResponse response) {
         if (authorizationRequest == null) {
-            CookieUtils.deleteCookie(response, OAUTH2_AUTH_REQUEST_COOKIE_NAME);
+            CookieUtils.deleteCookie(
+                    response,
+                    OAUTH2_AUTH_REQUEST_COOKIE_NAME,
+                    runtimePolicy.isSecureRequest(request)
+            );
             return;
         }
 
         String serialized = serialize(authorizationRequest);
-        CookieUtils.addCookie(response, OAUTH2_AUTH_REQUEST_COOKIE_NAME, serialized, COOKIE_EXPIRE_SECONDS);
+        CookieUtils.addCookie(
+                response,
+                OAUTH2_AUTH_REQUEST_COOKIE_NAME,
+                serialized,
+                COOKIE_EXPIRE_SECONDS,
+                runtimePolicy.isSecureRequest(request)
+        );
     }
 
     @Override
@@ -41,7 +56,11 @@ implements AuthorizationRequestRepository<OAuth2AuthorizationRequest> {
             HttpServletResponse response
     ) {
         OAuth2AuthorizationRequest authorizationRequest = loadAuthorizationRequest(request);
-        CookieUtils.deleteCookie(response, OAUTH2_AUTH_REQUEST_COOKIE_NAME);
+        CookieUtils.deleteCookie(
+                response,
+                OAUTH2_AUTH_REQUEST_COOKIE_NAME,
+                runtimePolicy.isSecureRequest(request)
+        );
         return authorizationRequest;
     }
 

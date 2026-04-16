@@ -9,6 +9,7 @@ import com.ootd.fitme.domain.user.dto.response.UserDto;
 import com.ootd.fitme.domain.user.enums.Role;
 import com.ootd.fitme.domain.user.service.AuthService;
 import com.ootd.fitme.domain.user.service.UserService;
+import com.ootd.fitme.global.config.AppRuntimePolicy;
 import com.ootd.fitme.global.security.jwt.JwtAuthenticationFilter;
 import com.ootd.fitme.global.security.jwt.JwtProperties;
 import jakarta.servlet.http.Cookie;
@@ -65,6 +66,9 @@ class AuthControllerTest {
 
     @MockitoBean
     private JwtProperties jwtProperties;
+
+    @MockitoBean
+    private AppRuntimePolicy runtimePolicy;
 
     @Nested
     @DisplayName("POST /api/auth/sign-in")

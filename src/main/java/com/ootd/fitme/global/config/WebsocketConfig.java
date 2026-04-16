@@ -15,12 +15,15 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebsocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final JwtChannelInterceptor jwtChannelInterceptor;
+    private final AppRuntimePolicy runtimePolicy;
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
+        String[] allowedOrigins = runtimePolicy.allowedOrigins().toArray(String[]::new);
+
         // STOMP 엔드포인트 설정
         registry.addEndpoint("/ws")
-                .setAllowedOrigins("http://localhost:8080")
+                .setAllowedOrigins(allowedOrigins)
                 .withSockJS();
     }
 
