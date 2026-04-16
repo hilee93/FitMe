@@ -202,51 +202,69 @@ public class RecommendationServiceImpl implements RecommendationService {
         return currentTemp - (3.0 - sensitivity) * 2;
     }
 
-    // 최소 2개 추천 보장
+    // 최소 2개 추천 보장 (모자는 최대 1개만 포함)
     private List<RecommendationClothesSummaryDto> getMinimumRecommendations(
             List<RecommendationClothesSummaryDto> allClothes,
             String gender,
             double feltTemp) {
 
-        // 기본 필터링
+        // 기본 필터링 (성별 + 날씨)
         List<RecommendationClothesSummaryDto> filtered = allClothes.stream()
                 .filter(clothes -> isGenderAppropriate(clothes, gender))
                 .filter(clothes -> isWeatherSuitable(clothes, feltTemp))
-                .limit(5)
+                .limit(10) // 여유 있게
                 .collect(Collectors.toList());
 
-        // 2개 이상이면 그대로 반환
-        if (filtered.size() >= 2) {
-            return filtered;
+        // 필터링 후 아무 것도 없으면, 전체에서 최소 2개만 골라서 반환
+        if (filtered.isEmpty()) {
+            return allClothes.stream()
+                    .limit(2)
+                    .collect(Collectors.toList());
         }
 
-        // 부족하면 성별만 고려해서 추가
-        Set<UUID> alreadySelected = filtered.stream()
+        // 모자 / 비모자 분리
+        List<RecommendationClothesSummaryDto> hats = filtered.stream()
+                .filter(c -> c.type() == ClothesType.HAT)
+                .collect(Collectors.toList());
+
+        List<RecommendationClothesSummaryDto> nonHats = filtered.stream()
+                .filter(c -> c.type() != ClothesType.HAT)
+                .collect(Collectors.toList());
+
+        List<RecommendationClothesSummaryDto> result = new ArrayList<>();
+
+        // 비모자 먼저 채우기
+        result.addAll(nonHats);
+
+        // 모자는 최대 1개만 추가
+        if (!hats.isEmpty()) {
+            result.add(hats.get(0));
+        }
+
+        // 2개 이상이면 여기서 종료 (최대 5개까지만)
+        if (result.size() >= 2) {
+            return result.stream()
+                    .limit(5)
+                    .collect(Collectors.toList());
+        }
+
+        // 아직 2개가 안 되면, 전체에서 부족한 만큼 더 채우기
+        Set<UUID> alreadySelected = result.stream()
                 .map(RecommendationClothesSummaryDto::clothesId)
                 .collect(Collectors.toSet());
 
         List<RecommendationClothesSummaryDto> additional = allClothes.stream()
                 .filter(clothes -> isGenderAppropriate(clothes, gender))
+                .filter(clothes -> clothes.type() != ClothesType.HAT)
                 .filter(clothes -> !alreadySelected.contains(clothes.clothesId()))
-                .limit(2 - filtered.size())
+                .limit(2 - result.size())
                 .collect(Collectors.toList());
 
-        filtered.addAll(additional);
+        result.addAll(additional);
 
-        // 여전히 2개 미만이면 모든 옷에서 추가
-        if (filtered.size() < 2) {
-            Set<UUID> finalSelected = filtered.stream()
-                    .map(RecommendationClothesSummaryDto::clothesId)
-                    .collect(Collectors.toSet());
-
-            List<RecommendationClothesSummaryDto> remaining = allClothes.stream()
-                    .filter(clothes -> !finalSelected.contains(clothes.clothesId()))
-                    .limit(2 - filtered.size())
-                    .collect(Collectors.toList());
-
-            filtered.addAll(remaining);
-        }
-
-        return filtered;
+        // 6) 최종적으로도 최대 5개까지만 반환
+        return result.stream()
+                .limit(5)
+                .collect(Collectors.toList());
     }
 }

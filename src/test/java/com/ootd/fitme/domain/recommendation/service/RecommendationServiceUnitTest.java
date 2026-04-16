@@ -298,4 +298,88 @@ class RecommendationServiceUnitTest {
 
         assertThat(result.clothes()).isEmpty();
     }
+
+    @Test
+    @DisplayName("모자만 여러 개 있어도 추천 결과에는 모자가 최대 1개만 포함된다")
+    void recommendation_algorithm_limits_hat_to_one() {
+        // given
+        UUID userId = UUID.randomUUID();
+        UUID weatherId = UUID.randomUUID();
+
+        // 모자 추천이 가능한 온도
+        RecommendationTemperatureSummaryDto warmWeather =
+                new RecommendationTemperatureSummaryDto(25.0);
+        RecommendationProfileSummaryDto profile =
+                new RecommendationProfileSummaryDto("FEMALE", 2);
+
+        // 옷장에 모자만 여러 개 있는 상황
+        List<RecommendationClothesSummaryDto> hatOnlyClothes = List.of(
+                new RecommendationClothesSummaryDto(UUID.randomUUID(), "모자1", ClothesType.HAT, "https://example.com/hat1.jpg", List.of()),
+                new RecommendationClothesSummaryDto(UUID.randomUUID(), "모자2", ClothesType.HAT, "https://example.com/hat2.jpg", List.of()),
+                new RecommendationClothesSummaryDto(UUID.randomUUID(), "모자3", ClothesType.HAT, "https://example.com/hat3.jpg", List.of())
+        );
+
+        when(recommendationQueryService.getWeatherById(weatherId)).thenReturn(warmWeather);
+        when(recommendationQueryService.getProfileByUserId(userId)).thenReturn(profile);
+        when(recommendationQueryService.getClothesByUserId(userId)).thenReturn(hatOnlyClothes);
+
+        // AI 실패 가정 → 알고리즘 경로로 진입
+        when(aiDataExtractor.extractData(anyString(), anyString(), eq(RecommendationAiDto.class)))
+                .thenReturn(null);
+
+        // when
+        RecommendationDto result = recommendationService.recommendation(userId, weatherId);
+
+        // then
+        assertThat(result).isNotNull();
+        assertThat(result.clothes()).isNotEmpty();
+
+        long hatCount = result.clothes().stream()
+                .filter(c -> c.type() == ClothesType.HAT)
+                .count();
+
+        // 모자는 최대 1개만 포함되어야 함
+        assertThat(hatCount).isLessThanOrEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("필터 결과가 1개뿐이어도 최소 2개는 추천된다")
+    void recommendation_algorithm_guarantees_minimum_two_items() {
+        // given
+        UUID userId = UUID.randomUUID();
+        UUID weatherId = UUID.randomUUID();
+
+        // 적당한 온도 값
+        RecommendationTemperatureSummaryDto weather =
+                new RecommendationTemperatureSummaryDto(20.0);
+        RecommendationProfileSummaryDto profile =
+                new RecommendationProfileSummaryDto("FEMALE", 2);
+
+        // 예시:
+        // - TOP 은 isWeatherSuitable 에 의해 true
+        // - 다른 한 벌은 어떤 이유로든 필터에서 탈락하더라도
+        //   -> getMinimumRecommendations 가 allClothes 에서 추가로 채워 넣어 최소 2개 보장
+        RecommendationClothesSummaryDto top = new RecommendationClothesSummaryDto(
+                UUID.randomUUID(), "상의1", ClothesType.TOP, "https://example.com/top1.jpg", List.of());
+        RecommendationClothesSummaryDto bottom = new RecommendationClothesSummaryDto(
+                UUID.randomUUID(), "하의1", ClothesType.BOTTOM, "https://example.com/bottom1.jpg", List.of());
+
+        List<RecommendationClothesSummaryDto> clothes = List.of(top, bottom);
+
+        when(recommendationQueryService.getWeatherById(weatherId)).thenReturn(weather);
+        when(recommendationQueryService.getProfileByUserId(userId)).thenReturn(profile);
+        when(recommendationQueryService.getClothesByUserId(userId)).thenReturn(clothes);
+
+        // AI 실패 가정 -> 알고리즘 경로
+        when(aiDataExtractor.extractData(anyString(), anyString(), eq(RecommendationAiDto.class)))
+                .thenReturn(null);
+
+        // when
+        RecommendationDto result = recommendationService.recommendation(userId, weatherId);
+
+        // then
+        assertThat(result).isNotNull();
+        // 최소 2개 이상 추천되는지 확인
+        assertThat(result.clothes().size()).isGreaterThanOrEqualTo(2);
+    }
 }
