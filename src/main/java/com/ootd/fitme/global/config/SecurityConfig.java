@@ -60,12 +60,6 @@ public class SecurityConfig {
                                 // 정적 리스스를 위해 추가
                                 "/",
                                 "/index.html",
-                                "/auth/**",
-                                "/recommendations",
-                                "/closet",
-                                "/feeds",
-                                "/profiles",
-                                "/admin/**",
                                 "/assets/**",
                                 "/vite.svg",
                                 "/logo_symbol.svg",
