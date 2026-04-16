@@ -1,6 +1,7 @@
 package com.ootd.fitme.domain.clothes.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ootd.fitme.domain.catalog.service.CatalogClothesService;
 import com.ootd.fitme.domain.clothes.dto.ClothesDto;
 import com.ootd.fitme.domain.clothes.dto.request.ClothesCreateRequest;
 import com.ootd.fitme.domain.clothes.dto.request.ClothesDtoCursorRequest;
@@ -59,6 +60,9 @@ class ClothesControllerTest {
 
     @MockitoBean
     private ClothesService clothesService;
+
+    @MockitoBean
+    private CatalogClothesService catalogClothesService;
 
     @MockitoBean
     private JwtProvider jwtProvider;
