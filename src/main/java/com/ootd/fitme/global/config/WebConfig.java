@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.nio.file.Paths;
@@ -38,5 +39,14 @@ public class WebConfig implements WebMvcConfigurer {
 
 
         // TODO: 운영 전환 시 local file 노출 제거하고 Azure 운영 방식으로 변경
+    }
+
+    @Override
+    public void addViewControllers(ViewControllerRegistry registry) {
+        registry.addViewController("/oauth2/callback").setViewName("forward:/index.html");
+        registry.addViewController("/auth/login").setViewName("forward:/index.html");
+        registry.addViewController("/auth/register").setViewName("forward:/index.html");
+        registry.addViewController("/auth/forgot-password").setViewName("forward:/index.html");
+        registry.addViewController("/recommendations").setViewName("forward:/index.html");
     }
 }

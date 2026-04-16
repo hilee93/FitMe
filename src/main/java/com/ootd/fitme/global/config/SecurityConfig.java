@@ -3,6 +3,10 @@ package com.ootd.fitme.global.config;
 import com.ootd.fitme.global.security.exception.CustomAccessDeniedHandler;
 import com.ootd.fitme.global.security.exception.CustomAuthenticationEntryPoint;
 import com.ootd.fitme.global.security.jwt.JwtAuthenticationFilter;
+import com.ootd.fitme.global.security.oauth2.CustomOAuth2UserService;
+import com.ootd.fitme.global.security.oauth2.OAuth2AuthenticationFailureHandler;
+import com.ootd.fitme.global.security.oauth2.OAuth2AuthenticationSuccessHandler;
+import com.ootd.fitme.global.security.oauth2.OAuth2AuthorizationRequestCookieRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
@@ -29,6 +33,10 @@ public class SecurityConfig {
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
     private final SecurityCorsProperties securityCorsProperties;
+    private final OAuth2AuthorizationRequestCookieRepository oAuth2AuthorizationRequestCookieRepository;
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+    private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -52,6 +60,12 @@ public class SecurityConfig {
                                 // 정적 리스스를 위해 추가
                                 "/",
                                 "/index.html",
+                                "/auth/**",
+                                "/recommendations",
+                                "/closet",
+                                "/feeds",
+                                "/profiles",
+                                "/admin/**",
                                 "/assets/**",
                                 "/vite.svg",
                                 "/logo_symbol.svg",
@@ -75,7 +89,9 @@ public class SecurityConfig {
                                 "/api/auth/reset-password",
                                 "/api/auth/csrf-token",
                                 "/api/sse",
-                                "/ws/**"
+                                "/ws/**",
+                                "/oauth2/**",
+                                "/login/oauth2/**"
                         ).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/clothes/attribute-defs/**").hasAnyRole("ADMIN", "USER")
@@ -83,6 +99,16 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         .requestMatchers("/storage/**").permitAll()
                         .anyRequest().authenticated()
+                )
+                .oauth2Login(oauth2 -> oauth2
+                        .authorizationEndpoint(endpoint -> endpoint
+                                .authorizationRequestRepository(oAuth2AuthorizationRequestCookieRepository)
+                        )
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(customOAuth2UserService)
+                        )
+                        .successHandler(oAuth2AuthenticationSuccessHandler)
+                        .failureHandler(oAuth2AuthenticationFailureHandler)
                 )
                 .headers(headers -> headers
                         .frameOptions(frameOptions -> frameOptions.sameOrigin()))

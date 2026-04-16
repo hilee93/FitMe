@@ -39,6 +39,33 @@ spring:
       retry:
         max-attempts: 1
 
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:}
+            client-secret: ${GOOGLE_CLIENT_SECRET:}
+            scope:
+              - profile
+              - email
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+
+          kakao:
+            client-id: ${KAKAO_API_KEY:}
+            client-secret: ${KAKAO_OAUTH_CLIENT_SECRET:}
+            client-authentication-method: client_secret_post
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            client-name: kakao
+            scope:
+              - profile_nickname
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
 
 fitme:
   storage:
@@ -95,4 +122,9 @@ admin:
 
 security:
   cors:
-    allowed-origins: http://localhost:8080
+    allowed-origins:
+      - http://localhost
+      - http://localhost:8080
+
+server:
+  forward-headers-strategy: framework

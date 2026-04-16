@@ -5,9 +5,12 @@ import com.ootd.fitme.domain.user.dto.response.JwtDto;
 import com.ootd.fitme.domain.user.dto.response.SignInResult;
 import com.ootd.fitme.domain.user.entity.User;
 
+import java.util.UUID;
+
 public interface AuthService {
     User validateSignIn(SignInRequest signInRequest);
     SignInResult signIn(SignInRequest signInRequest);
     JwtDto refresh(String refreshToken);
     void signOut(String accessToken, String refreshToken);
+    SignInResult signInByUserId(UUID userId);
 }
