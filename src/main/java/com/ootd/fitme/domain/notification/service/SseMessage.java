@@ -36,4 +36,8 @@ public class SseMessage {
                 .data(eventData)
                 .build();
     }
+
+    public boolean isReceivable(UUID userId) {
+        return this.receiverIds.equals(userId);
+    }
 }

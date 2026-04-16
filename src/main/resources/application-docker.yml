@@ -43,6 +43,8 @@ logging:
     org.hibernate.SQL: debug
     org.hibernate.orm.jdbc.bind: trace
     org.elasticsearch.client: trace
+    org.apache.kafka.clients: ERROR
+    org.springframework.kafka: ERROR
 
 # 명시적으로 설정
 server:
