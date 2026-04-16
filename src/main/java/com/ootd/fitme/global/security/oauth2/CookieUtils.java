@@ -26,10 +26,16 @@ public final class CookieUtils {
                 .findFirst();
     }
 
-    public static void addCookie(HttpServletResponse response, String name, String value, int maxAgeSeconds) {
+    public static void addCookie(
+            HttpServletResponse response,
+            String name,
+            String value,
+            int maxAgeSeconds,
+            boolean secure
+    ) {
         ResponseCookie cookie = ResponseCookie.from(name, value)
                 .httpOnly(true)
-                .secure(false) // prod HTTPS에서 true
+                .secure(secure) // prod HTTPS에서 true
                 .path("/")
                 .sameSite("Lax")
                 .maxAge(Duration.ofSeconds(maxAgeSeconds))
@@ -38,10 +44,10 @@ public final class CookieUtils {
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
-    public static void deleteCookie(HttpServletResponse response, String name) {
+    public static void deleteCookie(HttpServletResponse response, String name, boolean secure) {
         ResponseCookie cookie = ResponseCookie.from(name, "")
                 .httpOnly(true)
-                .secure(false)
+                .secure(secure)
                 .path("/")
                 .sameSite("Lax")
                 .maxAge(Duration.ZERO)
