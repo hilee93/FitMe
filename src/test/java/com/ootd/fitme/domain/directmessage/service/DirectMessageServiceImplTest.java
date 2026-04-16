@@ -1,7 +1,6 @@
 package com.ootd.fitme.domain.directmessage.service;
 
 import com.ootd.fitme.domain.directmessage.dto.request.DirectMessageCreateRequest;
-import com.ootd.fitme.domain.directmessage.dto.response.DirectMessageDto;
 import com.ootd.fitme.domain.directmessage.dto.response.DirectMessageDtoCursorResponse;
 import com.ootd.fitme.domain.directmessage.entity.DirectMessage;
 import com.ootd.fitme.domain.directmessage.repository.DirectMessageRepository;
@@ -9,21 +8,18 @@ import com.ootd.fitme.domain.profile.entity.Profile;
 import com.ootd.fitme.domain.profile.repository.ProfileRepository;
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.repository.UserRepository;
-import com.ootd.fitme.global.security.auth.CustomUserPrincipal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest

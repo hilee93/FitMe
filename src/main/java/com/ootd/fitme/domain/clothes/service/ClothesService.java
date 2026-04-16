@@ -15,6 +15,4 @@ public interface ClothesService {
     ClothesDto createClothes(ClothesCreateRequest request, MultipartFile image, UUID loginUserId);
     void deleteClothes(UUID clothesId, UUID loginUserId);
     ClothesDto updateClothes(UUID clothesId, UUID loginUserId, ClothesUpdateRequest request, MultipartFile image);
-    ClothesDto extractInfoFromLink(String link);
-    ClothesDto createClothesFromExtracted(UUID loginUserId, ExtractedClothesInfo extractedInfo);
 }

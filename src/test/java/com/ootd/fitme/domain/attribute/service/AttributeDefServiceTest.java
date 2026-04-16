@@ -43,9 +43,6 @@ class AttributeDefServiceTest {
     @Autowired
     private EntityManager em;
 
-    @Autowired
-    private CacheManager cacheManager;
-
     @Nested
     @DisplayName("createClothesAttributeDef() 메서드는")
     class Describe_create {

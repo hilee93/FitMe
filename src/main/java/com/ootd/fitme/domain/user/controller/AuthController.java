@@ -7,12 +7,11 @@ import com.ootd.fitme.domain.user.dto.response.SignInResult;
 import com.ootd.fitme.domain.user.service.AuthService;
 import com.ootd.fitme.domain.user.service.UserService;
 import com.ootd.fitme.global.security.jwt.JwtProperties;
+import com.ootd.fitme.global.security.oauth2.CookieUtils;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.*;
@@ -90,24 +89,13 @@ public class AuthController {
     }
 
     private void addRefreshCookie(HttpServletResponse response, String token) {
-        ResponseCookie cookie = ResponseCookie.from(REFRESH_COOKIE, token)
-                .httpOnly(true)
-                .secure(false) // 운영환경에서 true + HTTPS로 변경
-                .path("/")
-                .sameSite("Lax") // Strict/None 확인 필요
-                .maxAge(Duration.ofMillis(jwtProperties.refreshTokenExpirationMs()))
-                .build();
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+        int maxAgeSeconds = Math.toIntExact(
+                Duration.ofMillis(jwtProperties.refreshTokenExpirationMs()).getSeconds()
+        );
+        CookieUtils.addCookie(response, REFRESH_COOKIE, token, maxAgeSeconds);
     }
 
     private void expireRefreshCookie(HttpServletResponse response) {
-        ResponseCookie cookie = ResponseCookie.from(REFRESH_COOKIE, "")
-                .httpOnly(true)
-                .secure(false) // 운영환경에서 true + HTTPS로 변경
-                .path("/")
-                .sameSite("Lax")
-                .maxAge(Duration.ZERO)
-                .build();
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+        CookieUtils.deleteCookie(response, REFRESH_COOKIE);
     }
 }

@@ -111,6 +111,25 @@ public class AuthServiceImpl implements AuthService {
         blacklistIfValid(refreshToken);
     }
 
+    @Override
+    @Transactional
+    public SignInResult signInByUserId(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AuthException(ErrorCode.AUTH_INVALID_TOKEN));
+
+        if (user.isLocked()) {
+            throw new UserException(ErrorCode.USER_ACCOUNT_LOCKED);
+        }
+
+        tokenBlacklistService.setRevokeAllBefore(user.getId(), nowSeconds());
+
+        String accessToken = jwtProvider.generateAccessToken(user.getId(), user.getRole().name());
+        String refreshToken = jwtProvider.generateRefreshToken(user.getId(), user.getRole().name());
+
+        JwtDto jwtDto = new JwtDto(mapToUserDto(user), accessToken);
+        return new SignInResult(jwtDto, refreshToken);
+    }
+
     private void blacklistIfValid(String token) {
         if (token == null || !jwtProvider.validateToken(token)) {
             return;

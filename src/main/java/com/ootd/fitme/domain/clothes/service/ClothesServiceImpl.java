@@ -2,7 +2,9 @@ package com.ootd.fitme.domain.clothes.service;
 
 import com.ootd.fitme.domain.attribute.entity.Attribute;
 import com.ootd.fitme.domain.attribute.repository.AttributeRepository;
-import com.ootd.fitme.domain.clothes.dto.*;
+import com.ootd.fitme.domain.clothes.dto.ClothesAttributeDto;
+import com.ootd.fitme.domain.clothes.dto.ClothesAttributeWithDefDto;
+import com.ootd.fitme.domain.clothes.dto.ClothesDto;
 import com.ootd.fitme.domain.clothes.dto.request.ClothesCreateRequest;
 import com.ootd.fitme.domain.clothes.dto.request.ClothesDtoCursorRequest;
 import com.ootd.fitme.domain.clothes.dto.request.ClothesUpdateRequest;
@@ -18,11 +20,12 @@ import com.ootd.fitme.domain.selectablevalue.repository.SelectableValueRepositor
 import com.ootd.fitme.domain.user.entity.User;
 import com.ootd.fitme.domain.user.repository.UserRepository;
 import com.ootd.fitme.global.exception.ErrorCode;
+import com.ootd.fitme.infrastructure.ai.AiDataExtractor;
+import com.ootd.fitme.infrastructure.scraper.JsoupScraper;
 import com.ootd.fitme.infrastructure.scraper.PlaywrightScraper;
-import com.ootd.fitme.infrastructure.scraper.exception.ScraperException;
+import com.ootd.fitme.infrastructure.scraper.ScraperManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -46,7 +49,6 @@ public class ClothesServiceImpl implements ClothesService {
     private final SelectableValueRepository selectableValueRepository;
 
     private final MediaFileService mediaFileService;
-    private final PlaywrightScraper scraper;
 
     @Override
     @Transactional
@@ -177,99 +179,24 @@ public class ClothesServiceImpl implements ClothesService {
             throw new ClothesException(ErrorCode.INVALID_REQUEST);
         }
 
-        ClothesDtoCursorRequest secureRequest = new ClothesDtoCursorRequest(
-                request.cursor(),
-                request.idAfter(),
-                request.limit(),
-                request.typeEqual(),
-                loginUserId.toString(),
-                request.sortBy(),
-                request.sortDirection()
-        );
 
-        if (secureRequest.ownerId() == null || secureRequest.ownerId().isBlank()) {
+        if (request.ownerId() == null || request.ownerId().isBlank()) {
             log.warn("[ClothesService] 옷 목록 조회 실패: ownerId 식별 불가");
             throw new ClothesException(ErrorCode.INVALID_REQUEST);
         }
 
-        boolean hasCursor = secureRequest.cursor() != null && !secureRequest.cursor().isBlank();
-        boolean hasIdAfter = secureRequest.idAfter() != null && !secureRequest.idAfter().isBlank();
+        boolean hasCursor = request.cursor() != null && !request.cursor().isBlank();
+        boolean hasIdAfter = request.idAfter() != null && !request.idAfter().isBlank();
 
         if (hasCursor ^ hasIdAfter) {
-            log.warn("[ClothesService] 옷 목록 조회 실패: 불완전한 커서 정보 - cursor: {}, idAfter: {}", secureRequest.cursor(), secureRequest.idAfter());
+            log.warn("[ClothesService] 옷 목록 조회 실패: 불완전한 커서 정보 - cursor: {}, idAfter: {}", request.cursor(), request.idAfter());
             throw new ClothesException(ErrorCode.INVALID_INPUT_VALUE);
         }
 
-        ClothesDtoCursorResponse response = clothesRepository.findClothesByCursor(secureRequest);
+        ClothesDtoCursorResponse response = clothesRepository.findClothesByCursor(request);
 
         log.info("[ClothesService] 옷 목록 커서 조회 완료 - 반환 개수: {}, hasNext: {}", response.data().size(), response.hasNext());
         return response;
-    }
-
-    @Override
-    public ClothesDto extractInfoFromLink(String link) {
-        log.info("[ClothesService] 링크 스크래핑 요청 시작 - URL: {}", link);
-
-        try {
-            PlaywrightScraper.ScrapedData scrapedData = scraper.scrape(link);
-
-            String finalName = (scrapedData.title() != null && !scrapedData.title().isBlank())
-                    ? HtmlUtils.htmlEscape(scrapedData.title())
-                    : "이름 없음";
-
-            if (finalName.length() > 100) {
-                finalName = finalName.substring(0, 100);
-            }
-
-            return new ClothesDto(
-                    null,
-                    null,
-                    finalName,
-                    scrapedData.imageUrl(),
-                    null,
-                    new ArrayList<>()
-            );
-
-        } catch (ScraperException e) {
-            log.error("[ClothesService] 링크 스크래핑 실패 - URL: {}, Error: {}", link, e.getMessage(), e);
-            throw e;
-        }
-    }
-
-    @Override
-    @Transactional
-    public ClothesDto createClothesFromExtracted(UUID loginUserId, ExtractedClothesInfo extractedInfo) {
-        log.info("[ClothesService] 스크래핑된 정보로 옷 생성 요청 - loginUserId: {}, name: {}", loginUserId, extractedInfo.name());
-
-        User user = userRepository.findById(loginUserId)
-                .orElseThrow(() -> {
-                    log.warn("[ClothesService] 스크래핑 옷 생성 실패: 존재하지 않는 사용자 - userId: {}", loginUserId);
-                    return new ClothesException(ErrorCode.CLOTHES_OWNER_NOT_FOUND);
-                });
-
-        Clothes clothes = Clothes.createWithImage(
-                extractedInfo.name(),
-                extractedInfo.type(),
-                user,
-                extractedInfo.imageUrl()
-        );
-
-        List<ClothesAttribute> clothesAttributes = buildClothesAttributes(clothes, extractedInfo.attributes());
-        clothes.replaceAttributes(clothesAttributes);
-
-        Clothes savedClothes = clothesRepository.save(clothes);
-        log.info("[ClothesService] 스크래핑 옷 DB 저장 완료 - clothesId: {}", savedClothes.getId());
-
-        List<ClothesAttributeWithDefDto> attributeDtos = buildAttributeDtos(clothesAttributes);
-
-        return new ClothesDto(
-                savedClothes.getId(),
-                user.getId(),
-                savedClothes.getName(),
-                savedClothes.getImageUrl(),
-                savedClothes.getClothesType(),
-                attributeDtos
-        );
     }
 
     // --- 내부 private 헬퍼 메서드들 ---
@@ -341,3 +268,4 @@ public class ClothesServiceImpl implements ClothesService {
                 }).toList();
     }
 }
+

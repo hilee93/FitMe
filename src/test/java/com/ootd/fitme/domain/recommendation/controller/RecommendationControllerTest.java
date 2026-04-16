@@ -84,7 +84,8 @@ class RecommendationControllerTest {
             RecommendationDto responseDto = new RecommendationDto(
                     weatherId,
                     userId,
-                    Collections.emptyList()
+                    Collections.emptyList(),
+                    "오늘 날씨에 적합한 옷들을 추천했습니다"
             );
 
             given(recommendationService.recommendation(userId, weatherId)).willReturn(responseDto);
@@ -97,6 +98,37 @@ class RecommendationControllerTest {
                     .andExpect(jsonPath("$.userId").value(userId.toString()))
                     .andExpect(jsonPath("$.weatherId").value(weatherId.toString()))
                     .andExpect(jsonPath("$.clothes").isArray());
+
+            then(recommendationService).should(times(1)).recommendation(userId, weatherId);
+        }
+
+        @Test
+        @DisplayName("[200] AI 추천 이유가 포함된 응답 확인")
+        void getRecommendation_success_with_ai_reason() throws Exception {
+            // given
+            UUID weatherId = UUID.randomUUID();
+            UUID userId = UUID.randomUUID();
+            String aiReason = "15도 날씨에 면 소재가 적당해 추천했어요!";
+
+            RecommendationDto responseDto = new RecommendationDto(
+                    weatherId,
+                    userId,
+                    Collections.emptyList(),
+                    aiReason
+            );
+
+            given(recommendationService.recommendation(userId, weatherId)).willReturn(responseDto);
+
+            // when & then
+            mockMvc.perform(get("/api/recommendations")
+                            .param("weatherId", weatherId.toString())
+                            .with(userPrincipal(userId)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.userId").value(userId.toString()))
+                    .andExpect(jsonPath("$.weatherId").value(weatherId.toString()))
+                    .andExpect(jsonPath("$.clothes").isArray())
+                    .andExpect(jsonPath("$.recommendationReason").value(aiReason))
+                    .andExpect(jsonPath("$.recommendationReason").isNotEmpty());
 
             then(recommendationService).should(times(1)).recommendation(userId, weatherId);
         }
