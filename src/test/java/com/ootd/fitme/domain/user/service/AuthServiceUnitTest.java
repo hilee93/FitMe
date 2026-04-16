@@ -256,6 +256,57 @@ class AuthServiceUnitTest {
         }
     }
 
+    @Nested
+    @DisplayName("signInByUserId")
+    class SignInByUserIdTest {
+        @Test
+        @DisplayName("성공 - userId로 access/refresh 발급")
+        void signInByUserId_success() {
+            User user = mock(User.class);
+            Profile profile = mockProfile("tester");
+
+            given(user.getId()).willReturn(userId);
+            given(user.getRole()).willReturn(Role.USER);
+            given(user.isLocked()).willReturn(false);
+            given(userRepository.findById(userId)).willReturn(Optional.of(user));
+            given(jwtProvider.generateAccessToken(userId, "USER")).willReturn("access-token");
+            given(jwtProvider.generateRefreshToken(userId, "USER")).willReturn("refresh-token");
+            given(profileRepository.findByUserId(any())).willReturn(Optional.of(profile));
+            given(userMapper.toDto(any(User.class), any(String.class))).willReturn(userDto);
+
+            SignInResult result = authService.signInByUserId(userId);
+
+            assertThat(result.jwtDto().accessToken()).isEqualTo("access-token");
+            assertThat(result.refreshToken()).isEqualTo("refresh-token");
+            verify(tokenBlacklistService).setRevokeAllBefore(eq(userId), any(Instant.class));
+        }
+
+        @Test
+        @DisplayName("실패 - 잠긴 계정은 USER_ACCOUNT_LOCKED")
+        void signInByUserId_locked_fail() {
+            User user = mock(User.class);
+
+            given(user.isLocked()).willReturn(true);
+            given(userRepository.findById(userId)).willReturn(Optional.of(user));
+
+            assertThatThrownBy(() -> authService.signInByUserId(userId))
+                    .isInstanceOf(UserException.class)
+                    .extracting(ex -> ((UserException) ex).getErrorCode())
+                    .isEqualTo(ErrorCode.USER_ACCOUNT_LOCKED);
+        }
+
+        @Test
+        @DisplayName("실패 - 유저가 없으면 AUTH_INVALID_TOKEN")
+        void signInByUserId_userNotFound_fail() {
+            given(userRepository.findById(userId)).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> authService.signInByUserId(userId))
+                    .isInstanceOf(AuthException.class)
+                    .extracting(ex -> ((AuthException) ex).getErrorCode())
+                    .isEqualTo(ErrorCode.AUTH_INVALID_TOKEN);
+        }
+    }
+
     private Profile mockProfile(String name) {
         Profile profile = mock(Profile.class);
         given(profile.getName()).willReturn(name);
