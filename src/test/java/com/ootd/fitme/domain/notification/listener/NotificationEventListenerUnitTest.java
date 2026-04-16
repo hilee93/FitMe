@@ -2,6 +2,8 @@ package com.ootd.fitme.domain.notification.listener;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ootd.fitme.domain.attribute.event.AttributeAddedEvent;
+import com.ootd.fitme.domain.attribute.event.AttributeDeleteEvent;
+import com.ootd.fitme.domain.attribute.event.AttributeUpdateEvent;
 import com.ootd.fitme.domain.comment.event.FeedCommentCreateEvent;
 import com.ootd.fitme.domain.directmessage.event.DirectMessageCreateEvent;
 import com.ootd.fitme.domain.feed.event.FeedCreateEvent;
@@ -130,6 +132,50 @@ class NotificationEventListenerUnitTest {
 
             verify(notificationService)
                     .notifyAttributeAdded("color", AttributeAction.ADDED);
+        }
+
+        @Test
+        @DisplayName("속성 수정 이벤트 -> notifyAttributeAdded 호출")
+        void attributeUpdated() {
+            // given
+            UUID attributeId = UUID.randomUUID();
+
+            AttributeUpdateEvent event =
+                    new AttributeUpdateEvent(
+                            attributeId,
+                            "color",
+                            AttributeAction.UPDATED,
+                            Instant.now()
+                    );
+
+            // when
+            listener.attributeUpdated(event);
+
+            // then
+            verify(notificationService)
+                    .notifyAttributeAdded("color", AttributeAction.UPDATED);
+        }
+
+        @Test
+        @DisplayName("속성 삭제 이벤트 -> notifyAttributeAdded 호출")
+        void attributeDeleted() {
+            // given
+            UUID attributeId = UUID.randomUUID();
+
+            AttributeDeleteEvent event =
+                    new AttributeDeleteEvent(
+                            attributeId,
+                            "color",
+                            AttributeAction.REMOVED,
+                            Instant.now()
+                    );
+
+            // when
+            listener.attributeDeleted(event);
+
+            // then
+            verify(notificationService)
+                    .notifyAttributeAdded("color", AttributeAction.REMOVED);
         }
 
         @Test
