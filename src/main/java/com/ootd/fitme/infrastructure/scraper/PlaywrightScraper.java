@@ -40,7 +40,7 @@ public class PlaywrightScraper implements Scraper {
 
         Browser.NewContextOptions contextOptions = new Browser.NewContextOptions()
                 .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-                .setViewportSize(1920, 1080)
+                .setViewportSize(1366, 768)
                 .setExtraHTTPHeaders(Map.ofEntries(
                         Map.entry("Accept-Language", "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7"),
                         Map.entry("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"),
@@ -57,6 +57,14 @@ public class PlaywrightScraper implements Scraper {
 
         try (BrowserContext context = browser.newContext(contextOptions);
              Page page = context.newPage()) {
+            context.route("**/*", route -> {
+                String resourceType = route.request().resourceType();
+                if ("image".equals(resourceType) || "media".equals(resourceType) || "font".equals(resourceType)) {
+                    route.abort();
+                } else {
+                    route.resume();
+                }
+            });
 
             context.addInitScript("() => {" +
                     "Object.defineProperty(navigator, 'webdriver', {get: () => undefined});" +
