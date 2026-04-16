@@ -1,5 +1,6 @@
 package com.ootd.fitme.domain.notification.repository;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -9,6 +10,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Repository
+@Slf4j
 public class NotificationInMemoryRepository implements EmitterRepository {
 
 
@@ -19,7 +21,7 @@ public class NotificationInMemoryRepository implements EmitterRepository {
         emitters
                 .computeIfAbsent(userId, key -> new ConcurrentHashMap<>())
                 .put(emitterId, emitter);
-
+        log.debug("save emitterId={}, userId={}", emitterId, emitters.get(userId));
         return emitter;
     }
 

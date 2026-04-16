@@ -28,7 +28,7 @@ jobs:
             ~/.gradle/wrapper
           key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
-            gradle-${{ runner.os }}-    
+            gradle-${{ runner.os }}-
 
       - name: Test + JaCoCo report
         run: ./gradlew test jacocoTestReport

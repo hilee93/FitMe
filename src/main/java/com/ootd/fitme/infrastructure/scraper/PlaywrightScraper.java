@@ -4,14 +4,11 @@ import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.WaitUntilState;
 import com.ootd.fitme.global.exception.ErrorCode;
 import com.ootd.fitme.infrastructure.scraper.exception.ScraperException;
-import com.sun.management.OperatingSystemMXBean;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.lang.management.ManagementFactory;
-import java.nio.file.Paths;
 import java.util.Map;
 
 @Slf4j
@@ -107,13 +104,25 @@ public class PlaywrightScraper implements Scraper {
         try {
             String ogDesc = getAttributeSilently(page, "meta[property='og:description']", "content");
             if (!ogDesc.isBlank()) {
-                sb.append("[상품설명] ").append(ogDesc).append("\n");
+                sb.append("[요약설명] ").append(ogDesc).append("\n");
             }
 
             try {
-                sb.append("[메인본문] ").append(page.innerText("body")).append("\n");
+                page.evaluate("() => {" +
+                        "const selectors = [" +
+                        "   'footer', 'header', 'nav', 'aside', '#gnb', '.gnb', " +
+                        "   '.footer', '#footer', '.notice', '.review', '#review', " +
+                        "   'script', 'style', 'noscript', '.banner', '.ads'" +
+                        "];" +
+                        "document.querySelectorAll(selectors.join(',')).forEach(el => el.remove());" +
+                        "}");
+
+                String cleanBodyText = page.innerText("body");
+                if (cleanBodyText != null && !cleanBodyText.isBlank()) {
+                    sb.append("[본문정보] ").append(cleanBodyText).append("\n");
+                }
             } catch (Exception e) {
-                log.warn("[Playwright] 메인 바디 텍스트 추출 실패");
+                log.warn("[Playwright] 메인 바디 텍스트 추출/청소 실패");
             }
 
             for (Frame frame : page.frames()) {
@@ -130,7 +139,7 @@ public class PlaywrightScraper implements Scraper {
 
             String result = sb.toString().replaceAll("\\s+", " ").trim();
 
-            return result.substring(0, Math.min(result.length(), 2000));
+            return result.substring(0, Math.min(result.length(), 1500));
 
         } catch (Exception e) {
             log.error("[Playwright] 텍스트 추출 중 치명적 에러 발생", e);
