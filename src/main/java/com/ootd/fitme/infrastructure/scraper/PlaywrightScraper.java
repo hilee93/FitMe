@@ -4,14 +4,11 @@ import com.microsoft.playwright.*;
 import com.microsoft.playwright.options.WaitUntilState;
 import com.ootd.fitme.global.exception.ErrorCode;
 import com.ootd.fitme.infrastructure.scraper.exception.ScraperException;
-import com.sun.management.OperatingSystemMXBean;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.lang.management.ManagementFactory;
-import java.nio.file.Paths;
 import java.util.Map;
 
 @Slf4j
