@@ -30,6 +30,9 @@ spring:
       password: ${REDIS_PASSWORD}
       ssl:
         enabled: true
+    elasticsearch:
+      repositories:
+        enabled: true
 
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
@@ -50,7 +53,7 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "*"
-        spring.json.use.type.headers: false
+        spring.json.use.type.headers: true
 
   elasticsearch:
     uris: ${ELASTICSEARCH_URI}
