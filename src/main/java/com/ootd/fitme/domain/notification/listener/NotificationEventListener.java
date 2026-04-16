@@ -15,12 +15,19 @@ import com.ootd.fitme.domain.notification.service.NotificationService;
 import com.ootd.fitme.domain.weatherforecast.event.WeatherAlertEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+@ConditionalOnProperty(
+        name = "app.kafka.listener.enabled",
+        havingValue = "true",
+        matchIfMissing = true
+)
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -100,6 +107,34 @@ public class NotificationEventListener {
             log.info("[KAFKA][ATTRIBUTE_ADDED] 처리 성공 attributeId={}", event.attributeId());
         } catch (Exception e) {
             log.error("[KAFKA][ATTRIBUTE_ADDED] 알림 서비스 처리 실패 attributeId={}", event.attributeId(), e);
+        }
+    }
+
+    @KafkaListener(topics = "fitme.AttributeUpdateEvent", groupId = "notification-save-group")
+    public void attributeUpdated(AttributeUpdateEvent event) {
+        try {
+            notificationService.notifyAttributeAdded(
+                    event.attributeName(),
+                    event.action()
+            );
+
+            log.info("[KAFKA][ATTRIBUTE_UPDATED] 처리 성공 attributeId={}", event.attributeId());
+        } catch (Exception e) {
+            log.error("[KAFKA][ATTRIBUTE_UPDATED] 알림 서비스 처리 실패 attributeId={}", event.attributeId(), e);
+        }
+    }
+
+    @KafkaListener(topics = "fitme.AttributeDeleteEvent", groupId = "notification-save-group")
+    public void attributeDeleted(AttributeDeleteEvent event) {
+        try {
+            notificationService.notifyAttributeAdded(
+                    event.attributeName(),
+                    event.action()
+            );
+
+            log.info("[KAFKA][ATTRIBUTE_DELETED] 처리 성공 attributeId={}", event.attributeId());
+        } catch (Exception e) {
+            log.error("[KAFKA][ATTRIBUTE_DELETED] 알림 서비스 처리 실패 attributeId={}", event.attributeId(), e);
         }
     }
 
