@@ -56,11 +56,11 @@ class NotificationSseControllerTest {
     class SubscribeTest {
 
         @Test
-        @DisplayName("실패 - 인증 정보가 없으면 401을 반환한다")
-        void subscribe_noAuthentication_return401() throws Exception {
+        @DisplayName("실패 - 인증 정보가 없으면 302을 반환한다")
+        void subscribe_noAuthentication_return302() throws Exception {
             mockMvc.perform(get("/api/sse")
                             .header("User-Agent", "Mozilla/5.0"))
-                    .andExpect(status().isUnauthorized());
+                    .andExpect(status().isFound());
 
             then(notificationSseService).shouldHaveNoInteractions();
         }

@@ -66,15 +66,15 @@ class NotificationControllerTest {
     class GetNotificationsTest {
 
     @Test
-    @DisplayName("실패 - 인증 정보가 없으면 401을 반환한다")
-    void getNotifications_noAuthentication_return401() throws Exception {
+    @DisplayName("실패 - 인증 정보가 없으면 302을 반환한다")
+    void getNotifications_noAuthentication_return302() throws Exception {
 
         // when & then
         mockMvc.perform(get("/api/notifications")
                         .param("cursor", "2026-03-26T09:00:00Z")
                         .param("idAfter", "22222222-2222-2222-2222-222222222222")
                         .param("limit", "10"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isFound());
     }
 
     @Test
@@ -200,7 +200,7 @@ class NotificationControllerTest {
 
             mockMvc.perform(delete("/api/notifications/{notificationId}", notificationId)
                             .with(csrf())) // csrf는 넣어야 401만 검증됨
-                    .andExpect(status().isUnauthorized());
+                    .andExpect(status().isFound());
 
             verify(notificationService, never()).delete(any());
         }

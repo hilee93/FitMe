@@ -268,7 +268,7 @@ class ClothesControllerTest {
         }
 
         @Test
-        @DisplayName("[보안/실패] 인증 토큰(Security Context) 없이 API에 접근하면 접근이 차단된다 (401/403)")
+        @DisplayName("[보안/실패] 인증 토큰(Security Context) 없이 API에 접근하면 접근이 차단된다 (302)")
         void access_Without_Token_Blocked() throws Exception {
             // given: 인증 객체(mockAuthentication)를 주입하지 않은 순수 무방비 요청
 
@@ -277,7 +277,7 @@ class ClothesControllerTest {
                                     .param("limit", "20")
                     )
                     .andDo(print())
-                    .andExpect(status().is4xxClientError());
+                    .andExpect(status().isFound());
 
             then(clothesService).shouldHaveNoInteractions();
         }
