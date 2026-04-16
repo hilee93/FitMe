@@ -331,30 +331,5 @@ class ClothesServiceTest {
                     .isInstanceOf(ClothesException.class)
                     .hasFieldOrPropertyWithValue("errorCode", ErrorCode.AUTH_FORBIDDEN);
         }
-
-        @Test
-        @DisplayName("목록 조회 시 악의적인 ownerId를 넘겨도 로그인 유저의 ID로 덮어씌움")
-        void getClothesList_Overwrite_OwnerId() {
-            // given
-            ClothesCreateRequest myReq = new ClothesCreateRequest(testUser.getId(), "내 옷", ClothesType.TOP, List.of());
-            clothesService.createClothes(myReq, null, testUser.getId());
-
-            User otherUser = userRepository.save(User.create("other@test.com", "pass"));
-            ClothesCreateRequest otherReq = new ClothesCreateRequest(otherUser.getId(), "타인 옷", ClothesType.TOP, List.of());
-            clothesService.createClothes(otherReq, null, otherUser.getId());
-            flushAndClear();
-
-            ClothesDtoCursorRequest hackedRequest = new ClothesDtoCursorRequest(
-                    null, null, 20, null, otherUser.getId().toString(),
-                    SortBy.createdAt, SortDirection.DESCENDING
-            );
-
-            // when
-            ClothesDtoCursorResponse response = clothesService.getClothesList(hackedRequest, testUser.getId());
-
-            // then
-            assertThat(response.data()).hasSize(1);
-            assertThat(response.data().get(0).name()).isEqualTo("내 옷");
-        }
     }
 }

@@ -29,12 +29,12 @@ spring:
 
   ai:
     openai:
-      api-key: ${GOOGLE_AI_API_KEY:dummy-key}
-      base-url: https://generativelanguage.googleapis.com/v1beta/openai
+      api-key: ${AI_API_KEY:dummy_key}
+      base-url: https://api.groq.com/openai/v1
       chat:
         completions-path: /chat/completions
         options:
-          model: gemini-3-flash-preview
+          model: llama-3.3-70b-versatile
           temperature: 0.1
       retry:
         max-attempts: 1
@@ -71,6 +71,7 @@ jwt:
 logging:
   level:
     root: info
+    org.apache.kafka: error
 
 external:
   kakao:

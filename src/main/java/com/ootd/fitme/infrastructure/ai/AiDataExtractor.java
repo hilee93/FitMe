@@ -3,7 +3,6 @@ package com.ootd.fitme.infrastructure.ai;
 import com.ootd.fitme.domain.clothes.dto.AiClothesResult;
 import com.ootd.fitme.global.exception.ErrorCode;
 import com.ootd.fitme.infrastructure.ai.exception.AiException;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.converter.BeanOutputConverter;
@@ -31,15 +30,17 @@ public class AiDataExtractor {
     }
 
     public <T> T extractData(String rawData, String systemInstruction, Class<T> responseType) {
-        BeanOutputConverter<AiClothesResult> converter = new BeanOutputConverter<>(AiClothesResult.class);
+        BeanOutputConverter<T> converter = new BeanOutputConverter<>(responseType);
         String formatInstructions = converter.getFormat();
+        String finalSystemText = systemInstruction + "\n\n" + formatInstructions;
+
         log.info("[AiDataExtractor] 데이터 분석 요청 시작 - 반환 타입: {}, 데이터 길이: {}",
                 responseType.getSimpleName(), rawData.length());
 
         try {
 
             return chatClient.prompt()
-                    .system(systemInstruction)
+                    .system(finalSystemText)
                     .user(rawData)
                     .call()
                     .entity(responseType);

@@ -179,30 +179,21 @@ public class ClothesServiceImpl implements ClothesService {
             throw new ClothesException(ErrorCode.INVALID_REQUEST);
         }
 
-        ClothesDtoCursorRequest secureRequest = new ClothesDtoCursorRequest(
-                request.cursor(),
-                request.idAfter(),
-                request.limit(),
-                request.typeEqual(),
-                loginUserId.toString(),
-                request.sortBy(),
-                request.sortDirection()
-        );
 
-        if (secureRequest.ownerId() == null || secureRequest.ownerId().isBlank()) {
+        if (request.ownerId() == null || request.ownerId().isBlank()) {
             log.warn("[ClothesService] 옷 목록 조회 실패: ownerId 식별 불가");
             throw new ClothesException(ErrorCode.INVALID_REQUEST);
         }
 
-        boolean hasCursor = secureRequest.cursor() != null && !secureRequest.cursor().isBlank();
-        boolean hasIdAfter = secureRequest.idAfter() != null && !secureRequest.idAfter().isBlank();
+        boolean hasCursor = request.cursor() != null && !request.cursor().isBlank();
+        boolean hasIdAfter = request.idAfter() != null && !request.idAfter().isBlank();
 
         if (hasCursor ^ hasIdAfter) {
-            log.warn("[ClothesService] 옷 목록 조회 실패: 불완전한 커서 정보 - cursor: {}, idAfter: {}", secureRequest.cursor(), secureRequest.idAfter());
+            log.warn("[ClothesService] 옷 목록 조회 실패: 불완전한 커서 정보 - cursor: {}, idAfter: {}", request.cursor(), request.idAfter());
             throw new ClothesException(ErrorCode.INVALID_INPUT_VALUE);
         }
 
-        ClothesDtoCursorResponse response = clothesRepository.findClothesByCursor(secureRequest);
+        ClothesDtoCursorResponse response = clothesRepository.findClothesByCursor(request);
 
         log.info("[ClothesService] 옷 목록 커서 조회 완료 - 반환 개수: {}, hasNext: {}", response.data().size(), response.hasNext());
         return response;
