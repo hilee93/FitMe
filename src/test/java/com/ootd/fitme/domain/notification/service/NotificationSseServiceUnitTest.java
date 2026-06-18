@@ -2,8 +2,6 @@ package com.ootd.fitme.domain.notification.service;
 
 import com.ootd.fitme.domain.notification.dto.response.NotificationDto;
 import com.ootd.fitme.domain.notification.repository.EmitterRepository;
-import nl.basjes.parse.useragent.UserAgent;
-import nl.basjes.parse.useragent.UserAgentAnalyzer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -13,7 +11,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedConstruction;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
@@ -25,6 +22,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -67,7 +65,10 @@ class NotificationSseServiceUnitTest {
             String savedEmitterId = emitterIdCaptor.getValue();
             SseEmitter savedEmitter = emitterCaptor.getValue();
 
-            assertThat(savedEmitterId).isEqualTo("unknown");
+            assertThat(savedEmitterId).startsWith(userId + "_");
+            String uuidPart = savedEmitterId.substring((userId + "_").length());
+            assertThatCode(() -> UUID.fromString(uuidPart))
+                    .doesNotThrowAnyException();
             assertThat(savedEmitter).isNotNull();
             assertThat(savedEmitter).isSameAs(result);
         }
@@ -151,6 +152,24 @@ class NotificationSseServiceUnitTest {
             }
         }
 
+        @Test
+        @DisplayName("같은 사용자와 같은 User-Agent로 여러 번 구독해도 emitterId는 서로 다르다")
+        void shouldCreateDifferentEmitterIdWhenSameUserSubscribesMultipleTimes() {
+            UUID userId = UUID.randomUUID();
+
+            notificationSseService.subscribe(userId, null, "same-user-agent");
+            notificationSseService.subscribe(userId, null, "same-user-agent");
+
+            ArgumentCaptor<String> emitterIdCaptor = ArgumentCaptor.forClass(String.class);
+
+            verify(emitterRepository, times(2))
+                    .save(eq(userId), emitterIdCaptor.capture(), any(SseEmitter.class));
+
+            assertThat(emitterIdCaptor.getAllValues())
+                    .hasSize(2)
+                    .doesNotHaveDuplicates()
+                    .allSatisfy(emitterId -> assertThat(emitterId).startsWith(userId + "_"));
+        }
 
     }
 

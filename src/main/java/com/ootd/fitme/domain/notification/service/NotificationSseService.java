@@ -4,11 +4,8 @@ import com.ootd.fitme.domain.notification.dto.response.NotificationDto;
 import com.ootd.fitme.domain.notification.repository.EmitterRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import nl.basjes.parse.useragent.UserAgent;
-import nl.basjes.parse.useragent.UserAgentAnalyzer;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitter;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -25,11 +22,10 @@ public class NotificationSseService {
 
     private final EmitterRepository emitterRepository;
     private final SseMessageRepository sseMessageRepository;
-    private final UserAgentAnalyzer uaa;
 
     public SseEmitter subscribe(UUID userId,UUID lastEventId,String userAgent) {
 
-        String emitterId = createEmitterId(userAgent);
+        String emitterId = createEmitterId(userId);
         SseEmitter emitter = new SseEmitter(DEFAULT_TIMEOUT);
 
         emitter.onCompletion(() -> {
@@ -123,17 +119,8 @@ public class NotificationSseService {
                         emitter.completeWithError(new RuntimeException("sse ping failed")));
     }
 
-    private String createEmitterId(String userAgent) {
-        if (uaa == null || userAgent == null) {
-            return "unknown";
-        }
-        UserAgent agent = uaa.parse(userAgent);
-
-        String agentName = agent.getValue("AgentName");
-
-        return (agentName == null || agentName.isEmpty())
-                ? "unknown"
-                : agentName;
+    private String createEmitterId(UUID userId) {
+        return userId + "_" + UUID.randomUUID();
     }
 
 }
