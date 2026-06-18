@@ -171,6 +171,113 @@ class NotificationSseServiceUnitTest {
                     .allSatisfy(emitterId -> assertThat(emitterId).startsWith(userId + "_"));
         }
 
+
+        @Test
+        @DisplayName("재전송 중 IOException 발생 시 emitter를 삭제하고 이후 메세지 전송을 중단한다.")
+        void shouldDeleteEmitterAndStopResendingWhenIOExceptionOccurs() throws Exception {
+            UUID userId = UUID.randomUUID();
+            UUID lastEventId = UUID.randomUUID();
+
+            NotificationDto dto1 = new NotificationDto(
+                    UUID.randomUUID(), Instant.now(), userId, "제목1", "내용1", null
+            );
+            NotificationDto dto2 = new NotificationDto(
+                    UUID.randomUUID(), Instant.now(), userId, "제목2", "내용2", null
+            );
+
+            SseMessage message1 = SseMessage.create(userId, dto1);
+            SseMessage message2 = SseMessage.create(userId, dto2);
+
+            given(sseMessageRepository.findAllByEventIdAfterAndReceiverId(lastEventId, userId))
+                    .willReturn(List.of(message1,message2));
+
+            try (MockedConstruction<SseEmitter> mocked = mockConstruction(SseEmitter.class,
+                    (emitter, context) -> doThrow(new IOException("connection closed"))
+                            .when(emitter)
+                            .send(any(Set.class)))) {
+                notificationSseService.subscribe(userId, lastEventId, "user-agent");
+
+                SseEmitter emitter = mocked.constructed().get(0);
+                ArgumentCaptor<String> emitterIdCaptor = ArgumentCaptor.forClass(String.class);
+
+                verify(emitterRepository).save(eq(userId), emitterIdCaptor.capture(), eq(emitter));
+                verify(emitterRepository).deleteByUserIdAndEmitterId(userId, emitterIdCaptor.getValue());
+
+                // 첫 번째 실패 이후 두 번째 메세지는 전송하지 않는다.
+                verify(emitter, times(1)).send(any(Set.class));
+            }
+        }
+
+        @Test
+        @DisplayName("재전송 중 IllegalStateException 발생 시 emitter를 삭제한다.")
+        void shouldDeleteEmitterWhenResendingThrowsIllegalStateException() {
+            UUID userId = UUID.randomUUID();
+            UUID lastEventId = UUID.randomUUID();
+
+            NotificationDto dto = new NotificationDto(
+                    UUID.randomUUID(), Instant.now(), userId, "제목", "내용", null
+            );
+            SseMessage message = SseMessage.create(userId, dto);
+
+            given(sseMessageRepository.findAllByEventIdAfterAndReceiverId(lastEventId, userId))
+                    .willReturn(List.of(message));
+
+            try (MockedConstruction<SseEmitter> mocked =
+                         mockConstruction(SseEmitter.class, (emitter, context) ->
+                                 doThrow(new IllegalStateException("already completed"))
+                                         .when(emitter)
+                                         .send(any(Set.class)))) {
+                notificationSseService.subscribe(userId,lastEventId,"user-agent");
+                SseEmitter emitter = mocked.constructed().get(0);
+                ArgumentCaptor<String> emitterIdCaptor = ArgumentCaptor.forClass(String.class);
+
+                verify(emitterRepository).save(eq(userId), emitterIdCaptor.capture(), eq(emitter));
+                verify(emitterRepository).deleteByUserIdAndEmitterId(userId, emitterIdCaptor.getValue());
+            }
+        }
+
+        @Test
+        @DisplayName("신규 연결의 초기 ping 실패 시 emitter를 삭제한다.")
+        void shouldDeleteEmitterWhenInitialPingFails() throws Exception {
+            UUID userId = UUID.randomUUID();
+
+            try (MockedConstruction<SseEmitter> mocked =
+                    mockConstruction(SseEmitter.class, (emitter, context) ->
+                            doThrow(new IOException("ping failed"))
+                                    .when(emitter)
+                                    .send(any(Set.class)))) {
+                notificationSseService.subscribe(userId, null, "user-agent");
+                SseEmitter emitter = mocked.constructed().get(0);
+                ArgumentCaptor<String> emitterIdCaptor = ArgumentCaptor.forClass(String.class);
+
+                verify(emitterRepository).save(eq(userId), emitterIdCaptor.capture(), eq(emitter));
+                verify(emitterRepository).deleteByUserIdAndEmitterId(userId, emitterIdCaptor.getValue());
+            }
+        }
+
+        @Test
+        @DisplayName("재연결 시 미수신 메세지가 없고 ping도 실패하면 emitter를 삭제한다.")
+        void shouldDeleteEmitterWhenReconnectPingFailsWithoutMissedMessages() throws Exception {
+            UUID userId = UUID.randomUUID();
+            UUID lastEventId = UUID.randomUUID();
+
+            given(sseMessageRepository.findAllByEventIdAfterAndReceiverId(lastEventId, userId))
+                    .willReturn(List.of());
+
+            try (MockedConstruction<SseEmitter> mocked =
+                    mockConstruction(SseEmitter.class, (emitter, context) ->
+                            doThrow(new IOException("ping failed"))
+                                    .when(emitter)
+                                    .send(any(Set.class)))) {
+                notificationSseService.subscribe(userId, lastEventId, "user-agent");
+                SseEmitter emitter = mocked.constructed().get(0);
+                ArgumentCaptor<String> emitterIdCaptor = ArgumentCaptor.forClass(String.class);
+
+                verify(emitterRepository).save(eq(userId), emitterIdCaptor.capture(), eq(emitter));
+                verify(sseMessageRepository).findAllByEventIdAfterAndReceiverId(lastEventId,userId);
+                verify(emitterRepository).deleteByUserIdAndEmitterId(userId, emitterIdCaptor.getValue());
+            }
+        }
     }
 
     @Nested
@@ -208,7 +315,7 @@ class NotificationSseServiceUnitTest {
         }
 
         @Test
-        @DisplayName("send 중 IllegalStateException 발생 시 emitter를 삭제한다")
+        @DisplayName("send 중 IOException 발생 시 emitter를 삭제한다")
         void shouldDeleteEmitterWhenIOExceptionOccurs() throws Exception {
             // given
             UUID userId = UUID.randomUUID();
@@ -229,7 +336,7 @@ class NotificationSseServiceUnitTest {
             given(emitterRepository.findAllByUserId(userId))
                     .willReturn(Map.of(emitterId, emitter));
 
-            doThrow(new IllegalStateException("already completed"))
+            doThrow(new IOException("connection closed"))
                     .when(emitter)
                     .send(any(Set.class));
 

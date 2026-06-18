@@ -53,22 +53,28 @@ public class NotificationSseService {
 
                             if (messages.isEmpty()) {
                                 log.info("재전송할 이벤트 없음, ping 전송");
-                                ping(emitter);
+                                pingOrCleanup(userId,emitterId,emitter);
                                 return;
                             }
                             log.info("못 받은 알림 수={}", messages.size());
-                            messages.forEach(sseMessage -> {
+                            for (SseMessage message : messages) {
                                 try {
-                                    emitter.send(sseMessage.toEvent());
-                                    log.info("알림 재전송 성공 = {}", sseMessage.toEvent());
+                                    emitter.send(message.toEvent());
+                                    log.info("알림 재전송 성공 eventId = {}", message.getEventId());
                                 } catch (IOException | IllegalStateException e) {
-                                    log.error("SSE 재전송 실패 userId={}, eventId={}", userId, sseMessage.getEventId(), e);
-
+                                    log.warn("SSE 재전송 실패 userId = {}, emitterId = {}, eventId = {}",
+                                            userId,
+                                            emitterId,
+                                            message.getEventId(),
+                                            e
+                                    );
+                                    emitterRepository.deleteByUserIdAndEmitterId(userId, emitterId);
+                                    break;
                                 }
-                            });
+                            }
                         },
                         () -> {
-                            ping(emitter);
+                            pingOrCleanup(userId, emitterId, emitter);
                         }
                 );
         return emitter;
@@ -117,6 +123,12 @@ public class NotificationSseService {
                 .filter(emitter -> !ping(emitter))
                 .forEach(emitter ->
                         emitter.completeWithError(new RuntimeException("sse ping failed")));
+    }
+
+    private void pingOrCleanup(UUID userId, String emitterId, SseEmitter emitter) {
+        if (!ping(emitter)) {
+            emitterRepository.deleteByUserIdAndEmitterId(userId, emitterId);
+        }
     }
 
     private String createEmitterId(UUID userId) {
